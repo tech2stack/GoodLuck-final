@@ -1,7 +1,7 @@
 // src/components/reports/BranchOverviewReport.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
-import api from '../../services/api';
+import api from '../../utils/api';
 import { FaSpinner, FaSyncAlt } from 'react-icons/fa';
 // REMOVE: import '../../styles/Report.css';
 // NEW: Import the component-specific CSS

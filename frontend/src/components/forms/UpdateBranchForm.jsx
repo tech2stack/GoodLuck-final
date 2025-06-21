@@ -1,6 +1,6 @@
 // src/components/forms/UpdateBranchForm.jsx
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api'; // Make sure your api service is correctly configured
+import api from '../../utils/api'; // Make sure your api service is correctly configured
 import { FaSave, FaTimes, FaSpinner } from 'react-icons/fa'; // Added FaSpinner
 
 // Assuming you have a CSS file for this form.

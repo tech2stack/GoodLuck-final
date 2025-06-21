@@ -1,6 +1,6 @@
 // frontend/src/components/forms/CreateBranchAdminForm.js
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import api from '../../utils/api';
 import { FaPlus, FaTimes } from 'react-icons/fa';
 
 const CreateBranchAdminForm = ({ onBranchAdminCreated, onCancel, branches }) => {

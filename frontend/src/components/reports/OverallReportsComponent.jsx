@@ -1,7 +1,7 @@
 // src/components/reports/OverallReportsComponent.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
-import api from '../../services/api';
+import api from '../../utils/api';
 import { FaDownload, FaEye, FaSpinner, FaSyncAlt } from 'react-icons/fa';
 // REMOVE: import '../../styles/Report.css'; // This is a generic one, use specific now
 // NEW: Import the new component-specific CSS

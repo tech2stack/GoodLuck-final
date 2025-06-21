@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react'; // Added useCallback
-import api from '../services/api'; // Axios instance to make API calls
+import api from '../utils/api'; // Axios instance to make API calls
 
 const AuthContext = createContext(null); // Initialize with null or a default object
 
