@@ -1,6 +1,6 @@
 import React from "react";
-import bgImage from '../assets/3.png';
-import background from '../assets/bg.jpg';
+import background from '../assets/bgImg.png';
+import shopImg from '../assets/shopImg.jpg';
 import Delivery from '../assets/home_delivery.png';
 import BookSet from '../assets/sets.png';
 
@@ -21,7 +21,7 @@ const Home = () => {
       <section className="hero-section">
         {/* Changed <img> to <LazyImage> */}
         <LazyImage 
-  src={bgImage} 
+  src={background} 
   alt="Goodluck Book Store Banner" 
   className="hero-background-image" 
 />
@@ -58,7 +58,7 @@ const Home = () => {
           </div>
           <div className="about-image-container">
             {/* Changed <img> to <LazyImage> */}
-            <LazyImage src={background} alt="Goodluck Book Store Interior" className="about-store-image" />
+            <LazyImage src={shopImg} alt="Goodluck Book Store Interior" className="about-store-image" />
           </div>
         </div>
       </section>

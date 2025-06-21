@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 
 // Import stylesheet and assets
 import '../styles/Login.css';
-import logo from '../assets/logo.jpg';
+import logo from '../assets/glbs-logo.jpg';
 
 // Lazy load image component
 import LazyImage from '../components/LazyImage';

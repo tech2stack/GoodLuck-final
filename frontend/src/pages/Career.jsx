@@ -1,7 +1,7 @@
 // Career.js
 import React from 'react';
 import '../styles/Career.css';
-import background from '../assets/3.png';
+import background from '../assets/bgImg.png';
 import hiringBanner from '../assets/Hiring-banner.webp';
 import LazyImage from '../components/LazyImage';
 

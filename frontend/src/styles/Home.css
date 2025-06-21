@@ -286,7 +286,7 @@ body {
 /* Our Favorite Customers Section */
 .customers-section {
   padding: 100px 5%;
-  background-image: url('../assets/3.png');
+  background-image: url('../assets/bgImg.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
