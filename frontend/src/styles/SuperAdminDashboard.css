@@ -1011,7 +1011,7 @@ body {
         gap: 1rem;
     }
     .summary-card {
-        width: 100%;
+        /* width: 100%; */
         max-width: 280px;
         padding: 0.8rem;
     }
