@@ -5,7 +5,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 import '../styles/Login.css';
-import logo from '../assets/logo.jpg';
+import logo from '../assets/glbs-logo.jpg';
 import LazyImage from '../components/LazyImage';
 
 const Login = () => {

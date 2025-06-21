@@ -1,6 +1,6 @@
 // src/components/forms/UpdateStockManagerForm.jsx
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import api from '../../utils/api';
 import '../../styles/Form.css'; // Assuming you have a general form stylesheet
 import { FaTimes } from 'react-icons/fa';
 
