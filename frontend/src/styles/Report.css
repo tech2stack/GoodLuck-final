@@ -1,0 +1,207 @@
+/* src/styles/Report.css */
+
+/* --- General Report Page Container --- */
+.report-container {
+    padding: 2.5rem; /* Increased padding for more breathing room */
+    background-color: #ffffff;
+    border-radius: 10px; /* More pronounced rounded corners */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); /* Stronger, softer shadow */
+    margin: 2rem auto; /* Center with consistent top/bottom margin */
+    max-width: 900px; /* Constrain width for readability */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+/* --- Main Report Page Title (e.g., "Details for Branch:...") --- */
+.report-container h4 {
+    font-size: 2.2rem; /* Larger and more prominent */
+    color: #343a40; /* Dark gray for main headings */
+    text-align: center;
+    margin-bottom: 2rem; /* More space below the main title */
+    font-weight: 700; /* Bolder text */
+}
+
+.report-container h4 .text-primary {
+    color: #007bff !important; /* Ensure primary color stands out */
+    font-weight: 700;
+}
+
+/* --- Action Buttons Section (Download, Refresh) --- */
+.d-flex.justify-content-start.mb-4 {
+    /* Existing Bootstrap flexbox classes are good. */
+    /* Add any custom spacing or alignment if needed beyond Bootstrap's gap */
+    gap: 1rem; /* Bootstrap 5+ gap utility, if not using, fallback with margin-right on buttons */
+    justify-content: center; /* Center buttons within the container */
+    flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+}
+
+.btn {
+    border-radius: 0.5rem; /* Slightly more rounded buttons */
+    font-weight: 500;
+    padding: 0.75rem 1.5rem; /* Larger padding for clickability */
+    transition: all 0.3s ease; /* Smooth transition for hover effects */
+}
+
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+    transform: translateY(-2px); /* Slight lift on hover */
+}
+
+.btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+.btn-info:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+    transform: translateY(-2px); /* Slight lift on hover */
+}
+
+/* Spinner icon styling */
+.fa-spin.me-2 {
+    animation: fa-spin 1s infinite linear; /* Faster spin */
+    font-size: 1.1em; /* Slightly larger */
+}
+@keyframes fa-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(359deg); }
+}
+
+/* --- Card Styling (Branch Info, Admin Details, Employee List) --- */
+.card.shadow-sm.p-4 {
+    border: none; /* Remove default Bootstrap card border */
+    border-radius: 10px; /* Match container border-radius */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08) !important; /* Ensure consistent shadow */
+    margin-bottom: 1.8rem; /* Consistent spacing between cards */
+    background-color: #f8f9fa; /* Light background for cards for contrast */
+}
+
+.card-title.mb-3 {
+    font-size: 1.8rem; /* Larger title for card sections */
+    color: #495057; /* Darker text for card titles */
+    border-bottom: 2px solid #e9ecef; /* Subtle separator line */
+    padding-bottom: 0.8rem;
+    margin-bottom: 1.5rem; /* Space below title and separator */
+    font-weight: 600;
+}
+
+.card-text {
+    font-size: 1.05rem; /* Slightly larger text for info */
+    margin-bottom: 0.8rem; /* Space between info lines */
+    line-height: 1.5;
+    color: #343a40; /* Standard text color */
+}
+
+.card-text strong {
+    color: #212529; /* Darker bold text for labels */
+    font-weight: 600;
+}
+
+/* --- Status Badge --- */
+.badge {
+    padding: 0.4em 0.8em;
+    border-radius: 0.5rem; /* More rounded corners for badges */
+    font-size: 0.9em;
+    font-weight: bold;
+    text-transform: uppercase;
+    vertical-align: middle; /* Align badge with text */
+}
+
+.badge.bg-success {
+    background-color: #28a745 !important;
+}
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* --- Employee List Specifics --- */
+.list-group.employee-list {
+    border-radius: 8px; /* Rounded corners for the entire list group */
+    overflow: hidden; /* Ensures child elements respect border-radius */
+}
+
+.list-group-item {
+    background-color: #ffffff; /* White background for each list item */
+    border: 1px solid #e9ecef; /* Lighter border between items */
+    padding: 1rem 1.25rem; /* Ample padding */
+    margin-bottom: -1px; /* Remove gaps between items */
+    transition: background-color 0.2s ease;
+}
+
+.list-group-item:first-child {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+.list-group-item:last-child {
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+
+.list-group-item:hover {
+    background-color: #f0f4f8; /* Gentle hover effect */
+}
+
+.list-group-item strong {
+    color: #0056b3; /* Darker blue for employee names */
+    font-weight: 600;
+}
+
+.list-group-item small.text-muted {
+    font-size: 0.85rem;
+    color: #6c757d !important;
+}
+
+/* --- Messages (Loading, Error, No Data) --- */
+.text-center.my-4.p-4.border.rounded.bg-light {
+    font-size: 1.1rem;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Soft shadow for messages */
+}
+
+.text-danger p.mb-3 {
+    color: #dc3545 !important; /* Ensure error text is red */
+}
+
+.btn-outline-danger {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 768px) {
+    .report-container {
+        padding: 1.5rem;
+        margin: 1rem auto;
+    }
+    .report-container h4 {
+        font-size: 1.8rem;
+    }
+    .card-title.mb-3 {
+        font-size: 1.4rem;
+    }
+    .btn {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
+    }
+    .card-text, .list-group-item {
+        font-size: 0.95rem;
+    }
+    .d-flex.justify-content-start.mb-4 {
+        flex-direction: column; /* Stack buttons vertically on small screens */
+        align-items: stretch; /* Stretch buttons to full width */
+    }
+    .d-flex.justify-content-start.mb-4 .btn {
+        margin-right: 0 !important; /* Remove horizontal margin */
+        margin-bottom: 0.8rem; /* Add vertical margin */
+    }
+}

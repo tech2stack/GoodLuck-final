@@ -1,0 +1,341 @@
+/* src/styles/ReportsHub.css */
+
+/* Global Styling & Variables */
+:root {
+    --primary-color: #007bff; /* Bootstrap blue */
+    --primary-dark: #0056b3;
+    --secondary-color: #6c757d; /* Bootstrap gray */
+    --sidebar-bg: #2c3e50; /* Darker, more professional blue-gray for sidebar */
+    --sidebar-text: #ecf0f1; /* Light gray for sidebar text */
+    --content-bg: #f4f7f6; /* Very light, soft background for content */
+    --card-bg: #ffffff;
+    --border-color: #e0e6e9; /* Light border color */
+    --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
+    --text-dark: #212529;
+    --text-muted: #6a7480;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--content-bg);
+}
+
+/* --- Overall Layout Container --- */
+.reports-hub-wrapper {
+    display: flex;
+    min-height: calc(100vh - 0px);
+}
+
+/* --- Sidebar Styling --- */
+.reports-sidebar {
+    width: 280px;
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    padding: 2.5rem 1.8rem;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    flex-shrink: 0;
+    transition: all 0.3s ease-in-out;
+}
+
+.sidebar-title {
+    font-size: 2.1rem;
+    font-weight: 800;
+    margin-bottom: 2.5rem;
+    color: var(--primary-color);
+    text-align: center;
+    line-height: 1.2;
+    padding-bottom: 1.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-nav li {
+    margin-bottom: 1rem;
+}
+
+.sidebar-nav .nav-button {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between icon and text */
+    width: 100%;
+    padding: 1.2rem 1.4rem;
+    background-color: transparent;
+    border: none;
+    text-align: left;
+    color: var(--sidebar-text);
+    font-size: 1.15rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-decoration: none; /* For the Link component */
+}
+
+.sidebar-nav .nav-icon {
+    font-size: 1.2em; /* Size for icons */
+    color: var(--primary-color); /* Primary color for icons */
+    transition: color 0.3s ease;
+}
+
+.sidebar-nav .nav-button:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    transform: translateX(5px);
+}
+
+.sidebar-nav .nav-button:hover .nav-icon {
+    color: #ffffff; /* White icon on hover */
+}
+
+.sidebar-nav .nav-button.active {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+    transform: none;
+    position: relative;
+}
+
+.sidebar-nav .nav-button.active .nav-icon {
+    color: #ffffff; /* White icon when active */
+}
+
+/* Optional: Active indicator bar */
+.sidebar-nav .nav-button.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 5px;
+    height: 80%;
+    background-color: #fff;
+    border-radius: 0 3px 3px 0;
+}
+
+/* Specific styling for the Dashboard Button */
+.sidebar-nav .dashboard-button {
+    background-color: #009688; /* A distinct color for dashboard button */
+    box-shadow: 0 4px 10px rgba(0, 150, 136, 0.3); /* Subtle shadow for distinct button */
+    color: #fff;
+    font-weight: 600;
+    margin-bottom: 2rem; /* More space below it */
+}
+
+.sidebar-nav .dashboard-button .nav-icon {
+    color: #fff; /* White icon for dashboard button */
+}
+
+.sidebar-nav .dashboard-button:hover {
+    background-color: #00796b; /* Darker shade on hover */
+    transform: translateY(-2px); /* Slight lift */
+    box-shadow: 0 6px 15px rgba(0, 150, 136, 0.4);
+}
+
+
+/* Sidebar Divider */
+.sidebar-divider {
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.1);
+    margin: 1.5rem 0; /* Vertical spacing for the divider */
+}
+
+/* --- Main Content Area Styling --- */
+.reports-content {
+    flex-grow: 1;
+    padding: 2.5rem 3rem;
+    background-color: var(--content-bg);
+    display: flex;
+    flex-direction: column;
+}
+
+.reports-main-title {
+    font-size: 3.2rem;
+    font-weight: 800;
+    color: var(--text-dark);
+    margin-bottom: 3rem;
+    text-align: center;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border-color);
+    letter-spacing: -0.02em;
+}
+
+.report-display-area {
+    flex-grow: 1;
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 2.5rem;
+    box-shadow: var(--shadow-light);
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+}
+
+/* Ensure components within report-display-area fit well */
+.report-display-area > *:not(:last-child) {
+    margin-bottom: 1.5rem;
+}
+
+/* Specific styling for the description text under BranchSelector */
+.reports-description {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    margin-top: 2rem !important;
+    line-height: 1.6;
+    max-width: 650px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+/* --- Responsive Design --- */
+
+/* Medium devices (tablets, 992px and up) */
+@media (min-width: 992px) {
+    /* No changes needed here, default desktop rules apply */
+}
+
+/* Small devices (landscape phones, 768px to 991px) */
+@media (max-width: 991px) {
+    .reports-hub-wrapper {
+        flex-direction: column;
+    }
+
+    .reports-sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem 1rem;
+        border-radius: 0 0 10px 10px;
+    }
+
+    .sidebar-title {
+        text-align: left;
+        margin-bottom: 1.5rem;
+        font-size: 1.7rem;
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .sidebar-nav ul {
+        display: flex;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 10px;
+        justify-content: flex-start;
+        gap: 0.8rem;
+    }
+
+    .sidebar-nav li {
+        flex-shrink: 0;
+        margin-bottom: 0;
+    }
+
+    .sidebar-nav .nav-button {
+        padding: 0.8rem 1.4rem;
+        font-size: 1rem;
+        white-space: nowrap;
+        display: inline-block;
+        width: auto;
+    }
+
+    .sidebar-nav .nav-button.active::before {
+        display: none;
+    }
+
+    .sidebar-nav .dashboard-button {
+        /* Adjustments for horizontal layout */
+        margin-bottom: 0; /* Remove vertical margin */
+        margin-right: 1rem; /* Add horizontal margin if needed */
+        order: -1; /* Make it appear first in the horizontal list */
+    }
+
+    .sidebar-divider {
+        display: none; /* Hide divider in horizontal layout */
+    }
+
+    .reports-content {
+        padding: 2rem;
+    }
+
+    .reports-main-title {
+        font-size: 2.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .report-display-area {
+        padding: 2rem;
+    }
+}
+
+/* Extra small devices (portrait phones, less than 768px) */
+@media (max-width: 767px) {
+    .reports-content {
+        padding: 1.5rem;
+    }
+    .reports-main-title {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    .report-display-area {
+        padding: 1.5rem;
+        border-radius: 8px;
+    }
+    .sidebar-title {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .sidebar-nav .nav-button {
+        padding: 0.7rem 1.2rem;
+        font-size: 0.95rem;
+    }
+    .reports-description {
+        font-size: 0.95rem;
+        margin-top: 1.5rem !important;
+    }
+}
+
+/* Very small devices (less than 480px) */
+@media (max-width: 480px) {
+    .reports-content {
+        padding: 1rem;
+    }
+    .reports-main-title {
+        font-size: 1.6rem;
+        text-align: left;
+        margin-bottom: 1rem;
+        padding-bottom: 0.8rem;
+    }
+    .reports-sidebar {
+        padding: 1rem 0.5rem;
+    }
+    .sidebar-title {
+        font-size: 1.3rem;
+        margin-bottom: 0.8rem;
+    }
+    .sidebar-nav .nav-button {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.8rem;
+    }
+    .report-display-area {
+        padding: 1rem;
+    }
+}

@@ -1,0 +1,445 @@
+/* src/styles/BranchDetailsReport.css */
+
+/*
+   CSS Variables for Theming (Define these in a global stylesheet like App.css or index.css)
+   If you don't have these, you can hardcode the values or create a root:
+   :root {
+       --primary-color: #007bff;
+       --primary-dark: #0056b3;
+       --secondary-color: #6c757d;
+       --success-color: #28a745;
+       --info-color: #17a2b8;
+       --danger-color: #dc3545;
+       --warning-color: #ffc107;
+
+       --background-light: #f8f9fa;
+       --content-bg: #ffffff;
+       --card-bg: #fdfdfd;
+
+       --text-dark: #343a40;
+       --text-muted: #6c757d;
+       --border-color: #e9ecef;
+
+       --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.05);
+       --shadow-medium: 0 6px 16px rgba(0, 0, 0, 0.08);
+       --shadow-strong: 0 8px 20px rgba(0, 0, 0, 0.12);
+   }
+*/
+
+
+/* =======================================
+   1. Base Wrapper and Layout
+   ======================================= */
+.branch-details-report-wrapper {
+    padding: 2.5rem 3rem; /* Generous padding for content */
+    max-width: 1200px; /* Max width for readability on large screens */
+    margin: 2.5rem auto; /* Center the component with top/bottom margin */
+    background-color: var(--content-bg, #ffffff); /* Fallback to white if variable not defined */
+    border-radius: 12px; /* Soft rounded corners */
+    box-shadow: var(--shadow-medium, 0 6px 16px rgba(0, 0, 0, 0.08)); /* Subtle shadow for depth */
+    color: var(--text-dark, #343a40); /* Default text color */
+}
+
+/* =======================================
+   2. Header Section (Back Button & Title)
+   ======================================= */
+.branch-details-header {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Space between back button and title */
+    margin-bottom: 2.5rem;
+    flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+    justify-content: space-between; /* Pushes back button left, title takes middle, then actions if any */
+}
+
+.branch-details-header .back-button {
+    font-size: 1rem;
+    padding: 0.8rem 1.2rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--secondary-color, #6c757d);
+    color: var(--secondary-color, #6c757d);
+    background-color: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none; /* If it's a link */
+}
+
+.branch-details-header .back-button:hover {
+    background-color: var(--secondary-color, #6c757d);
+    color: #fff;
+    transform: translateY(-3px); /* Lift effect */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15); /* More pronounced shadow on hover */
+}
+
+.branch-details-header .branch-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--text-dark, #343a40);
+    margin: 0; /* Override default margins */
+    flex-grow: 1; /* Allows title to take available space */
+    text-align: left; /* Default alignment */
+}
+
+/* =======================================
+   3. Action Buttons (Download, Refresh)
+   ======================================= */
+.action-buttons-group {
+    display: flex;
+    gap: 15px; /* Space between buttons */
+    margin-bottom: 3rem; /* More space below buttons */
+    flex-wrap: wrap; /* Allow wrapping */
+    justify-content: flex-start; /* Align buttons to the left */
+}
+
+.action-buttons-group .btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border: none; /* Assuming solid color buttons */
+}
+
+/* Specific button styles - ensure these match your theme */
+.action-buttons-group .btn-primary {
+    background-color: var(--primary-color, #007bff);
+    color: #fff;
+}
+.action-buttons-group .btn-primary:hover {
+    background-color: var(--primary-dark, #0056b3);
+}
+
+.action-buttons-group .btn-success {
+    background-color: var(--success-color, #28a745);
+    color: #fff;
+}
+.action-buttons-group .btn-success:hover {
+    background-color: #218838; /* Slightly darker green */
+}
+
+.action-buttons-group .btn:hover {
+    transform: translateY(-3px); /* Consistent lift effect */
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15); /* More pronounced shadow */
+}
+
+
+/* =======================================
+   4. Details Grid (Branch Info, Admins)
+   ======================================= */
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Adjusted min-width for larger cards */
+    gap: 2.5rem; /* Increased space between grid items */
+    margin-bottom: 3rem;
+}
+
+.details-grid .details-card {
+    background-color: var(--card-bg, #fdfdfd);
+    border: 1px solid var(--border-color, #e9ecef);
+    box-shadow: var(--shadow-light, 0 4px 12px rgba(0, 0, 0, 0.05));
+    border-radius: 10px;
+    padding: 2rem;
+    display: flex; /* Use flex for internal layout */
+    flex-direction: column;
+}
+
+.details-grid .details-card .card-title {
+    font-size: 1.7rem; /* Slightly larger title */
+    font-weight: 700;
+    color: var(--primary-dark, #0056b3);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem; /* More padding below title */
+    border-bottom: 2px solid var(--border-color, #e9ecef); /* Thicker border */
+    text-align: center; /* Center card titles */
+}
+
+.details-grid .details-card .card-text {
+    font-size: 1.05rem; /* Slightly larger text */
+    margin-bottom: 0.9rem; /* More space between lines */
+    color: var(--text-dark, #343a40);
+    display: flex; /* Align strong and text horizontally */
+    align-items: flex-start;
+    line-height: 1.5;
+}
+
+.details-grid .details-card .card-text strong {
+    color: var(--secondary-color, #6c757d);
+    min-width: 140px; /* Sufficient space for labels */
+    display: inline-flex; /* Align icon and text */
+    align-items: center;
+    gap: 8px; /* Space between icon and label text */
+    font-weight: 600;
+}
+
+.details-grid .details-card ul.list-unstyled {
+    margin: 0;
+    padding: 0;
+}
+
+.details-grid .details-card ul.list-unstyled li.card-text {
+    padding-left: 0; /* Remove default list padding */
+    margin-bottom: 0.7rem;
+}
+
+
+/* =======================================
+   5. Employees List Card
+   ======================================= */
+.employees-card {
+    background-color: var(--card-bg, #fdfdfd);
+    border: 1px solid var(--border-color, #e9ecef);
+    box-shadow: var(--shadow-light, 0 4px 12px rgba(0, 0, 0, 0.05));
+    border-radius: 10px;
+    padding: 2.5rem; /* Consistent padding */
+}
+
+.employees-card .card-title {
+    font-size: 1.7rem; /* Consistent title size */
+    font-weight: 700;
+    color: var(--primary-dark, #0056b3);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-color, #e9ecef);
+    text-align: center;
+}
+
+.employees-card .employee-list {
+    margin-top: 1.5rem;
+    list-style: none; /* Remove default list styling */
+    padding: 0;
+}
+
+.employees-card .employee-list-item {
+    background-color: var(--background-light, #f8f9fa); /* Lighter background for list items */
+    border: 1px solid var(--border-color, #e9ecef);
+    border-radius: 8px;
+    margin-bottom: 1rem; /* More space between items */
+    padding: 1.2rem 1.5rem; /* More padding */
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Allow wrapping */
+}
+
+.employees-card .employee-list-item:last-child {
+    margin-bottom: 0;
+}
+
+.employees-card .employee-list-item:hover {
+    background-color: #f0f0f0; /* Slightly darker on hover */
+    transform: translateX(5px); /* Gentle slide effect */
+}
+
+.employees-card .employee-info strong {
+    font-size: 1.1rem;
+    color: var(--text-dark, #343a40);
+    display: block; /* Ensures name takes its own line */
+    margin-bottom: 3px;
+}
+
+.employees-card .employee-info small {
+    color: var(--text-muted, #6c757d);
+    font-size: 0.9rem;
+}
+
+
+/* =======================================
+   6. Loading, Error, No Data States
+   ======================================= */
+.report-detail-card-layout {
+    background-color: var(--card-bg, #ffffff);
+    border: 1px solid var(--border-color, #e9ecef);
+    border-radius: 12px;
+    padding: 3rem; /* Generous padding */
+    box-shadow: var(--shadow-medium, 0 6px 16px rgba(0, 0, 0, 0.08));
+    margin: 2.5rem auto; /* Center it with spacing */
+    max-width: 800px; /* Max width for these messages */
+    text-align: center;
+    color: var(--text-dark, #343a40);
+}
+
+.report-detail-card-layout p {
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.report-detail-card-layout .text-danger {
+    color: var(--danger-color, #dc3545) !important;
+    font-weight: 600;
+}
+
+.report-detail-card-layout .text-muted {
+    color: var(--text-muted, #6c757d) !important;
+}
+
+.report-detail-card-layout .fa-spin {
+    margin-right: 8px;
+    animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Buttons within loading/error state */
+.report-detail-card-layout .btn {
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    margin-left: 10px; /* Space between buttons */
+    margin-right: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border: 1px solid; /* Ensure border is present for outlined buttons */
+}
+
+/* Specific styles for buttons inside loading/error state */
+.report-detail-card-layout .btn-outline-danger {
+    color: var(--danger-color, #dc3545);
+    border-color: var(--danger-color, #dc3545);
+    background-color: transparent;
+}
+.report-detail-card-layout .btn-outline-danger:hover {
+    background-color: var(--danger-color, #dc3545);
+    color: white;
+}
+
+.report-detail-card-layout .btn-outline-secondary {
+    color: var(--secondary-color, #6c757d);
+    border-color: var(--secondary-color, #6c757d);
+    background-color: transparent;
+}
+.report-detail-card-layout .btn-outline-secondary:hover {
+    background-color: var(--secondary-color, #6c757d);
+    color: white;
+}
+
+.report-detail-card-layout .btn-primary {
+    background-color: var(--primary-color, #007bff);
+    color: white;
+    border-color: var(--primary-color, #007bff);
+}
+.report-detail-card-layout .btn-primary:hover {
+    background-color: var(--primary-dark, #0056b3);
+    border-color: var(--primary-dark, #0056b3);
+}
+
+
+/* =======================================
+   7. Responsive Adjustments
+   ======================================= */
+
+/* Tablets and small desktops (e.g., 769px to 991px) */
+@media (max-width: 991px) {
+    .branch-details-report-wrapper {
+        padding: 2rem;
+        margin: 2rem auto;
+    }
+    .branch-details-header {
+        flex-direction: column; /* Stack button and title */
+        align-items: flex-start;
+        gap: 15px;
+        margin-bottom: 2rem;
+    }
+    .branch-details-header .branch-title {
+        font-size: 1.9rem; /* Slightly smaller title */
+        text-align: left; /* Ensure left alignment when stacked */
+    }
+    .action-buttons-group {
+        justify-content: flex-start;
+        gap: 12px;
+        margin-bottom: 2rem;
+    }
+    .details-grid {
+        grid-template-columns: 1fr; /* Stack cards vertically on smaller tablets */
+        gap: 2rem;
+    }
+    .details-grid .details-card,
+    .employees-card {
+        padding: 1.8rem; /* Slightly reduced padding */
+    }
+    .details-grid .details-card .card-title,
+    .employees-card .card-title {
+        font-size: 1.5rem;
+        margin-bottom: 1.2rem;
+        padding-bottom: 0.6rem;
+    }
+    .report-detail-card-layout {
+        padding: 2rem;
+        margin: 1.5rem auto;
+    }
+}
+
+/* Mobile devices (e.g., up to 576px) */
+@media (max-width: 576px) {
+    .branch-details-report-wrapper {
+        padding: 1rem;
+        margin: 1rem auto;
+        border-radius: 8px; /* Slightly smaller border radius */
+    }
+    .branch-details-header {
+        gap: 10px;
+        margin-bottom: 1.5rem;
+    }
+    .branch-details-header .back-button {
+        font-size: 0.9rem;
+        padding: 0.6rem 1rem;
+        border-radius: 6px;
+    }
+    .branch-details-header .branch-title {
+        font-size: 1.6rem;
+    }
+    .action-buttons-group {
+        flex-direction: column; /* Stack action buttons vertically */
+        align-items: stretch; /* Stretch buttons to full width */
+        gap: 10px;
+        margin-bottom: 1.5rem;
+    }
+    .action-buttons-group .btn {
+        width: 100%; /* Full width for stacked buttons */
+        font-size: 0.9rem;
+        padding: 0.7rem 1rem;
+    }
+    .details-grid .details-card,
+    .employees-card {
+        padding: 1.2rem; /* Further reduced padding for small screens */
+    }
+    .details-grid .details-card .card-title,
+    .employees-card .card-title {
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+    }
+    .details-grid .details-card .card-text,
+    .employees-card .employee-info strong,
+    .employee-list .employee-list-item {
+        font-size: 0.95rem; /* Adjust text size */
+    }
+    .employees-card .employee-list-item {
+        padding: 1rem; /* Smaller padding for list items */
+    }
+    .report-detail-card-layout {
+        padding: 1.5rem;
+        margin: 1rem auto;
+        border-radius: 8px;
+    }
+    .report-detail-card-layout p {
+        font-size: 1rem;
+    }
+    .report-detail-card-layout .btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+        margin-left: 5px;
+        margin-right: 5px;
+    }
+}

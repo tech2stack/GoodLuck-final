@@ -1,0 +1,17 @@
+.scroll-top-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1000;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #4caf50;
+    transition: transform 0.3s ease;
+  }
+  
+  .scroll-top-btn:hover {
+    transform: scale(1.2);
+    color: #2e7d32;
+  }
+  

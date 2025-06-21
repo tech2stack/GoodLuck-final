@@ -1,0 +1,276 @@
+/* src/styles/BranchOverviewReport.css */
+
+/* Base container for the report */
+.branch-overview-container {
+    padding: 25px;
+    background-color: #f8f9fa; /* Light background */
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    margin-bottom: 30px;
+}
+
+/* Report Title */
+.branch-overview-container h4 {
+    color: #212529;
+    margin-bottom: 15px;
+    font-size: 1.9rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Description text */
+.branch-overview-container .report-description-text {
+    color: #6c757d;
+    font-size: 1.05rem;
+    text-align: center;
+    margin-bottom: 30px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+}
+
+/* Summary Cards Grid (similar to Overall, but separate for specificity) */
+.branch-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Adjusted min-width for 3 cards */
+    gap: 25px; /* Increased gap */
+    margin-bottom: 40px; /* Space before the list */
+    padding: 10px;
+}
+
+/* Individual Summary Card */
+.branch-summary-card {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); /* Stronger shadow */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 160px; /* Consistent height */
+}
+
+.branch-summary-card:hover {
+    transform: translateY(-7px); /* More pronounced lift */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.branch-summary-card h5 {
+    color: #343a40;
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+    font-weight: 500;
+}
+
+.branch-summary-card .display-count {
+    font-size: 4rem; /* Very large count */
+    font-weight: 800;
+    margin-top: auto;
+    line-height: 1;
+}
+
+/* Colors for counts */
+.branch-summary-card .text-primary { color: #007bff !important; }
+.branch-summary-card .text-success { color: #28a745 !important; }
+.branch-summary-card .text-warning { color: #ffc107 !important; }
+
+/* Detailed Branch List Section */
+.branch-detail-list-section h5 {
+    color: #343a40;
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.branch-list {
+    list-style: none; /* Remove default list bullets */
+    padding: 0;
+    margin: 0;
+}
+
+.branch-list-item {
+    background-color: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease-in-out;
+    flex-wrap: wrap; /* Allow content to wrap */
+}
+
+.branch-list-item:hover {
+    transform: translateX(5px); /* Slight slide effect */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.branch-info strong {
+    font-size: 1.1rem;
+    color: #495057;
+    display: block; /* Make name a block for better spacing */
+    margin-bottom: 5px;
+}
+
+.branch-info small {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.branch-status-badge {
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap; /* Prevent badge text from wrapping */
+    margin-top: 5px; /* Adjust for wrap on small screens */
+}
+
+.branch-status-badge.status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.branch-status-badge.status-inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Loading, Error, No Data Messages */
+.branch-overview-loading,
+.branch-overview-error,
+.branch-overview-no-data {
+    text-align: center;
+    padding: 40px;
+    border-radius: 10px;
+    margin-top: 30px;
+    font-size: 1.15rem;
+    font-weight: 500;
+}
+
+.branch-overview-loading {
+    background-color: #e6f7ff;
+    color: #0056b3;
+    border: 1px solid #b3e0ff;
+}
+
+.branch-overview-error {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.branch-overview-error .btn {
+    margin-top: 20px;
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+.branch-overview-error .btn:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+
+.branch-overview-no-data {
+    background-color: #f0f4f7;
+    color: #6c757d;
+    border: 1px solid #dcdfe1;
+}
+
+.branch-overview-loading .fa-spin {
+    margin-right: 10px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .branch-overview-container {
+        padding: 15px;
+    }
+
+    .branch-overview-container h4 {
+        font-size: 1.6rem;
+    }
+
+    .branch-overview-container .report-description-text {
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+    }
+
+    .branch-summary-grid {
+        grid-template-columns: 1fr; /* Single column on small screens */
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+    .branch-summary-card {
+        padding: 20px;
+        min-height: 140px;
+    }
+
+    .branch-summary-card .display-count {
+        font-size: 3rem;
+    }
+
+    .branch-detail-list-section h5 {
+        font-size: 1.4rem;
+    }
+
+    .branch-list-item {
+        flex-direction: column; /* Stack name/location and status vertically */
+        align-items: flex-start;
+        padding: 15px;
+    }
+
+    .branch-info strong {
+        font-size: 1rem;
+        margin-bottom: 3px;
+    }
+
+    .branch-info small {
+        font-size: 0.85rem;
+    }
+
+    .branch-status-badge {
+        align-self: flex-end; /* Align badge to the right if stacked */
+        margin-top: 10px; /* Space between info and badge */
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .branch-summary-grid {
+        grid-template-columns: repeat(3, 1fr); /* Keep 3 columns if screen allows */
+    }
+}
+
+/* Utility classes for general layout (if not using Bootstrap) */
+.mb-3 { margin-bottom: 1rem !important; }
+.mb-4 { margin-bottom: 1.5rem !important; }
+.mt-4 { margin-top: 1.5rem !important; }
+.p-3 { padding: 1rem !important; }
+.p-4 { padding: 1.5rem !important; }
+.me-1 { margin-right: 0.25rem !important; }
+.me-2 { margin-right: 0.5rem !important; }
+.text-center { text-align: center !important; }
+.text-muted { color: #6c757d !important; }
+.bg-light { background-color: #f8f9fa !important; }
+.border { border: 1px solid #dee2e6 !important; }
+.rounded { border-radius: 0.25rem !important; }
+.shadow-sm { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important; }
+.fw-bold { font-weight: 700 !important; }

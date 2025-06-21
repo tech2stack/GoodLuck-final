@@ -1,0 +1,673 @@
+/* Color Palette */
+:root {
+  --primary-green: #4CAF50; /* Vibrant green */
+  --accent-yellow: #FFD700; /* Gold/Yellow */
+  --dark-brown: #2F2F2F; /* Dark background */
+  --light-gray: #f8f8f8;
+  --medium-gray: #e0e0e0;
+  --text-dark: #333;
+  --text-light: #fff;
+  --text-muted: #666;
+}
+
+/* General Body and Container Styles */
+body {
+  margin: 0;
+  font-family: 'Open Sans', Arial, sans-serif;
+  color: var(--text-dark);
+  line-height: 1.6;
+  background-color: var(--light-gray);
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+.home-container {
+  max-width: 100vw;
+  overflow: hidden;
+}
+
+/* Section Titles */
+.section-title {
+  text-align: center;
+  font-size: 2.8em;
+  margin-bottom: 2em;
+  color: var(--primary-green);
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* Buttons - Primary and Secondary */
+.btn-primary,
+.hero-button,
+.benefit-button {
+  background-color: var(--accent-yellow);
+  color: var(--dark-brown);
+  padding: 15px 35px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  font-weight: bold;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary:hover,
+.hero-button:hover,
+.benefit-button:hover {
+  background-color: #e6c200; /* Slightly darker yellow */
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--dark-brown);
+  padding: 15px 35px;
+  border: 2px solid var(--accent-yellow);
+  border-radius: 8px;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  font-weight: bold;
+}
+
+.btn-secondary:hover {
+  background-color: var(--accent-yellow);
+  color: var(--dark-brown);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Hero Section - Top Banner */
+.hero-section {
+  position: relative;
+  width: 100%;
+  height: 700px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.hero-background-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 130%; /* Adjust as needed */
+  object-fit: cover;
+  filter: brightness(0.4) contrast(1.1);
+  z-index: -1; /* Push behind content */
+}
+
+
+.hero-overlay {
+  position: relative;
+  text-align: center;
+  color: var(--text-light);
+  z-index: 10; /* Ensure text is above image */
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3); /* Subtle dark overlay for text readability */
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.hero-title {
+  font-size: 4.5em;
+  margin-bottom: 5px;
+  font-weight: bold;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.9);
+  line-height: 1.1;
+}
+
+.hero-subtitle {
+  font-size: 3em;
+  font-family:serif;
+  margin-top: 0;
+  margin-bottom: 40px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
+  color: var(--accent-yellow);
+}
+
+/* Good Luck Book Store - About Section */
+.goodluck-about-section {
+  padding: 100px 5%;
+  background-color: var(--medium-gray);
+}
+
+.about-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 80px;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.about-text-wrapper {
+  flex: 1.2;
+  text-align: left;
+}
+
+.about-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+/* Removed specific logo styling as it's commented out in JSX */
+/* .goodluck-logo {} */
+
+.about-heading {
+  font-family: 'Cinzel', serif;
+  font-size: 3rem;
+  margin: 0;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-weight: bold;
+  text-align: center;
+  background: linear-gradient(to right, #4CAF50, #79a100, #00BFFF); /* green, red, sky */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+
+.about-tagline {
+  font-size: 1.2em;
+  color: var(--text-muted);
+  margin-top: 5px;
+  margin-bottom: 30px;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.about-description {
+  font-size: 1.1em;
+  color: var(--text-dark);
+  margin-bottom: 40px;
+  line-height: 1.8;
+}
+
+.about-buttons {
+  display: flex;
+  gap: 25px;
+}
+
+.about-image-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.about-store-image {
+  width: 100%;
+  max-width: 550px;
+  height: auto;
+  border-radius: 15px;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Your Bookstore, Your Benefits Section */
+.benefits-section {
+  padding: 100px 5%;
+  background-color: var(--dark-brown);
+  color: var(--text-light);
+  text-align: center;
+}
+
+.benefits-section .section-title {
+  color: var(--accent-yellow);
+  margin-bottom: 3em;
+}
+
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.benefit-card {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  padding: 35px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+  overflow: hidden;
+}
+
+.benefit-card:hover {
+  transform: translateY(-8px);
+  background-color: rgba(16, 37, 2, 0.256); /* A subtle green-tinted dark */
+  border-color: var(--accent-yellow);
+}
+
+.benefit-image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 25px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s ease;
+}
+
+.benefit-card:hover .benefit-image {
+  transform: scale(1.05);
+}
+
+.benefit-text-content h3 {
+  font-size: 1.8em;
+  margin-bottom: 12px;
+  color: var(--accent-yellow);
+  font-weight: 700;
+}
+
+.benefit-text-content p {
+  font-size: 1.05em;
+  color: #c0c0c0;
+  margin-bottom: 25px;
+  line-height: 1.7;
+}
+
+/* Our Favorite Customers Section */
+.customers-section {
+  padding: 100px 5%;
+  background-image: url('../assets/3.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: var(--text-light);
+  text-align: center;
+  position: relative;
+}
+
+.customers-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  z-index: 1;
+}
+
+.customers-section .section-title {
+  color: var(--accent-yellow);
+  position: relative;
+  z-index: 2;
+  margin-bottom: 3em;
+}
+
+.customer-reviews-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.customer-review-card {
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  border-radius: 15px;
+  padding: 35px;
+  text-align: center;
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.3s ease, background-color 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.customer-review-card:hover {
+  transform: translateY(-8px);
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.customer-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 20px;
+  border: 4px solid var(--accent-yellow);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+}
+
+.customer-info h4 {
+  font-size: 1.5em;
+  margin-bottom: 8px;
+  color: var(--text-light);
+  font-weight: 700;
+}
+
+.customer-info .stars {
+  color: var(--accent-yellow);
+  font-size: 1.5em;
+  margin-bottom: 15px;
+  letter-spacing: 2px;
+}
+
+.customer-info p:last-of-type {
+  font-size: 1.05em;
+  color: #e0e0e0;
+  font-style: italic;
+  line-height: 1.7;
+}
+
+/* Bottom Contact/Address Section */
+.contact-section {
+  background-color: var(--dark-brown);
+  color: var(--text-light);
+  padding: 80px 5%;
+  position: relative;
+  text-align: center;
+  overflow: hidden;
+}
+
+.contact-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.contact-store-image {
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  object-fit: cover;
+  border-radius: 15px;
+  margin-bottom: 40px;
+  filter: brightness(0.6) contrast(1.1);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+}
+
+.contact-overlay-quote {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  width: 80%;
+  z-index: 1;
+}
+
+.contact-quote {
+  font-size: 3em;
+  font-style: italic;
+  font-weight: 900;
+  color: var(--accent-yellow);
+  text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.9);
+  line-height: 1.2;
+}
+
+.contact-details {
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 15px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  margin-top: -120px;
+  position: relative;
+  z-index: 2;
+  width: 90%;
+  max-width: 700px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.contact-details h3 {
+  font-size: 2.5em;
+  margin-bottom: 25px;
+  color: var(--primary-green);
+  font-weight: 800;
+}
+
+.contact-details address p {
+  font-size: 1.2em;
+  margin-bottom: 12px;
+  color: #f0f0f0;
+  line-height: 1.6;
+}
+
+.contact-details address p strong {
+  color: var(--accent-yellow);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .hero-title {
+    font-size: 3.8em;
+  }
+  .hero-subtitle {
+    font-size: 2.5em;
+  }
+  .about-content {
+    gap: 50px;
+  }
+}
+
+@media (max-width: 992px) {
+  .hero-section {
+    height: 550px;
+  }
+  .hero-title {
+    font-size: 3em;
+  }
+  .hero-subtitle {
+    font-size: 2em;
+  }
+  .section-title {
+    font-size: 2.2em;
+  }
+
+  .goodluck-about-section {
+    padding: 80px 3%;
+  }
+  .about-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 40px;
+  }
+  .about-text-wrapper {
+    text-align: center;
+  }
+  .about-header {
+    justify-content: center;
+  }
+  .about-buttons {
+    justify-content: center;
+  }
+
+  .benefits-section,
+  .customers-section {
+    padding: 80px 3%;
+  }
+  .benefits-grid,
+  .customer-reviews-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+  }
+
+  .contact-section {
+    padding: 60px 3%;
+  }
+  .contact-quote {
+    font-size: 2.5em;
+  }
+  .contact-details {
+    margin-top: -90px;
+    width: 90%;
+  }
+  .contact-details h3 {
+    font-size: 2em;
+  }
+  .contact-details address p {
+    font-size: 1.1em;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    height: 450px;
+  }
+  .hero-title {
+    font-size: 2.2em;
+  }
+  .hero-subtitle {
+    font-size: 1.5em;
+  }
+  .btn-primary, .btn-secondary, .hero-button, .benefit-button {
+    padding: 12px 25px;
+    font-size: 1em;
+    width: fit-content;  }
+
+  .about-heading {
+    font-size: 2em;
+  }
+  .about-tagline {
+    font-size: 1.1em;
+  }
+  .about-description {
+    font-size: 1em;
+  }
+
+  .benefits-grid,
+  .customer-reviews-grid   {
+    grid-template-columns: 1fr; /* Single column on smaller screens */
+  }
+
+  .benefit-card, .customer-review-card {
+    padding: 30px;
+  }
+  .benefit-image {
+    height: 350px;
+  }
+  .benefit-text-content h3 {
+    font-size: 1.6em;
+  }
+
+  .contact-quote {
+    font-size: 2em;
+  }
+  .contact-details {
+    padding: 30px;
+    margin-top: -70px;
+  }
+  .contact-details h3 {
+    font-size: 1.8em;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section {
+    height: 350px;
+  }
+  .hero-title {
+    font-size: 1.6em;
+    letter-spacing: 1px;
+  }
+  .hero-subtitle {
+    font-size: 1em;
+    letter-spacing: 1px;
+    margin-bottom: 25px;
+  }
+  .hero-button {
+    padding: 10px 20px;
+    font-size: 0.9em;
+  }
+
+  .section-title {
+    font-size: 1.8em;
+    margin-bottom: 1.5em;
+  }
+
+  .goodluck-about-section,
+  .benefits-section,
+  .customers-section,
+  .contact-section {
+    padding: 40px 2%;
+  }
+
+  /* goodluck-logo was commented out in JSX, so its CSS is removed */
+  /* .goodluck-logo {} */
+  .about-heading {
+    font-size: 1.5em;
+  }
+  .about-tagline {
+    font-size: 0.9em;
+  }
+  .about-description {
+    font-size: 0.9em;
+  }
+  .about-buttons {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .benefit-card {
+    padding: 25px;
+  }
+  .benefit-image {
+    height: 140px;
+  }
+  .benefit-text-content h3 {
+    font-size: 1.4em;
+  }
+  .benefit-text-content p {
+    font-size: 0.9em;
+  }
+  .benefit-button {
+    padding: 10px 20px;
+    font-size: 0.9em;
+  }
+
+  .customer-review-card {
+    padding: 25px;
+  }
+  .customer-avatar {
+    width: 80px;
+    height: 80px;
+  }
+  .customer-info h4 {
+    font-size: 1.2em;
+  }
+  .customer-info .stars {
+    font-size: 1.3em;
+  }
+  .customer-info p:last-of-type {
+    font-size: 0.9em;
+  }
+
+  .contact-quote {
+    font-size: 1.5em;
+  }
+  .contact-details {
+    padding: 25px;
+    margin-top: -50px;
+    width: 95%;
+  }
+  .contact-details h3 {
+    font-size: 1.5em;
+  }
+}

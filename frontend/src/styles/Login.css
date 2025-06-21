@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.login-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* background: url('https://t3.ftcdn.net/jpg/12/09/45/48/360_F_1209454888_31alvY9z7h3omRkl2C1EMiocXQ9z6Zot.jpg') no-repeat center center/cover; */
+  background: url('../assets/3.png') no-repeat center center/cover;
+  background-attachment: fixed;
+  filter: brightness(0.8) contrast(1.1);
+  font-family: 'Poppins', sans-serif;
+  padding: 20px;
+}
+
+.login-box {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 40px 30px;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  width: 100%;
+  max-width: 360px;
+  color: #fff;
+}
+
+.login-logo {
+  width: 80px;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 0 5px rgba(0,0,0,0.3));
+}
+
+.login-box h2 {
+  margin-bottom: 20px;
+  color: #fff;
+  font-weight: 500;
+}
+
+.login-box input {
+  width: 100%;
+  padding: 12px 15px;
+  margin: 10px 0;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #333;
+  outline: none;
+}
+
+.login-box input::placeholder {
+  color: #777;
+}
+
+
+.login-box button {
+  width: 100%;
+  padding: 12px;
+  background-color: #1e88e5;
+  color: white;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.login-box button:hover {
+  background-color: #1565c0;
+  transform: translateY(-2px);
+}
+
+.forgot {
+  color: #fff;
+  margin-top: 10px;
+  display: block;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.forgot:hover {
+  color: #ccc;
+}
+
+
+/* Responsive tweaks */
+@media (max-width: 480px) {
+  .login-box {
+    padding: 30px 20px;
+  }
+
+  .login-box h2 {
+    font-size: 20px;
+  }
+
+  .login-box input {
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  .login-box button {
+    font-size: 15px;
+    padding: 10px;
+  }
+
+  .forgot {
+    font-size: 13px;
+  }
+}
+
+
+.role-dropdown {
+  width: 100%;
+  padding: 12px 15px;
+  margin: 10px 0;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #333;
+  outline: none;
+  font-family: 'Poppins', sans-serif;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%23333' d='M0 0l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+}

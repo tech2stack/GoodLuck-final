@@ -1,0 +1,161 @@
+/* src/styles/BranchSelector.css */
+
+/* Main container for the branch selector */
+.branch-selector-wrapper {
+    background-color: #f8f9fa; /* Light background */
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 30px; /* Space below the selector */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    max-width: 600px; /* Limit width for better appearance */
+    margin-left: auto;
+    margin-right: auto; /* Center the selector */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center content horizontally */
+}
+
+/* Title for the selector */
+.branch-selector-title {
+    color: #343a40;
+    margin-bottom: 20px;
+    font-size: 1.6rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Input group styling (combining label/icon and select) */
+.branch-selector-input-group {
+    display: flex; /* Use flexbox for horizontal alignment */
+    width: 100%; /* Take full width of parent */
+    max-width: 450px; /* Limit width of the input group itself */
+    align-items: stretch; /* Make items stretch to fill height */
+    margin-bottom: 15px; /* Space below the input group */
+}
+
+/* Style for the icon/label part of the input group */
+.branch-selector-input-label {
+    background-color: #e9ecef;
+    border: 1px solid #ced4da;
+    border-right: none; /* No border on the right to blend with select */
+    padding: 10px 15px;
+    border-radius: 5px 0 0 5px; /* Rounded corners only on left */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #495057;
+    font-size: 1.2rem;
+}
+
+/* Style for the select dropdown */
+.branch-selector-dropdown {
+    flex-grow: 1; /* Allow select to take remaining space */
+    width: auto; /* Override default width */
+    padding: 10px 15px;
+    border: 1px solid #ced4da;
+    border-left: none; /* No border on the left to blend with label */
+    border-radius: 0 5px 5px 0; /* Rounded corners only on right */
+    font-size: 1rem;
+    color: #495057;
+    background-color: white;
+    appearance: none; /* Remove default arrow */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23000000%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-6.4H18.2c-7.9%200-14.4%207.7-13.2%2015.6l136.8%20137.9a18.7%2018.7%200%200%200%2026.8%200l136.9-137.9c1.2-7.9-5.3-15.6-13.2-15.6z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat, repeat;
+    background-position: right 0.7em top 50%, 0 0;
+    background-size: 0.65em auto, 100%;
+    cursor: pointer;
+}
+
+.branch-selector-dropdown:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Placeholder option styling */
+.branch-selector-dropdown option[value=""] {
+    color: #6c757d;
+}
+
+/* Loading and Error States */
+.branch-selector-loading,
+.branch-selector-error {
+    text-align: center;
+    padding: 30px;
+    border-radius: 8px;
+    margin-top: 20px;
+    font-size: 1.1rem;
+}
+
+.branch-selector-loading {
+    background-color: #e0f7fa;
+    color: #00838f;
+    border: 1px solid #80deea;
+}
+
+.branch-selector-error {
+    background-color: #ffebee;
+    color: #d32f2f;
+    border: 1px solid #ef9a9a;
+}
+
+.branch-selector-loading .fa-spin {
+    margin-right: 10px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+    .branch-selector-wrapper {
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+
+    .branch-selector-title {
+        font-size: 1.4rem;
+        margin-bottom: 15px;
+    }
+
+    .branch-selector-input-group {
+        flex-direction: column; /* Stack label/icon and select vertically */
+        max-width: 100%; /* Take full width on small screens */
+    }
+
+    .branch-selector-input-label {
+        border-radius: 5px 5px 0 0; /* Rounded top corners */
+        border-right: 1px solid #ced4da; /* Add back right border */
+        border-bottom: none; /* No border on bottom to blend with select */
+        padding: 8px 10px;
+        font-size: 1rem;
+    }
+
+    .branch-selector-dropdown {
+        border-radius: 0 0 5px 5px; /* Rounded bottom corners */
+        border-left: 1px solid #ced4da; /* Add back left border */
+        border-top: none; /* No border on top */
+        padding: 8px 10px;
+        font-size: 0.95rem;
+    }
+}
+
+/* Utility classes (if not using Bootstrap directly) */
+.mb-3 { margin-bottom: 1rem !important; }
+.mb-4 { margin-bottom: 1.5rem !important; }
+.my-4 { margin-top: 1.5rem !important; margin-bottom: 1.5rem !important; }
+.p-3 { padding: 1rem !important; }
+.p-4 { padding: 1.5rem !important; }
+.me-2 { margin-right: 0.5rem !important; }
+.text-center { text-align: center !important; }
+.bg-light { background-color: #f8f9fa !important; }
+.border { border: 1px solid #dee2e6 !important; }
+.rounded { border-radius: 0.25rem !important; }
+.shadow-sm { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important; }
