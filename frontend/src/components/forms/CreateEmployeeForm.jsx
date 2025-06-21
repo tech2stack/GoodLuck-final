@@ -4,9 +4,8 @@ import { FaPlus, FaTimes } from 'react-icons/fa';
 
 const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches }) => {
     const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [role, setRole] = useState(''); // Default to empty string to force selection
+    const [mobileNumber, setMobileNumber] = useState(''); // Replaced email with mobileNumber
+    const [address, setAddress] = useState('');           // New field: address
     const [branchId, setBranchId] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -31,25 +30,22 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches }) => {
         setSuccess(null);
 
         try {
-            // --- FIX: Changed API endpoint from '/employees/register' to '/employees' ---
-            const response = await api.post('/employees', { name, email, password, role, branchId });
-            // --- END FIX ---
+            // Updated payload to send mobileNumber and address
+            const response = await api.post('/employees', { name, mobileNumber, address, branchId });
 
             setSuccess('Employee added successfully!');
             console.log('New Employee created:', response.data);
             setName('');
-            setEmail('');
-            setPassword('');
-            setRole(''); // Reset role
+            setMobileNumber(''); // Reset mobileNumber
+            setAddress('');       // Reset address
             setBranchId('');
 
             if (onEmployeeCreated) {
-                // Ensure correct data structure is passed (assuming backend sends data: { employee: {...} })
                 onEmployeeCreated(response.data.data.employee);
             }
         } catch (err) {
             console.error('Error creating employee:', err.response?.data || err);
-            setError(err.response?.data?.message || 'Failed to add Employee. Make sure email is unique and branch is selected.');
+            setError(err.response?.data?.message || 'Failed to add Employee. Make sure mobile number is unique and branch is selected.');
         } finally {
             setLoading(false);
         }
@@ -76,29 +72,29 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches }) => {
                 </div>
 
                 <div className="form-group">
-                    <label htmlFor="employeeEmail" className="form-label">Email:</label>
+                    <label htmlFor="employeeMobileNumber" className="form-label">Mobile Number:</label>
                     <input
-                        type="email"
-                        id="employeeEmail"
+                        type="tel" // Use 'tel' type for phone numbers
+                        id="employeeMobileNumber"
                         className="form-input"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        value={mobileNumber}
+                        onChange={(e) => setMobileNumber(e.target.value)}
                         required
-                        aria-label="Employee Email"
+                        aria-label="Employee Mobile Number"
                     />
                 </div>
 
                 <div className="form-group">
-                    <label htmlFor="employeePassword" className="form-label">Password:</label>
-                    <input
-                        type="password"
-                        id="employeePassword"
+                    <label htmlFor="employeeAddress" className="form-label">Address:</label>
+                    <textarea
+                        id="employeeAddress"
                         className="form-input"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
                         required
-                        aria-label="Employee Password"
-                    />
+                        aria-label="Employee Address"
+                        rows="3"
+                    ></textarea>
                 </div>
 
                 <div className="form-group">
@@ -115,24 +111,6 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches }) => {
                         {branches.map(branch => (
                             <option key={branch._id} value={branch._id}>{branch.name} ({branch.location})</option>
                         ))}
-                    </select>
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="employeeRole" className="form-label">Role:</label>
-                    <select
-                        id="employeeRole"
-                        className="form-select"
-                        value={role}
-                        onChange={(e) => setRole(e.target.value)}
-                        required
-                        aria-label="Employee Role"
-                    >
-                        <option value="">Select Role</option>
-                        <option value="cashier">Cashier</option>
-                        <option value="manager">Manager</option>
-                        <option value="sales">Sales</option>
-                        {/* Ensure these roles are also in your Employee model's enum */}
                     </select>
                 </div>
 

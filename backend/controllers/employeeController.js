@@ -1,16 +1,15 @@
-// backend/controllers/employeeController.js
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const Employee = require('../models/Employee');
-const Branch = require('../models/Branch'); // Needed if creating/updating employees with branchId
+const Branch = require('../models/Branch');
 
 exports.createEmployee = catchAsync(async (req, res, next) => {
-    // Ensure req.body contains all necessary fields.
-    // The model's pre-save hook will hash the password.
-    const { name, email, password, role, branchId, phoneNumber, address } = req.body;
+    // Replaced 'email' with 'mobileNumber', added 'address'
+    const { name, mobileNumber, address, branchId, phoneNumber, status } = req.body;
 
-    if (!name || !email || !password || !branchId || !role) {
-        return next(new AppError('Please provide name, email, password, role, and branch ID.', 400));
+    // Updated validation check for required fields
+    if (!name || !mobileNumber || !address || !branchId) {
+        return next(new AppError('Please provide name, mobile number, address, and branch ID.', 400));
     }
 
     // Validate the provided branchId
@@ -19,26 +18,31 @@ exports.createEmployee = catchAsync(async (req, res, next) => {
         return next(new AppError('Provided branch ID does not exist for employee.', 404));
     }
 
-    // Check for existing employee with the same email
-    const existingEmployee = await Employee.findOne({ email });
+    // Check for existing employee with the same mobile number
+    const existingEmployee = await Employee.findOne({ mobileNumber }); // Changed from email
     if (existingEmployee) {
-        return next(new AppError('Employee with this email already exists.', 409));
+        return next(new AppError('Employee with this mobile number already exists.', 409));
     }
 
-    // Create the employee. Mongoose schema validation will handle 'role' enum checks.
-    const newEmployee = await Employee.create(req.body);
+    // Create the employee with the new fields
+    const newEmployee = await Employee.create({
+        name,
+        mobileNumber, // New field
+        address,      // New field
+        branchId,
+        phoneNumber: phoneNumber || mobileNumber, // Assuming phoneNumber might be the same as mobileNumber, or separate
+        status: status || 'active'
+    });
     res.status(201).json({ status: 'success', data: { employee: newEmployee } });
 });
 
 exports.getAllEmployees = catchAsync(async (req, res, next) => {
-    // Admins only see employees from their branch, SuperAdmin sees all
     let filter = {};
     if (req.user.role === 'branch_admin' && req.user.branchId) {
-        // Ensure filter field matches the model's field name (now 'branchId')
         filter.branchId = req.user.branchId;
     }
     const employees = await Employee.find(filter).populate({
-        path: 'branchId', // --- FIX: Changed path to 'branchId' from 'branch_id' ---
+        path: 'branchId',
         select: 'name location'
     });
     res.status(200).json({ status: 'success', results: employees.length, data: employees });
@@ -46,16 +50,16 @@ exports.getAllEmployees = catchAsync(async (req, res, next) => {
 
 exports.getEmployee = catchAsync(async (req, res, next) => {
     const employee = await Employee.findById(req.params.id).populate({
-        path: 'branchId', // --- FIX: Changed path to 'branchId' from 'branch_id' ---
+        path: 'branchId',
         select: 'name location'
     });
     if (!employee) return next(new AppError('No employee found with that ID.', 404));
-    // Add logic here: if employee is trying to view self, or super admin/branch admin for relevant branch
     res.status(200).json({ status: 'success', data: { employee } });
 });
 
 exports.updateEmployee = catchAsync(async (req, res, next) => {
-    const { branchId, password, ...restOfBody } = req.body; // Destructure password to prevent direct update via this route
+    // Destructure to include new fields, ensure others are removed if still present in req.body
+    const { branchId, password, role, email, ...restOfBody } = req.body; // Added email to filter out if sent
 
     // If branchId is being updated, validate it
     if (branchId) {
@@ -65,15 +69,13 @@ exports.updateEmployee = catchAsync(async (req, res, next) => {
         }
     }
 
-    // Prevent password from being updated via this generic update route
-    // Passwords should be updated via a dedicated 'change password' route
-    if (password) {
-        return next(new AppError('Password cannot be updated via this route. Please use the /updateMyPassword route.', 400));
+    // The 'restOfBody' now correctly contains 'name', 'mobileNumber', 'address', 'phoneNumber', 'status'
+    const updateFields = { ...restOfBody };
+    if (branchId) { // Only add branchId if it was provided for update
+        updateFields.branchId = branchId;
     }
 
-    // --- FIX: Use restOfBody to prevent unauthorized password updates ---
-    const updatedEmployee = await Employee.findByIdAndUpdate(req.params.id, restOfBody, { new: true, runValidators: true });
-    // --- END FIX ---
+    const updatedEmployee = await Employee.findByIdAndUpdate(req.params.id, updateFields, { new: true, runValidators: true });
 
     if (!updatedEmployee) return next(new AppError('No employee found with that ID to update.', 404));
     res.status(200).json({ status: 'success', data: { employee: updatedEmployee } });

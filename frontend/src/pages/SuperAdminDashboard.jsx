@@ -25,7 +25,8 @@ import {
     FaBookOpen,
     FaUserCheck,
     FaTruck,
-    FaUserCog
+    FaUserCog,
+    FaBoxes // New icon for Stock Managers
 } from 'react-icons/fa';
 // Import all form components
 import CreateBranchForm from '../components/forms/CreateBranchForm';
@@ -34,18 +35,20 @@ import CreateBranchAdminForm from '../components/forms/CreateBranchAdminForm';
 import UpdateBranchAdminForm from '../components/forms/UpdateBranchAdminForm';
 import CreateEmployeeForm from '../components/forms/CreateEmployeeForm';
 import UpdateEmployeeForm from '../components/forms/UpdateEmployeeForm';
+// New: Stock Manager Forms
+import CreateStockManagerForm from '../components/forms/CreateStockManagerForm';
+import UpdateStockManagerForm from '../components/forms/UpdateStockManagerForm';
 
 // Import report components
 import OverallReportsComponent from '../components/reports/OverallReportsComponent';
 import BranchOverviewReport from '../components/reports/BranchOverviewReport';
 import BranchSelector from '../components/reports/BranchSelector';
 import BranchDetailsReport from '../components/reports/BranchDetailsReport';
-
 // Import CSS file (provides general styles for forms and tables, and now the new flash/confirm styles)
 import '../styles/SuperAdminDashboard.css';
 // Ensure this CSS file has styles for relative-dropdown and dropdown-menu
 
-// Reusable Flash Message Component (no change, copied from your provided content)
+// Reusable Flash Message Component
 const FlashMessage = ({ message, type, onClose, className }) => {
     if (!message) return null;
     const Icon = type === 'success' ? FaCheckCircle : FaExclamationCircle;
@@ -63,7 +66,7 @@ const FlashMessage = ({ message, type, onClose, className }) => {
     );
 };
 
-// Reusable Confirmation Dialog Component (no change, copied from your provided content)
+// Reusable Confirmation Dialog Component
 const ConfirmDialog = ({ show, message, onConfirm, onCancel }) => {
     if (!show) return null;
     return (
@@ -85,11 +88,11 @@ const ConfirmDialog = ({ show, message, onConfirm, onCancel }) => {
 
 const SuperAdminDashboard = () => {
     const { userData, loading: authLoading, isLoggedIn } = useAuth();
-
     // State for storing fetched data
     const [branches, setBranches] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [branchAdmins, setBranchAdmins] = useState([]);
+    const [stockManagers, setStockManagers] = useState([]); // NEW: State for Stock Managers
     const [loadingData, setLoadingData] = useState(true);
     const [error, setError] = useState(null);
     const [zones, setZones] = useState([]);
@@ -100,34 +103,35 @@ const SuperAdminDashboard = () => {
     const [customers, setCustomers] = useState([]);
     const [transports, setTransports] = useState([]);
     const [users, setUsers] = useState([]);
+
     // Flash Message State
     const [flashMessage, setFlashMessage] = useState(null);
-    const [flashMessageType, setFlashMessageType] = useState('');
-    // 'success' or 'error'
+    const [flashMessageType, setFlashMessageType] = useState(''); // 'success' or 'error'
     const [flashMessageAnimationClass, setFlashMessageAnimationClass] = useState('');
+
     // Confirmation Dialog State
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
     const [onConfirmAction, setOnConfirmAction] = useState(null);
 
-    // States for controlling dropdown visibility for Branches, Admins, Employees
+    // States for controlling dropdown visibility for Branches, Admins, Employees, Stock Managers
     const [showBranchesDropdown, setShowBranchesDropdown] = useState(false);
     const [showAdminsDropdown, setShowAdminsDropdown] = useState(false);
     const [showEmployeesDropdown, setShowEmployeesDropdown] = useState(false);
-    // NEW: State for controlling Reports dropdown visibility
+    const [showStockManagersDropdown, setShowStockManagersDropdown] = useState(false); // NEW: Stock Managers dropdown
     const [showReportsDropdown, setShowReportsDropdown] = useState(false);
+
     // Refs for handling clicks outside dropdowns (to close them)
     const branchesDropdownRef = useRef(null);
     const adminsDropdownRef = useRef(null);
     const employeesDropdownRef = useRef(null);
+    const stockManagersDropdownRef = useRef(null); // NEW: Stock Managers ref
     const reportsDropdownRef = useRef(null);
-    // NEW: Ref for reports dropdown
 
     // State to control which section is displayed in the main content area
-    // 'summary', 'createBranch', 'updateBranch', 'branches', 'createBranchAdmin', 'updateBranchAdmin', 'branchAdmins', 'createEmployee', 'updateEmployee', 'employees', 'reports' (new, for reports display)
     const [activeView, setActiveView] = useState('summary');
+
     // NEW: State to control which report is active within the 'reports' view
-    // 'overall', 'branch-overview', 'branch-details-selector', 'branch-details'
     const [activeReportView, setActiveReportView] = useState('overall');
     const [selectedBranchId, setSelectedBranchId] = useState(null); // State to hold selected branch ID for details report
 
@@ -135,7 +139,9 @@ const SuperAdminDashboard = () => {
     const [editingBranchData, setEditingBranchData] = useState(null);
     const [editingBranchAdminData, setEditingBranchAdminData] = useState(null);
     const [editingEmployeeData, setEditingEmployeeData] = useState(null);
-    // Function to show flash messages (no change, copied from your provided content)
+    const [editingStockManagerData, setEditingStockManagerData] = useState(null); // NEW: State for editing Stock Manager
+
+    // Function to show flash messages
     const showFlashMessage = useCallback((message, type) => {
         clearTimeout(window.flashMessageTimeout);
         clearTimeout(window.flashMessageHideTimeout);
@@ -152,22 +158,25 @@ const SuperAdminDashboard = () => {
                 setFlashMessageAnimationClass('');
             }, 500);
         }, 2000);
-    }, []);
-    // Function to fetch all dashboard data (no change, copied from your provided content)
+    }, []); // CORRECTED: Removed showFlashMessage from dependency array
+
+    // Function to fetch all dashboard data
     const fetchData = useCallback(async () => {
         try {
             setLoadingData(true);
             setError(null);
 
-            const [branchesResponse, employeesResponse, branchAdminsResponse] = await Promise.all([
+            const [branchesResponse, employeesResponse, branchAdminsResponse, stockManagersResponse] = await Promise.all([
                 api.get('/branches'),
                 api.get('/employees'),
-                api.get('/branch-admins')
+                api.get('/branch-admins'),
+                api.get('/stock-managers') // NEW: Fetch Stock Managers
             ]);
 
             setBranches(branchesResponse.data.data);
             setEmployees(employeesResponse.data.data);
             setBranchAdmins(branchAdminsResponse.data.data);
+            setStockManagers(stockManagersResponse.data.data); // NEW: Set Stock Managers data
 
         } catch (err) {
             console.error('Error fetching dashboard data:', err);
@@ -177,7 +186,8 @@ const SuperAdminDashboard = () => {
             setLoadingData(false);
         }
     }, [showFlashMessage]);
-    // useEffect for initial data fetch and auth check (updated to remove navigate)
+
+    // useEffect for initial data fetch and auth check
     useEffect(() => {
         if (authLoading) {
             setLoadingData(true);
@@ -188,15 +198,13 @@ const SuperAdminDashboard = () => {
             setError('You do not have permission to access this dashboard. Please log in as a Super Admin.');
             setLoadingData(false);
             showFlashMessage('Access Denied: Please log in as a Super Admin.', 'error');
-            // Consider redirecting here if not logged in/authorized, e.g., window.location.href = '/login';
             return;
         }
 
         fetchData();
     }, [userData, authLoading, isLoggedIn, fetchData, showFlashMessage]);
-    // Removed navigate from dependency array
 
-    // useEffect to handle clicks outside dropdowns to close them (updated with reports dropdown)
+    // useEffect to handle clicks outside dropdowns to close them
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (branchesDropdownRef.current && !branchesDropdownRef.current.contains(event.target)) {
@@ -208,7 +216,11 @@ const SuperAdminDashboard = () => {
             if (employeesDropdownRef.current && !employeesDropdownRef.current.contains(event.target)) {
                 setShowEmployeesDropdown(false);
             }
-            // NEW: Handle reports dropdown
+            // NEW: Handle Stock Managers dropdown
+            if (stockManagersDropdownRef.current && !stockManagersDropdownRef.current.contains(event.target)) {
+                setShowStockManagersDropdown(false);
+            }
+            // Handle reports dropdown
             if (reportsDropdownRef.current && !reportsDropdownRef.current.contains(event.target)) {
                 setShowReportsDropdown(false);
             }
@@ -219,20 +231,24 @@ const SuperAdminDashboard = () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
-    // Dropdown togglers (updated with reports toggler)
+
+    // Dropdown togglers
     const toggleBranchesDropdown = () => setShowBranchesDropdown(prev => !prev);
     const toggleAdminsDropdown = () => setShowAdminsDropdown(prev => !prev);
     const toggleEmployeesDropdown = () => setShowEmployeesDropdown(prev => !prev);
-    const toggleReportsDropdown = () => setShowReportsDropdown(prev => !prev); // NEW: Reports toggler
+    const toggleStockManagersDropdown = () => setShowStockManagersDropdown(prev => !prev); // NEW: Stock Managers toggler
+    const toggleReportsDropdown = () => setShowReportsDropdown(prev => !prev);
 
     // Function to close all dropdowns
     const closeAllDropdowns = () => {
         setShowBranchesDropdown(false);
         setShowAdminsDropdown(false);
         setShowEmployeesDropdown(false);
-        setShowReportsDropdown(false); // NEW: Close reports dropdown
+        setShowStockManagersDropdown(false); // NEW: Close stock managers dropdown
+        setShowReportsDropdown(false);
     };
-    // --- Branch Handlers (no change, copied from your provided content) ---
+
+    // --- Branch Handlers ---
     const handleCreateBranchClick = () => {
         closeAllDropdowns();
         setActiveView('createBranch');
@@ -243,11 +259,13 @@ const SuperAdminDashboard = () => {
         setActiveView('branches');
         fetchData();
     };
+
     const handleUpdateBranch = (branch) => {
         closeAllDropdowns();
         setEditingBranchData(branch);
         setActiveView('updateBranch');
     };
+
     const handleDeleteBranch = (branchId) => {
         setItemToDelete(branchId);
         setOnConfirmAction(() => async () => {
@@ -266,6 +284,7 @@ const SuperAdminDashboard = () => {
         });
         setShowConfirmDialog(true);
     };
+
     const onBranchCreated = (newBranch) => {
         showFlashMessage('New branch created successfully!', 'success');
         fetchData();
@@ -279,7 +298,7 @@ const SuperAdminDashboard = () => {
         setEditingBranchData(null);
     };
 
-    // --- Branch Admin Handlers (no change, copied from your provided content) ---
+    // --- Branch Admin Handlers ---
     const handleCreateBranchAdminClick = () => {
         closeAllDropdowns();
         setActiveView('createBranchAdmin');
@@ -290,11 +309,13 @@ const SuperAdminDashboard = () => {
         setActiveView('branchAdmins');
         fetchData();
     };
+
     const handleUpdateBranchAdmin = (admin) => {
         closeAllDropdowns();
         setEditingBranchAdminData(admin);
         setActiveView('updateBranchAdmin');
     };
+
     const handleDeleteBranchAdmin = (adminId) => {
         setItemToDelete(adminId);
         setOnConfirmAction(() => async () => {
@@ -313,6 +334,7 @@ const SuperAdminDashboard = () => {
         });
         setShowConfirmDialog(true);
     };
+
     const onBranchAdminCreated = (newAdmin) => {
         showFlashMessage('New branch admin created successfully!', 'success');
         fetchData();
@@ -326,7 +348,7 @@ const SuperAdminDashboard = () => {
         setEditingBranchAdminData(null);
     };
 
-    // --- Employee Handlers (no change, copied from your provided content) ---
+    // --- Employee Handlers ---
     const handleCreateEmployeeClick = () => {
         closeAllDropdowns();
         setActiveView('createEmployee');
@@ -337,11 +359,13 @@ const SuperAdminDashboard = () => {
         setActiveView('employees');
         fetchData();
     };
+
     const handleUpdateEmployee = (employee) => {
         closeAllDropdowns();
         setEditingEmployeeData(employee);
         setActiveView('updateEmployee');
     };
+
     const handleDeleteEmployee = (employeeId) => {
         setItemToDelete(employeeId);
         setOnConfirmAction(() => async () => {
@@ -360,6 +384,7 @@ const SuperAdminDashboard = () => {
         });
         setShowConfirmDialog(true);
     };
+
     const onEmployeeCreated = (newEmployee) => {
         showFlashMessage('New employee created successfully!', 'success');
         fetchData();
@@ -373,43 +398,90 @@ const SuperAdminDashboard = () => {
         setEditingEmployeeData(null);
     };
 
-    // --- NEW: Report Specific Handlers ---
+    // --- NEW: Stock Manager Handlers ---
+    const handleCreateStockManagerClick = () => {
+        closeAllDropdowns();
+        setActiveView('createStockManager');
+    };
+
+    const handleViewStockManagers = () => {
+        closeAllDropdowns();
+        setActiveView('stockManagers');
+        fetchData();
+    };
+
+    const handleUpdateStockManager = (manager) => {
+        closeAllDropdowns();
+        setEditingStockManagerData(manager);
+        setActiveView('updateStockManager');
+    };
+
+    const handleDeleteStockManager = (managerId) => {
+        setItemToDelete(managerId);
+        setOnConfirmAction(() => async () => {
+            try {
+                await api.delete(`/stock-managers/${managerId}`); // Make sure your backend route exists
+                showFlashMessage("Stock Manager deleted successfully!", 'success');
+                fetchData();
+            } catch (err) {
+                console.error("Error deleting stock manager:", err.response || err);
+                showFlashMessage(`Failed to delete stock manager: ${err.response?.data?.message || err.message}`, 'error');
+            } finally {
+                setShowConfirmDialog(false);
+                setItemToDelete(null);
+                setOnConfirmAction(null);
+            }
+        });
+        setShowConfirmDialog(true);
+    };
+
+    const onStockManagerCreated = (newManager) => {
+        showFlashMessage('New Stock Manager created successfully!', 'success');
+        fetchData();
+        setActiveView('stockManagers');
+    };
+
+    const onStockManagerUpdated = (updatedManager) => {
+        showFlashMessage('Stock Manager updated successfully!', 'success');
+        fetchData();
+        setActiveView('stockManagers');
+        setEditingStockManagerData(null);
+    };
+
+    // --- Report Specific Handlers ---
     const handleReportSelection = (reportType) => {
         closeAllDropdowns();
-        // Close the reports dropdown after selection
         setActiveView('reports');
-        // Ensure we are in the reports section
         setActiveReportView(reportType);
-        // Set the specific report to display
         setSelectedBranchId(null);
-        // Reset selected branch for new report view
     };
-    // Function to handle branch selection from BranchSelector (for Branch Details Report)
+
     const handleBranchSelectForDetails = (branchId) => {
         setSelectedBranchId(branchId);
-        setActiveReportView('branch-details'); // Automatically switch to branch-details view
+        setActiveReportView('branch-details');
     };
-    // Function to clear selected branch and go back to branch selection view (for Branch Details Report)
+
     const clearSelectedBranchForDetails = () => {
         setSelectedBranchId(null);
-        setActiveReportView('branch-details-selector'); // Go back to the selector
+        setActiveReportView('branch-details-selector');
     };
+
     // --- General Navigation ---
     const handleGoHome = () => {
         setActiveView('summary');
-        closeAllDropdowns(); // Close all dropdowns
+        closeAllDropdowns();
         // Clear all editing states
         setEditingBranchData(null);
         setEditingBranchAdminData(null);
         setEditingEmployeeData(null);
+        setEditingStockManagerData(null); // NEW: Clear editing stock manager state
         // Reset report states
         setActiveReportView('overall');
         setSelectedBranchId(null);
         fetchData();
-        // Re-fetch data for summary
     };
 
-    // Handle confirmation dialog actions (no change, copied from your provided content)
+    // Handle confirmation dialog actions
     const handleConfirm = () => {
         if (onConfirmAction) {
             onConfirmAction();
@@ -422,7 +494,7 @@ const SuperAdminDashboard = () => {
         setOnConfirmAction(null);
     };
 
-    // Helper component for dropdown buttons (for cleaner JSX) (no change, copied from your provided content)
+    // Helper component for dropdown buttons
     const DropdownButton = ({ onClick, children, icon: IconComponent }) => (
         <button
             onClick={onClick}
@@ -433,7 +505,7 @@ const SuperAdminDashboard = () => {
         </button>
     );
 
-    // NEW: Function to render the active report component
+    // Function to render the active report component
     const renderActiveReportComponent = () => {
         switch (activeReportView) {
             case 'overall':
@@ -475,7 +547,8 @@ const SuperAdminDashboard = () => {
                 );
         }
     };
-    // Render loading or error states (no change, copied from your provided content)
+
+    // Render loading or error states
     if (authLoading || loadingData) {
         return (
             <div className="loading-screen">
@@ -524,13 +597,10 @@ const SuperAdminDashboard = () => {
 
             <h1 className="dashboard-title">Super Admin Dashboard</h1>
 
-
             <div className="welcome-message-card">
                 <p className="welcome-text">
                     Hello, {userData?.name || userData?.username || 'Super Admin'}
                 </p>
-                {/* <p>Your Role: <span className="font-bold">{userData?.role}</span></p> */}
-
             </div>
 
             {/* Main Action Buttons with Dropdowns */}
@@ -598,7 +668,25 @@ const SuperAdminDashboard = () => {
                     )}
                 </div>
 
-                {/* NEW: Reports Button with Dropdown */}
+                {/* NEW: Stock Managers Button and Dropdown */}
+                <div className="relative-dropdown" ref={stockManagersDropdownRef}>
+                    <button
+                        onClick={toggleStockManagersDropdown}
+                        className="action-button stock-manager-button"
+                    >
+                        <FaBoxes className="icon" />
+                        <span>Stock Managers</span>
+                        <FaChevronDown className={`dropdown-arrow ${showStockManagersDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                    {showStockManagersDropdown && (
+                        <div className="dropdown-menu">
+                            <DropdownButton onClick={handleCreateStockManagerClick} icon={FaPlus}>Add New Stock Manager</DropdownButton>
+                            <DropdownButton onClick={handleViewStockManagers} icon={FaEye}>View Stock Managers</DropdownButton>
+                        </div>
+                    )}
+                </div>
+
+                {/* Reports Button with Dropdown */}
                 <div className="relative-dropdown" ref={reportsDropdownRef}>
                     <button
                         onClick={toggleReportsDropdown}
@@ -639,6 +727,12 @@ const SuperAdminDashboard = () => {
                             <FaUserTie className="summary-icon teal" />
                             <p className="summary-text">Employees:</p>
                             <p className="summary-count">{employees.length}</p>
+                        </div>
+
+                        <div className="summary-card">
+                            <FaBoxes className="summary-icon brown" /> {/* NEW: Stock Managers Summary Card */}
+                            <p className="summary-text">Stock Managers:</p>
+                            <p className="summary-count">{stockManagers.length}</p>
                         </div>
 
                         <div className="summary-card">
@@ -696,17 +790,16 @@ const SuperAdminDashboard = () => {
                 <CreateBranchForm
                     onBranchCreated={onBranchCreated}
                     onCancel={() => setActiveView('branches')}
-                    showFlashMessage={showFlashMessage} 
+                    showFlashMessage={showFlashMessage}
                 />
             )}
 
-            
             {activeView === 'updateBranch' && editingBranchData && (
                 <UpdateBranchForm
                     branchData={editingBranchData}
                     onBranchUpdated={onBranchUpdated}
                     onCancel={() => setActiveView('branches')}
-                    showFlashMessage={showFlashMessage} // <-- ADD THIS LINE
+                    showFlashMessage={showFlashMessage}
                 />
             )}
 
@@ -744,6 +837,24 @@ const SuperAdminDashboard = () => {
                 />
             )}
 
+            {/* NEW: Stock Manager Forms */}
+            {activeView === 'createStockManager' && (
+                <CreateStockManagerForm
+                    onStockManagerCreated={onStockManagerCreated}
+                    onCancel={() => setActiveView('stockManagers')}
+                    showFlashMessage={showFlashMessage}
+                />
+            )}
+
+            {activeView === 'updateStockManager' && editingStockManagerData && (
+                <UpdateStockManagerForm
+                    managerData={editingStockManagerData}
+                    onStockManagerUpdated={onStockManagerUpdated}
+                    onCancel={() => setActiveView('stockManagers')}
+                    showFlashMessage={showFlashMessage}
+                />
+            )}
+
             {activeView === 'branches' && (
                 <div className="table-section">
                     <div className="table-header">
@@ -771,8 +882,7 @@ const SuperAdminDashboard = () => {
                                             <td className="table-td">{branch.name}</td>
                                             <td className="table-td">{branch.location}</td>
                                             <td className="table-td">
-                                                <span className={`status-badge ${branch.status === 'active' ? 'status-active' : 'status-inactive'
-                                                    }`}>
+                                                <span className={`status-badge ${branch.status === 'active' ? 'status-active' : 'status-inactive'}`}>
                                                     {branch.status}
                                                 </span>
                                             </td>
@@ -871,7 +981,8 @@ const SuperAdminDashboard = () => {
                                 <thead className="table-head">
                                     <tr>
                                         <th className="table-th">Name</th>
-                                        <th className="table-th">Email</th>
+                                        <th className="table-th">Mobile Number</th>
+                                        <th className="table-th">Address</th>
                                         <th className="table-th">Role</th>
                                         <th className="table-th">Branch</th>
                                         <th className="table-th actions-th">Actions</th>
@@ -881,7 +992,8 @@ const SuperAdminDashboard = () => {
                                     {employees.map(employee => (
                                         <tr key={employee._id} className="table-row">
                                             <td className="table-td">{employee.name}</td>
-                                            <td className="table-td">{employee.email}</td>
+                                            <td className="table-td">{employee.mobileNumber}</td>
+                                            <td className="table-td">{employee.address}</td>
                                             <td className="table-td">{employee.role}</td>
                                             <td className="table-td">
                                                 {employee.branchId ? employee.branchId.name || 'N/A' : 'N/A'}
@@ -911,7 +1023,63 @@ const SuperAdminDashboard = () => {
                 </div>
             )}
 
-            {/* NEW: Conditional rendering for Reports components */}
+            {/* NEW: All Stock Managers Table */}
+            {activeView === 'stockManagers' && (
+                <div className="table-section">
+                    <div className="table-header">
+                        <h2 className="table-title">All Stock Managers</h2>
+                        <button onClick={handleCreateStockManagerClick} className="btn btn-primary">
+                            <FaPlus className="mr-2" /> Add New Stock Manager
+                        </button>
+                    </div>
+                    {stockManagers.length === 0 ? (
+                        <p className="no-data-message">No stock managers available. Please add a new stock manager.</p>
+                    ) : (
+                        <div className="table-responsive">
+                            <table className="data-table">
+                                <thead className="table-head">
+                                    <tr>
+                                        <th className="table-th">Name</th>
+                                        <th className="table-th">Email</th>
+                                        <th className="table-th">Phone</th>
+                                        <th className="table-th">Address</th>
+                                        <th className="table-th actions-th">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="table-body">
+                                    {stockManagers.map(manager => (
+                                        <tr key={manager._id} className="table-row">
+                                            <td className="table-td">{manager.name}</td>
+                                            <td className="table-td">{manager.email}</td>
+                                            <td className="table-td">{manager.phone}</td>
+                                            <td className="table-td">{manager.address}</td>
+                                            <td className="table-td action-buttons">
+                                                <button
+                                                    onClick={() => handleUpdateStockManager(manager)}
+                                                    className="action-icon-button edit-button"
+                                                    title="Update Stock Manager"
+                                                >
+                                                    <FaEdit />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteStockManager(manager._id)}
+                                                    className="action-icon-button delete-button"
+                                                    title="Delete Stock Manager"
+                                                >
+                                                    <FaTrash />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
+
+
+            {/* Conditional rendering for Reports components */}
             {activeView === 'reports' && (
                 <div className="report-display-area card shadow-sm">
                     <h2 className="reports-main-title">Business Intelligence Reports</h2>

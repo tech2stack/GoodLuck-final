@@ -1,0 +1,137 @@
+/* src/styles/StockManagerDashboard.css */
+
+:root {
+    --primary-color: #007bff; /* A nice blue */
+    --secondary-color: #6c757d; /* Gray */
+    --background-light: #f8f9fa; /* Light background */
+    --text-dark: #343a40; /* Dark text */
+    --card-bg: #ffffff; /* Card background */
+    --border-color: #dee2e6; /* Light border */
+    --shadow-light: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    --header-bg: #e9ecef;
+}
+
+.stock-manager-dashboard-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--background-light);
+    color: var(--text-dark);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.dashboard-header {
+    background-color: var(--header-bg);
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow-light);
+}
+
+.dashboard-title {
+    margin: 0;
+    font-size: 1.8rem;
+    color: var(--primary-color);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-weight: 500;
+}
+
+.logout-btn {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.logout-btn:hover {
+    background-color: #5a6268;
+}
+
+.dashboard-main-content {
+    flex-grow: 1;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.dashboard-main-content p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.dashboard-widgets {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.widget-card {
+    background-color: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: var(--shadow-light);
+    border: 1px solid var(--border-color);
+}
+
+.widget-card h3 {
+    color: var(--primary-color);
+    font-size: 1.3rem;
+    margin-top: 0;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.widget-card p, .widget-card ul {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.widget-card ul {
+    list-style: none;
+    padding: 0;
+}
+
+.widget-card ul li {
+    padding: 0.3rem 0;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.widget-card ul li:last-child {
+    border-bottom: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .user-info {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .dashboard-main-content {
+        padding: 1rem;
+    }
+
+    .dashboard-widgets {
+        grid-template-columns: 1fr; /* Stack cards on smaller screens */
+    }
+}

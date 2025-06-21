@@ -4,8 +4,8 @@ import { FaSave, FaTimes } from 'react-icons/fa';
 
 const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branches }) => {
     const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [role, setRole] = useState('');
+    const [mobileNumber, setMobileNumber] = useState(''); // Replaced email with mobileNumber
+    const [address, setAddress] = useState('');           // New field: address
     const [branchId, setBranchId] = useState('');
     const [status, setStatus] = useState('active');
     const [loading, setLoading] = useState(false);
@@ -15,12 +15,10 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
     useEffect(() => {
         if (employeeData) {
             setName(employeeData.name || '');
-            setEmail(employeeData.email || '');
-            setRole(employeeData.role || ''); // Initialize role
-            // --- FIX: Ensure branchId is correctly initialized for both populated and unpopulated data ---
+            setMobileNumber(employeeData.mobileNumber || ''); // Initialize mobileNumber
+            setAddress(employeeData.address || '');           // Initialize address
             setBranchId(employeeData.branchId?._id || employeeData.branchId || '');
-            // --- END FIX ---
-            setStatus(employeeData.status || 'active'); // Initialize status
+            setStatus(employeeData.status || 'active');
         }
     }, [employeeData]);
 
@@ -43,17 +41,14 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
         setSuccess(null);
 
         try {
-            // Prepare payload with fields that can be updated
-            const updatePayload = { name, email, role, branchId, status };
+            // Prepare payload with updated fields
+            const updatePayload = { name, mobileNumber, address, branchId, status };
 
-            // --- FIX: Changed api.put to api.patch to match backend route ---
             const response = await api.patch(`/employees/${employeeData._id}`, updatePayload);
-            // --- END FIX ---
 
             setSuccess('Employee updated successfully!');
             console.log('Employee updated:', response.data);
             if (onEmployeeUpdated) {
-                // Ensure correct data structure is passed (assuming backend sends data: { employee: {...} })
                 onEmployeeUpdated(response.data.data.employee);
             }
         } catch (err) {
@@ -85,20 +80,30 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                 </div>
 
                 <div className="form-group">
-                    <label htmlFor="employeeEmail" className="form-label">Email:</label>
+                    <label htmlFor="employeeMobileNumber" className="form-label">Mobile Number:</label>
                     <input
-                        type="email"
-                        id="employeeEmail"
+                        type="tel" // Use 'tel' type for phone numbers
+                        id="employeeMobileNumber"
                         className="form-input"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        value={mobileNumber}
+                        onChange={(e) => setMobileNumber(e.target.value)}
                         required
-                        aria-label="Employee Email"
+                        aria-label="Employee Mobile Number"
                     />
                 </div>
 
-                {/* Password field is typically NOT part of a general update form for security. */}
-                {/* It should be a separate 'Change Password' feature. */}
+                <div className="form-group">
+                    <label htmlFor="employeeAddress" className="form-label">Address:</label>
+                    <textarea
+                        id="employeeAddress"
+                        className="form-input"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        required
+                        aria-label="Employee Address"
+                        rows="3"
+                    ></textarea>
+                </div>
 
                 <div className="form-group">
                     <label htmlFor="employeeBranch" className="form-label">Assign Branch:</label>
@@ -114,24 +119,6 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                         {branches.map(branch => (
                             <option key={branch._id} value={branch._id}>{branch.name} ({branch.location})</option>
                         ))}
-                    </select>
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="employeeRole" className="form-label">Role:</label>
-                    <select
-                        id="employeeRole"
-                        className="form-select"
-                        value={role}
-                        onChange={(e) => setRole(e.target.value)}
-                        required
-                        aria-label="Employee Role"
-                    >
-                        <option value="">Select Role</option>
-                        <option value="cashier">Cashier</option>
-                        <option value="manager">Manager</option>
-                        <option value="sales">Sales</option>
-                        {/* Ensure these roles are also in your Employee model's enum */}
                     </select>
                 </div>
 

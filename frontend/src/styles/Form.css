@@ -1,0 +1,178 @@
+/* src/styles/Form.css */
+
+/* --- General Form Container & Header --- */
+.form-container-card {
+    background-color: var(--bg-white);
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow-subtle);
+    max-width: 600px;
+    margin: 3rem auto;
+    border: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    position: relative;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--secondary-gray);
+    cursor: pointer;
+    transition: color 0.2s ease-in-out;
+    padding: 0.5rem; /* Make it easier to click */
+}
+
+.close-button:hover {
+    color: var(--primary-indigo); /* Example hover color */
+}
+
+
+/* --- Form Elements --- */
+.app-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-medium);
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group input[type="password"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    font-size: 1rem;
+    color: var(--text-dark);
+    background-color: var(--bg-light-gray);
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--primary-indigo);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2); /* Focus ring */
+    outline: none;
+}
+
+.form-group textarea {
+    resize: vertical; /* Allow vertical resizing */
+    min-height: 80px;
+}
+
+/* --- Form Actions --- */
+.form-actions {
+    display: flex;
+    justify-content: flex-end; /* Align buttons to the right */
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+/* --- Buttons --- */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background-color: var(--primary-indigo);
+    color: var(--bg-white);
+    border: 1px solid var(--primary-indigo);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-indigo-dark);
+    border-color: var(--primary-indigo-dark);
+}
+
+.btn-secondary {
+    background-color: var(--bg-medium-gray);
+    color: var(--text-medium);
+    border: 1px solid var(--secondary-gray);
+}
+
+.btn-secondary:hover {
+    background-color: #e2e8f0; /* Lighter gray hover */
+    border-color: #a0aec0; /* Darker gray border hover */
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* --- Error/Validation Messages --- */
+.error-message {
+    color: #ef4444; /* Red for errors */
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 768px) {
+    .form-container-card {
+        padding: 1.5rem;
+        margin: 2rem auto;
+    }
+
+    .form-title {
+        font-size: 1.6rem;
+    }
+
+    .btn {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-actions .btn {
+        width: 100%;
+    }
+}

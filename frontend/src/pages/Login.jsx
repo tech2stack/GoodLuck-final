@@ -1,14 +1,11 @@
+// src/pages/Login.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
-// Import AuthContext
 import { useAuth } from '../context/AuthContext';
 
-// Import stylesheet and assets
 import '../styles/Login.css';
 import logo from '../assets/logo.jpg';
-
-// Lazy load image component
 import LazyImage from '../components/LazyImage';
 
 const Login = () => {
@@ -22,22 +19,25 @@ const Login = () => {
 
   useEffect(() => {
     console.log('Login useEffect running');
-    console.log('  isLoggedIn:', isLoggedIn);
-    console.log('  userData:', userData);
-    console.log('  userData?.role:', userData?.role);
-    console.log('  location.state:', location.state);
+    console.log('   isLoggedIn:', isLoggedIn);
+    console.log('   userData:', userData);
+    console.log('   userData?.role:', userData?.role);
+    console.log('   location.state:', location.state);
 
     if (location.state && location.state.fromLogout) {
       setMessage(location.state.message || 'You have successfully logged out.');
       navigate(location.pathname, { replace: true, state: {} });
     } else if (isLoggedIn && userData && userData.role) {
       console.log('Login useEffect: User already logged in. Redirecting based on role:', userData.role);
+      // Ensure this redirection logic is correct based on your userData structure
       if (userData.role === 'super_admin') {
         navigate('/superadmin-dashboard', { replace: true });
       } else if (userData.role === 'branch_admin') {
         navigate('/branch-admin-dashboard', { replace: true });
       } else if (userData.role === 'employee') {
         navigate('/employee-dashboard', { replace: true });
+      } else if (userData.role === 'stock_manager') {
+        navigate('/stock-manager-dashboard', { replace: true });
       } else {
         navigate('/', { replace: true });
       }
@@ -55,17 +55,22 @@ const Login = () => {
     setMessage('');
 
     try {
-      const result = await login(credentials.username, credentials.password);
+      // <<< CRITICAL CHANGE: 'result' is the user object directly >>>
+      const loggedInUser = await login(credentials.username, credentials.password); 
 
-      setMessage(`Login successful! Welcome, ${result.user.name || result.user.username || result.user.loginId}. Role: ${result.user.role}`);
-      console.log('Login successful. User data:', result.user);
+      // <<< CRITICAL CHANGE: Access properties directly from 'loggedInUser' >>>
+      setMessage(`Login successful! Welcome, ${loggedInUser.name || loggedInUser.username || loggedInUser.email}. Role: ${loggedInUser.role}`);
+      console.log('Login successful. User data:', loggedInUser);
 
-      if (result.user.role === 'super_admin') {
+      // <<< CRITICAL CHANGE: Access 'role' directly from 'loggedInUser' >>>
+      if (loggedInUser.role === 'super_admin') {
         navigate('/superadmin-dashboard');
-      } else if (result.user.role === 'branch_admin') {
+      } else if (loggedInUser.role === 'branch_admin') {
         navigate('/branch-admin-dashboard');
-      } else if (result.user.role === 'employee') {
+      } else if (loggedInUser.role === 'employee') {
         navigate('/employee-dashboard');
+      } else if (loggedInUser.role === 'stock_manager') {
+        navigate('/stock-manager-dashboard');
       } else {
         navigate('/dashboard');
       }
@@ -96,7 +101,7 @@ const Login = () => {
             <input
               type="text"
               name="username"
-              placeholder="Username"
+              placeholder="Username or Email"
               value={credentials.username}
               onChange={handleChange}
               required
@@ -124,6 +129,7 @@ const Login = () => {
               userData?.role === 'super_admin' ? '/superadmin-dashboard' :
               userData?.role === 'branch_admin' ? '/branch-admin-dashboard' :
               userData?.role === 'employee' ? '/employee-dashboard' :
+              userData?.role === 'stock_manager' ? '/stock-manager-dashboard' :
               '/'
             } className="text-blue-600 hover:underline">
               Go to your Dashboard

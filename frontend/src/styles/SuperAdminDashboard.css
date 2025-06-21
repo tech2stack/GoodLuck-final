@@ -163,6 +163,9 @@ body {
 .employee-button { background-color: #0d9488; }
 .employee-button:hover { background-color: #0f766e; }
 
+.stock-manager-button { background-color: #940d79; }
+.stock-manager-button:hover { background-color: #0f766e; }
+
 .report-button { background-color: #5cd0da; }
 .report-button:hover { background-color: #4dbbc4; }
 

@@ -1,7 +1,8 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from 'react'; // Added useCallback
+// src/context/AuthContext.js
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import api from '../services/api'; // Axios instance to make API calls
 
-const AuthContext = createContext(null); // Initialize with null or a default object
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -46,17 +47,15 @@ export const AuthProvider = ({ children }) => {
     }, []); // Empty dependency array means this runs only once on mount
 
     // Function to handle user login, wrapped in useCallback
-    const login = useCallback(async (loginId, password) => { // Removed 'role' from parameters
+    const login = useCallback(async (loginId, password) => {
         try {
             console.log('AuthContext: Attempting login for LoginID:', loginId);
-            // FIX: Changed 'loginId' key to 'identifier' to match backend expectation
             const payload = { identifier: loginId, password };
             console.log('AuthContext: Login payload being sent:', payload);
 
             const response = await api.post('/auth/login', payload);
             console.log('AuthContext: Login API response (response.data):', response.data);
 
-            // Destructure directly from response.data as per your console log
             const { token, data: { user } } = response.data; // Backend sends token and user under 'data' object
 
             if (!user || !user._id || !user.role) { // More robust user object validation
@@ -82,7 +81,8 @@ export const AuthProvider = ({ children }) => {
             setUserData(user);
             setIsLoggedIn(true);
             console.log('Login successful. Token and user data stored.');
-            return { success: true, user }; // Indicate successful login and return user data
+            return user; // <<< IMPORTANT: Return the user object here
+
         } catch (error) {
             console.error('Login failed:', error.response?.data?.message || error.message || 'Unknown login error');
             localStorage.clear(); // Clear all auth data on login failure
@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }) => {
     }, []); // Dependencies for useCallback: empty if api is stable, or [api] if it changes
 
     // Function to handle user logout
-    const logout = useCallback(async () => { // Added useCallback and async/await
+    const logout = useCallback(async () => {
         console.log('AuthContext: User is logging out.');
         try {
             await api.post('/auth/logout'); // Call backend logout endpoint to clear server-side cookies
@@ -130,7 +130,6 @@ export const AuthProvider = ({ children }) => {
 
 // Custom hook to easily consume the AuthContext
 export const useAuth = () => {
-    // Ensure useContext is called within a component rendered inside AuthProvider
     const context = useContext(AuthContext);
     if (context === null) {
         throw new Error('useAuth must be used within an AuthProvider');

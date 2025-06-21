@@ -1,3 +1,4 @@
+// backend/middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
 const { promisify } = require('util');
 const AppError = require('../utils/appError');
@@ -7,6 +8,7 @@ const catchAsync = require('../utils/catchAsync');
 const SuperAdmin = require('../models/SuperAdmin');
 const BranchAdmin = require('../models/BranchAdmin');
 const Employee = require('../models/Employee');
+const StockManager = require('../models/StockManager'); // <<< ADDED: Import StockManager model
 
 exports.protect = catchAsync(async (req, res, next) => {
     let token;
@@ -32,6 +34,9 @@ exports.protect = catchAsync(async (req, res, next) => {
     }
     if (!currentUser) {
         currentUser = await Employee.findById(decoded.id);
+    }
+    if (!currentUser) { // <<< ADDED: Check for StockManager
+        currentUser = await StockManager.findById(decoded.id);
     }
 
     if (!currentUser) {

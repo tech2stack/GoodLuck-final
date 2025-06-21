@@ -1,3 +1,4 @@
+// backend/controllers/authController.js
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs'); // Assuming you use bcryptjs for password hashing
 const AppError = require('../utils/appError');
@@ -5,6 +6,7 @@ const catchAsync = require('../utils/catchAsync');
 const SuperAdmin = require('../models/SuperAdmin');
 const BranchAdmin = require('../models/BranchAdmin');
 const Employee = require('../models/Employee');
+const StockManager = require('../models/StockManager'); // <<< ADDED: Import StockManager model
 
 // Helper function to sign the JWT token
 const signToken = id => {
@@ -72,6 +74,9 @@ exports.login = catchAsync(async (req, res, next) => {
     }
     if (!user) {
         user = await Employee.findOne({ email: identifier }).select('+password');
+    }
+    if (!user) { // <<< ADDED: Check for StockManager
+        user = await StockManager.findOne({ email: identifier }).select('+password');
     }
 
     if (!user || !(await user.correctPassword(password, user.password))) {
