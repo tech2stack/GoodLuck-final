@@ -1,6 +1,6 @@
 // src/components/forms/CreateBranchForm.jsx
 import React, { useState } from 'react';
-import api from '../../services/api'; // Ensure this path is correct for your API client
+import api from '../../utils/api'; // Ensure this path is correct for your API client
 import { FaPlus, FaTimes, FaSpinner } from 'react-icons/fa'; // Added FaSpinner for loading state
 
 // Assuming you have a CSS file for this form.

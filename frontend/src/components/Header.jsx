@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 import '../styles/Header.css';
-import logoImage from '../assets/logo.jpg';
+import logoImage from '../assets/glbs-logo.jpg';
 import LazyImage from './LazyImage';
 
 import { FaHome, FaUserAlt, FaSignInAlt, FaSignOutAlt, FaTachometerAlt } from 'react-icons/fa';
@@ -45,7 +45,7 @@ const Header = () => {
     } else if (userData?.role === 'branch_admin') {
       navigate('/branch-admin-dashboard');
     } else {
-      navigate('/dashboard');
+      navigate('/employee-dashboard');
     }
   }, [userData, closeProfileDropdown, closeMobileMenu, navigate]);
 

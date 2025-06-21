@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import '../styles/Contact.css';
-import contactUsBackground from '../assets/contact_us2.webp';
+import contactUsImage from '../assets/contact_Img2.webp';
 
 const ContactForm = () => {
 
@@ -29,7 +29,7 @@ const ContactForm = () => {
         <div className="image-wrapper">
           <div
             className="background-image"
-            style={{ backgroundImage: `url(${contactUsBackground})` }}
+            style={{ backgroundImage: `url(${contactUsImage})` }}
           />
           {/* <div className="contact-info">
             <InfoItem icon="fas fa-phone" title="Phone" detail="+91 7024136476" />

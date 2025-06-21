@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 // import { useParams, useNavigate } from 'react-router-dom'; // Remove useParams and useNavigate
-import api from '../../services/api';
+import api from '../../utils/api';
 import { FaDownload, FaSpinner, FaSyncAlt, FaArrowLeft } from 'react-icons/fa';
 
 

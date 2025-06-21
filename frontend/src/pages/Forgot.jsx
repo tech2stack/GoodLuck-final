@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../styles/Forgot.css';
-import logo from '../assets/logo.jpg';
-import bgImage from '../assets/3.png';
+import logo from '../assets/glbs-logo.jpg';
+import background from '../assets/bgImg.png';
 
 // Import the LazyImage component
 import LazyImage from '../components/LazyImage'; 
@@ -19,7 +19,7 @@ const Forgot = () => {
 <div
   className="forgot-container"
   style={{
-    background: `url(${bgImage}) no-repeat center center / cover`,
+    background: `url(${background}) no-repeat center center / cover`,
     filter: 'brightness(0.8) contrast(1.1)',
     backgroundAttachment: 'fixed'
   }}

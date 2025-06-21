@@ -1,7 +1,7 @@
 // src/pages/SuperAdminDashboard.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
+import api from '../utils/api';
 // Icons for buttons and tables
 import {
     FaPlus,

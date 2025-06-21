@@ -3,19 +3,36 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Header from './components/Header';
+import Home from './pages/Home';
+import About from './pages/About';
+import Career from './pages/Career';
+import Contact from './pages/Contact';
+import Login from './pages/Login';
+import Forgot from './pages/Forgot';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollTop';
 import ScrollTopButton from "./components/ScrollTopButton";
 import Preloader from './components/Preloader';
 import ErrorBoundary from './components/ErrorBoundary';
 import FlashMessage from './components/FlashMessage';
+import { AuthProvider } from './context/AuthContext';
 
-import Login from './pages/Login';
-import Forgot from './pages/Forgot';
+import Preloader from './components/Preloader';
+
+import Header from './components/Header';
 import Home from './pages/Home';
 import About from './pages/About';
 import Career from './pages/Career';
 import Contact from './pages/Contact';
+import Login from './pages/Login';
+import Forgot from './pages/Forgot';
+import Footer from './components/Footer';
+
+import ScrollToTop from './components/ScrollTop';
+import ScrollTopButton from "./components/ScrollTopButton";
+
+import ErrorBoundary from './components/ErrorBoundary';
+import FlashMessage from './components/FlashMessage'; // Make sure this path is correct
 
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import BranchAdminDashboard from './pages/BranchAdminDashboard';
@@ -70,6 +87,8 @@ const RoleBasedRedirect = () => {
             return <Navigate to="/login" replace />;
     }
 };
+// import BranchDetailsReport from './components/reports/BranchDetailsReport';
+// import ReportsHub from './pages/ReportsHub';
 
 function App() {
     const [isLoading, setIsLoading] = useState(true);
@@ -186,6 +205,9 @@ function App() {
                                     </PrivateRoute>
                                 }
                             />
+              <Route path="/superadmin-dashboard" element={<SuperAdminDashboard />} />
+              <Route path="/branch-admin-dashboard" element={<BranchAdminDashboard />} />
+              <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
 
                             {/* Reports Routes - Passing showFlashMessage to ensure it's available */}
                             <Route path="/reports/overall" element={<OverallReportsComponent showFlashMessage={showFlashMessage} />} />
