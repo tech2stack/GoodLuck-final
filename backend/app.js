@@ -19,7 +19,8 @@ const app = express();
 const allowedOrigins = [
     'https://goodluckstore.tech2stack.com',
     'http://localhost:3000',
-    'http://localhost:5173'
+    'http://localhost:5173',
+    'https://thorough-recreation-production-635b.up.railway.app/'
 ];
 
 // ✅ Global CORS middleware for APIs
