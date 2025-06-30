@@ -1,0 +1,276 @@
+/* src/styles/Table.css */
+
+.table-container {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    overflow-x: auto; /* Allows horizontal scrolling on small screens */
+}
+
+.table-title {
+    font-size: 1.8rem;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.75rem;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: separate; /* Use separate to allow border-radius on cells */
+    border-spacing: 0; /* Remove space between cell borders */
+    font-size: 0.95rem;
+    min-width: 600px; /* Ensure table doesn't get too narrow on small screens */
+}
+
+.data-table thead {
+    background-color: #f5f5f5;
+}
+
+.data-table th {
+    padding: 1rem 1.2rem;
+    text-align: left;
+    font-weight: 600;
+    color: #34495e;
+    border-bottom: 2px solid #ddd;
+    white-space: nowrap; /* Prevent wrapping for headers */
+}
+
+.data-table td {
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid #eee;
+    color: #555;
+    vertical-align: middle;
+}
+
+/* Rounded corners for first/last cells in header and body */
+.data-table th:first-child,
+.data-table td:first-child {
+    border-top-left-radius: 8px; /* For header and first row */
+}
+.data-table th:last-child,
+.data-table td:last-child {
+    border-top-right-radius: 8px; /* For header and first row */
+}
+
+/* If you want rounded corners on the whole table */
+.data-table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 8px;
+}
+.data-table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 8px;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f9f9f9;
+    transition: background-color 0.1s ease-in-out;
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 0.3em 0.6em;
+    border-radius: 5px;
+    font-size: 0.85em;
+    font-weight: 600;
+    color: white;
+    text-transform: capitalize;
+}
+
+.status-badge.active {
+    background-color: #28a745; /* Green */
+}
+
+.status-badge.inactive {
+    background-color: #dc3545; /* Red */
+}
+
+/* Action Buttons in Table */
+.actions-column {
+    white-space: nowrap; /* Prevent buttons from wrapping */
+    text-align: center;
+}
+
+.action-icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    margin: 0 0.4rem;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    display: inline-flex; /* To center icon if needed */
+    align-items: center;
+    justify-content: center;
+}
+
+.action-icon-button:hover {
+    transform: translateY(-2px);
+}
+
+.action-icon-button.edit-button {
+    color: #007bff; /* Blue */
+}
+.action-icon-button.edit-button:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.action-icon-button.delete-button {
+    color: #dc3545; /* Red */
+}
+.action-icon-button.delete-button:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* No data and loading messages */
+.no-data-message, .loading-state {
+    text-align: center;
+    padding: 2rem;
+    font-size: 1.1rem;
+    color: #777;
+    background-color: #f8f8f8;
+    border-radius: 8px;
+    margin-top: 1.5rem;
+}
+
+/* Table Controls (Search and PDF Button) */
+.table-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap; /* Allow wrapping on small screens */
+    gap: 1rem; /* Space between items */
+}
+
+.search-input-group {
+    position: relative;
+    flex-grow: 1; /* Allow search input to take available space */
+    max-width: 300px; /* Limit max width for desktop */
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.8rem 1rem 0.8rem 2.5rem; /* Left padding for icon */
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: #555;
+    background-color: #fcfcfc;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    outline: none;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #777;
+}
+
+.download-pdf-btn {
+    background-color: #e74c3c; /* Red color for PDF */
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+.download-pdf-btn:hover {
+    background-color: #c0392b;
+}
+
+/* Pagination Controls */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.pagination-controls .btn-page {
+    background-color: #3498db;
+    color: white;
+    padding: 0.7rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pagination-controls .btn-page:hover:not(:disabled) {
+    background-color: #2980b9;
+}
+
+.pagination-controls .btn-page:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.pagination-controls span {
+    font-size: 1rem;
+    color: #555;
+    font-weight: 500;
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .table-container {
+        padding: 1rem;
+    }
+
+    .table-title {
+        font-size: 1.5rem;
+    }
+
+    .data-table {
+        font-size: 0.85rem;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 0.8rem 1rem;
+    }
+
+    .action-icon-button {
+        font-size: 1rem;
+        margin: 0 0.2rem;
+        padding: 0.4rem;
+    }
+
+    .table-controls {
+        flex-direction: column;
+        align-items: stretch; /* Stretch items to full width */
+    }
+
+    .search-input-group {
+        max-width: 100%; /* Full width on small screens */
+    }
+
+    .download-pdf-btn,
+    .pagination-controls .btn-page {
+        width: 100%; /* Full width buttons */
+        justify-content: center;
+    }
+}

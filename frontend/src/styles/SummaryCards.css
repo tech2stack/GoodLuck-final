@@ -1,0 +1,189 @@
+/* src/styles/SummaryCards.css */
+
+.summary-section {
+    margin-bottom: 2rem;
+}
+
+.summary-section .section-title {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.summary-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.summary-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: 1px solid #e0e0e0;
+}
+
+.summary-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.summary-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.05); /* Light background for icon */
+}
+
+/* Color variations for icons */
+.summary-card.purple .summary-icon { color: #8e44ad; background-color: rgba(142, 68, 173, 0.1); }
+.summary-card.indigo .summary-icon { color: #34495e; background-color: rgba(52, 73, 94, 0.1); }
+.summary-card.teal .summary-icon { color: #1abc9c; background-color: rgba(26, 188, 156, 0.1); }
+.summary-card.orange .summary-icon { color: #f39c12; background-color: rgba(243, 156, 18, 0.1); }
+.summary-card.cyan .summary-icon { color: #16a085; background-color: rgba(22, 160, 133, 0.1); }
+.summary-card.blue .summary-icon { color: #2980b9; background-color: rgba(41, 128, 185, 0.1); }
+.summary-card.brown .summary-icon { color: #7f8c8d; background-color: rgba(127, 140, 141, 0.1); }
+.summary-card.violet .summary-icon { color: #9b59b6; background-color: rgba(155, 89, 182, 0.1); }
+
+
+.summary-card .summary-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 0.5rem;
+}
+
+.summary-card .summary-count {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+/* Loading and Error States */
+.summary-section.loading-state,
+.summary-section.error-state {
+    text-align: center;
+    padding: 2rem;
+    font-size: 1.2rem;
+    color: #666;
+}
+
+.summary-section.error-state {
+    color: #e74c3c;
+}
+
+/* Master Dropdown Styles (should ideally be in a general dropdown.css or here) */
+/* This ensures consistency for the Master dropdown in the sidebar */
+.sidebar-nav .relative-dropdown {
+    position: relative;
+    width: 100%;
+}
+
+.sidebar-nav .relative-dropdown button {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-nav .dropdown-arrow {
+    transition: transform 0.2s ease-in-out;
+}
+
+.sidebar-nav .dropdown-arrow.rotate-180 {
+    transform: rotate(180deg);
+}
+
+.sidebar-nav .dropdown-menu {
+    position: absolute;
+    top: 100%; /* Just below the button */
+    left: 0;
+    background-color: #34495e; /* Sidebar background color match */
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    min-width: 200px;
+    padding: 0.5rem 0;
+    margin-top: 5px; /* Small gap from button */
+}
+
+.sidebar-nav .dropdown-menu button {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: none;
+    border: none;
+    color: #ecf0f1;
+    font-size: 0.95rem;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: background-color 0.2s ease;
+}
+
+.sidebar-nav .dropdown-menu button:hover {
+    background-color: #44607a; /* Lighter shade on hover */
+}
+
+.sidebar-nav .dropdown-icon {
+    font-size: 1rem;
+}
+
+/* Placeholder for new content sections */
+.content-placeholder {
+    padding: 2rem;
+    text-align: center;
+    color: #666;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.content-placeholder h3 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+.content-placeholder p {
+    font-size: 1.1rem;
+    line-height: 1.5;
+}
+
+
+/* Responsive adjustments for summary cards */
+@media (max-width: 768px) {
+    .summary-cards-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Smaller cards on mobile */
+        gap: 1rem;
+    }
+
+    .summary-card {
+        padding: 1rem;
+    }
+
+    .summary-icon {
+        font-size: 2.5rem;
+    }
+
+    .summary-card .summary-title {
+        font-size: 0.9rem;
+    }
+
+    .summary-card .summary-count {
+        font-size: 1.8rem;
+    }
+}

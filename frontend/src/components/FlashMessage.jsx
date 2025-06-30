@@ -1,36 +1,39 @@
-import React, { useEffect, useRef } from 'react';
-import '../styles/FlashMessage.css'; // Make sure you have this CSS file
-import { FaTimesCircle, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+// src/components/FlashMessage.jsx
+import React, { useEffect, useState, useCallback } from 'react';
+import { FaInfoCircle, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+
+// Styles for the flash message itself
+import '../styles/FlashMessage.css'; // This file will be provided next
 
 const FlashMessage = ({ message, type, onClose, className }) => {
-    const flashMessageRef = useRef(null);
-
-    useEffect(() => {
-        if (message) {
-            flashMessageRef.current?.focus();
+    // Determine icon based on message type
+    const getIcon = useCallback(() => {
+        switch (type) {
+            case 'success':
+                return <FaCheckCircle className="flash-icon success-icon" />;
+            case 'error':
+                return <FaExclamationCircle className="flash-icon error-icon" />;
+            case 'info':
+            default:
+                return <FaInfoCircle className="flash-icon info-icon" />;
         }
-    }, [message]);
+    }, [type]);
 
-    if (!message) return null;
+    // Render nothing if no message is provided
+    if (!message) {
+        return null;
+    }
 
-    const icon = type === 'success' ? <FaCheckCircle /> :
-                 type === 'error'   ? <FaTimesCircle /> :
-                 type === 'warning' ? <FaExclamationCircle /> : null;
-
+    // `className` prop will handle `show` and `hide` animation classes
     return (
-        <div
-            ref={flashMessageRef}
-            className={`flash-message ${type} ${className}`}
-            role="alert"
-            aria-live="assertive"
-            tabIndex="-1"
-        >
+        <div className={`flash-message-container ${type} ${className}`}>
             <div className="flash-message-content">
-                {icon && <span className="flash-message-icon">{icon}</span>}
-                <p className="flash-message-text">{message}</p>
+                {getIcon()}
+                <p>{message}</p>
             </div>
+            {/* Optional close button if needed, although App.js clears it automatically */}
             {onClose && (
-                <button onClick={onClose} className="flash-message-close-btn" aria-label="Close message">
+                <button onClick={onClose} className="flash-message-close-btn">
                     &times;
                 </button>
             )}

@@ -1,76 +1,87 @@
-/* src/components/common/FlashMessage.css */
+/* src/styles/FlashMessage.css */
 
-.flash-message {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 15px 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.flash-message-container {
+    position: fixed; /* Stays in place */
+    top: 20px; /* Adjust as needed */
+    left: 50%;
+    transform: translateX(-50%); /* Center horizontally */
+    z-index: 2000; /* Ensure it's on top of almost everything */
+    padding: 15px 25px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    z-index: 1050; /* Above most other content */
-    font-size: 1rem;
-    transition: transform 0.5s ease-out, opacity 0.5s ease-out;
-    transform: translateX(120%); /* Start off-screen */
-    opacity: 0;
+    gap: 15px;
+    font-size: 1.1rem;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    min-width: 300px;
+    max-width: 90%;
+    text-align: center;
+    opacity: 0; /* Hidden by default for animation */
+    pointer-events: none; /* Allows clicks to pass through when hidden */
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
 }
 
-.flash-message.show {
-    transform: translateX(0); /* Slide in */
+/* Specific styles for different message types */
+.flash-message-container.success {
+    background-color: #28a745; /* Green */
+}
+
+.flash-message-container.error {
+    background-color: #dc3545; /* Red */
+}
+
+.flash-message-container.info {
+    background-color: #007bff; /* Blue */
+}
+
+/* Animation classes controlled by App.js/StockManagerDashboard.jsx */
+.flash-message-container.show {
     opacity: 1;
+    transform: translateX(-50%) translateY(0); /* Move into view */
+    pointer-events: all; /* Enable clicks when visible */
 }
 
-.flash-message.hide {
-    transform: translateX(120%); /* Slide out */
+.flash-message-container.hide {
     opacity: 0;
-}
-
-.flash-message.success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.flash-message.error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-.flash-message.warning {
-    background-color: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeeba;
+    transform: translateX(-50%) translateY(-20px); /* Move slightly up and fade out */
+    pointer-events: none;
 }
 
 .flash-message-content {
     display: flex;
     align-items: center;
-    flex-grow: 1;
+    gap: 10px;
 }
 
-.flash-message-icon {
-    font-size: 1.2rem;
-    margin-right: 8px;
-}
-
-.flash-message-text {
-    margin: 0;
-    flex-grow: 1;
+.flash-icon {
+    font-size: 1.5rem;
 }
 
 .flash-message-close-btn {
     background: none;
     border: none;
+    color: white;
     font-size: 1.5rem;
     cursor: pointer;
-    color: inherit; /* Inherit color from parent */
-    padding: 0 5px;
-    line-height: 1;
+    margin-left: auto; /* Push to the right */
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
 }
 
 .flash-message-close-btn:hover {
-    opacity: 0.7;
+    opacity: 1;
+}
+
+@media (max-width: 600px) {
+    .flash-message-container {
+        padding: 10px 15px;
+        font-size: 0.9rem;
+        min-width: unset;
+        width: 95%;
+    }
+
+    .flash-icon {
+        font-size: 1.2rem;
+    }
 }
