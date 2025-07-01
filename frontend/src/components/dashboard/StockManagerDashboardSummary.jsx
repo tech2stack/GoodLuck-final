@@ -5,7 +5,8 @@ import SummaryCard from '../common/SummaryCard'; // Reusable component for displ
 import {
     FaUsers, FaBuilding, FaUserTie, FaBoxes, FaGlobeAsia, FaCity,
     FaBook, FaBookOpen, FaUserCheck, FaTruck, FaUserCog, FaGraduationCap,
-    FaLanguage // NEW: Import FaLanguage icon
+    FaLanguage, // Import FaLanguage icon
+    FaPencilRuler // NEW: Import FaPencilRuler for Stationery Items
 } from 'react-icons/fa'; // Icons for various summary cards
 
 // Stylesheets
@@ -23,9 +24,10 @@ const StockManagerDashboardSummary = ({ showFlashMessage }) => {
         zones: 0,
         cities: 0,
         publications: 0,
-        languages: 0, // NEW: Language count
-        bookCatalogs: 0, // Will not be fetched, remains 0
-        customers: 0, // Will not be fetched, remains 0
+        languages: 0,
+        bookCatalogs: 0,
+        stationeryItems: 0, // NEW: Stationery Item count
+        customers: 0, // Will not be fetched, remains 0 (This will be implemented in a later step)
         transports: 0, // Will not be fetched, remains 0
         classes: 0
     });
@@ -44,11 +46,14 @@ const StockManagerDashboardSummary = ({ showFlashMessage }) => {
                 api.get('/summary/cities'),
                 api.get('/summary/classes'),
                 api.get('/summary/publications'),
-                api.get('/summary/languages'), // NEW: Fetch Language count
+                api.get('/summary/languages'),
+                api.get('/summary/book-catalogs'),
+                api.get('/summary/stationery-items'), // NEW: Fetch Stationery Item count
+                api.get('/summary/customers') // Included here, but will only update when backend route is available
             ];
 
             const [
-                zonesRes, citiesRes, classesRes, publicationsRes, languagesRes // NEW: languagesRes
+                zonesRes, citiesRes, classesRes, publicationsRes, languagesRes, bookCatalogsRes, stationeryItemsRes, customersRes // NEW: stationeryItemsRes and customersRes
             ] = await Promise.all(apiCalls);
 
             setCounts({
@@ -57,14 +62,15 @@ const StockManagerDashboardSummary = ({ showFlashMessage }) => {
                 cities: citiesRes.data.data.count,
                 classes: classesRes.data.data.count,
                 publications: publicationsRes.data.data.count,
-                languages: languagesRes.data.data.count, // NEW: Set Language count
+                languages: languagesRes.data.data.count,
+                bookCatalogs: bookCatalogsRes.data.data.count,
+                stationeryItems: stationeryItemsRes.data.data.count, // NEW: Set Stationery Item count
+                customers: customersRes.data.data.count || 0, // Set customers count, default to 0 if undefined/null
                 // Keep other counts as 0 or their initial values if not fetched
                 branches: 0,
                 employees: 0,
                 branchAdmins: 0,
                 stockManagers: 0,
-                bookCatalogs: 0,
-                customers: 0,
                 transports: 0,
             });
             showFlashMessage('Dashboard summary updated!', 'success');
@@ -109,10 +115,12 @@ const StockManagerDashboardSummary = ({ showFlashMessage }) => {
                 <SummaryCard title="Total Zones" count={counts.zones} icon={FaGlobeAsia} color="blue" />
                 <SummaryCard title="Total Cities" count={counts.cities} icon={FaCity} color="brown" />
                 <SummaryCard title="Total Publications" count={counts.publications} icon={FaBook} color="violet" />
-                <SummaryCard title="Total Languages" count={counts.languages} icon={FaLanguage} color="orange" /> {/* NEW: Language Summary Card */}
-                
-                {/* These cards will display 0 as their counts are initialized to 0 and not updated by API */}
+                <SummaryCard title="Total Languages" count={counts.languages} icon={FaLanguage} color="orange" />
                 <SummaryCard title="Total Book Catalogs" count={counts.bookCatalogs} icon={FaBookOpen} color="purple" />
+                <SummaryCard title="Total Stationery Items" count={counts.stationeryItems} icon={FaPencilRuler} color="green" /> {/* NEW: Stationery Item Summary Card */}
+                
+                {/* These cards will display 0 as their counts are initialized to 0 and not updated by API,
+                    or will update once their backend routes are implemented. */}
                 <SummaryCard title="Total Customers" count={counts.customers} icon={FaUserCheck} color="indigo" />
                 <SummaryCard title="Total Transports" count={counts.transports} icon={FaTruck} color="teal" />
             </div>

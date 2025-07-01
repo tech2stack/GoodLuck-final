@@ -11,7 +11,10 @@ import ClassManagement from '../components/masters/ClassManagement'; // Import C
 import ZoneManagement from '../components/masters/ZoneManagement'; // Import ZoneManagement component
 import CityManagement from '../components/masters/CityManagement'; // Import CityManagement component
 import PublicationManagement from '../components/masters/PublicationManagement'; // Import PublicationManagement component
-import LanguageManagement from '../components/masters/LanguageManagement'; // NEW: Import LanguageManagement component
+import LanguageManagement from '../components/masters/LanguageManagement'; // Import LanguageManagement component
+import BookCatalogManagement from '../components/masters/BookCatalogManagement'; // Import BookCatalogManagement component
+import StationeryItemManagement from '../components/masters/StationeryItemManagement'; // Import StationeryItemManagement component
+import CustomerManagement from '../components/masters/CustomerManagement'; // NEW: Import CustomerManagement component
 
 // Icons for navigation and UI (Make sure you have react-icons installed: npm install react-icons)
 import {
@@ -28,10 +31,10 @@ import {
     FaBook,            // For Publication
     FaBookOpen,        // For Book Catalog
     FaPencilRuler,     // For Stationery Item
-    FaUserFriends,     // For Customers
+    FaUserFriends,     // For Customers // This icon is already here!
     FaTruck,           // For Transports
     FaLayerGroup,      // For Create Sets
-    FaLanguage,        // For Language (First use of FaLanguage)
+    FaLanguage,        // For Language
     FaHourglassHalf,   // For Pending Book
 
     // NEW: Purchase Option Icons:
@@ -204,7 +207,7 @@ const StockManagerDashboard = () => {
                                         <FaBook className="dropdown-icon" /> Publication
                                     </button>
                                     <button onClick={() => handleOptionClick('language')}>
-                                        <FaLanguage className="dropdown-icon" /> Language {/* NEW: Language button */}
+                                        <FaLanguage className="dropdown-icon" /> Language
                                     </button>
                                     <button onClick={() => handleOptionClick('book-catalog')}>
                                         <FaBookOpen className="dropdown-icon" /> Book Catalog
@@ -213,7 +216,7 @@ const StockManagerDashboard = () => {
                                         <FaPencilRuler className="dropdown-icon" /> Stationery Item
                                     </button>
                                     <button onClick={() => handleOptionClick('customers')}>
-                                        <FaUserFriends className="dropdown-icon" /> Customers
+                                        <FaUserFriends className="dropdown-icon" /> Customers {/* NEW: Customer button */}
                                     </button>
                                     <button onClick={() => handleOptionClick('transports')}>
                                         <FaTruck className="dropdown-icon" /> Transports
@@ -351,14 +354,23 @@ const StockManagerDashboard = () => {
                         <PublicationManagement showFlashMessage={showFlashMessage} />
                     )}
 
-                    {activeView === 'language' && ( // NEW: Render LanguageManagement component
+                    {activeView === 'language' && (
                         <LanguageManagement showFlashMessage={showFlashMessage} />
                     )}
 
+                    {activeView === 'book-catalog' && (
+                        <BookCatalogManagement showFlashMessage={showFlashMessage} />
+                    )}
+
+                    {activeView === 'stationery-item' && (
+                        <StationeryItemManagement showFlashMessage={showFlashMessage} />
+                    )}
+                    
+                    {activeView === 'customers' && ( // NEW: Render CustomerManagement component
+                        <CustomerManagement showFlashMessage={showFlashMessage} />
+                    )}
+
                     {/* Placeholders for other Master Options */}
-                    {activeView === 'book-catalog' && <div className="content-placeholder card"><h3>Book Catalog Management (Coming Soon)</h3><p>Details related to Book Catalogs will be displayed and managed here.</p></div>}
-                    {activeView === 'stationery-item' && <div className="content-placeholder card"><h3>Stationery Item Management (Coming Soon)</h3><p>Details related to Stationery Items will be displayed and managed here.</p></div>}
-                    {activeView === 'customers' && <div className="content-placeholder card"><h3>Customer Management (Coming Soon)</h3><p>Details related to Customers will be displayed and managed here.</p></div>}
                     {activeView === 'transports' && <div className="content-placeholder card"><h3>Transport Management (Coming Soon)</h3><p>Details related to Transports will be displayed and managed here.</p></div>}
                     {activeView === 'create-sets' && <div className="content-placeholder card"><h3>Create Sets (Coming Soon)</h3><p>Details related to creating sets will be displayed and managed here.</p></div>}
                     {activeView === 'pending-book' && <div className="content-placeholder card"><h3>Pending Book Management (Coming Soon)</h3><p>Details related to Pending Books will be displayed and managed here.</p></div>}

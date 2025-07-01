@@ -2,92 +2,103 @@
 
 .table-container {
     background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    padding: 2rem;
-    margin-bottom: 2rem;
-    overflow-x: auto; /* Allows horizontal scrolling on small screens */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-top: 30px;
+    overflow-x: auto; /* Ensures horizontal scrolling for small screens */
 }
 
 .table-title {
     font-size: 1.8rem;
-    color: #2c3e50;
-    margin-bottom: 1.5rem;
+    color: #333;
+    margin-bottom: 25px;
     text-align: center;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 0.75rem;
+    font-weight: 600;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.table-title::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background-color: #007bff;
+    border-radius: 2px;
 }
 
 .data-table {
     width: 100%;
-    border-collapse: separate; /* Use separate to allow border-radius on cells */
-    border-spacing: 0; /* Remove space between cell borders */
-    font-size: 0.95rem;
-    min-width: 600px; /* Ensure table doesn't get too narrow on small screens */
+    border-collapse: collapse; /* This is key for proper borders */
+    margin-top: 20px;
+    font-size: 0.9em;
+    color: #333;
 }
 
-.data-table thead {
-    background-color: #f5f5f5;
-}
-
-.data-table th {
-    padding: 1rem 1.2rem;
-    text-align: left;
-    font-weight: 600;
-    color: #34495e;
-    border-bottom: 2px solid #ddd;
-    white-space: nowrap; /* Prevent wrapping for headers */
-}
-
+.data-table th,
 .data-table td {
-    padding: 1rem 1.2rem;
-    border-bottom: 1px solid #eee;
-    color: #555;
-    vertical-align: middle;
+    padding: 12px 15px;
+    text-align: left;
+    /* Add borders to create grid lines */
+    border: 1px solid #ddd; /* Light grey border */
 }
 
-/* Rounded corners for first/last cells in header and body */
-.data-table th:first-child,
-.data-table td:first-child {
-    border-top-left-radius: 8px; /* For header and first row */
-}
-.data-table th:last-child,
-.data-table td:last-child {
-    border-top-right-radius: 8px; /* For header and first row */
+.data-table thead th {
+    background-color: #007bff;
+    color: #ffffff;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
-/* If you want rounded corners on the whole table */
-.data-table tbody tr:last-child td:first-child {
-    border-bottom-left-radius: 8px;
-}
-.data-table tbody tr:last-child td:last-child {
-    border-bottom-right-radius: 8px;
+.data-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9; /* Light stripe for readability */
 }
 
 .data-table tbody tr:hover {
-    background-color: #f9f9f9;
-    transition: background-color 0.1s ease-in-out;
+    background-color: #f1f1f1; /* Hover effect */
+}
+
+.data-table tbody td {
+    vertical-align: middle;
+}
+
+.table-img {
+    width: 50px;
+    height: 50px;
+    border-radius: 4px;
+    object-fit: cover;
+    border: 1px solid #eee;
 }
 
 /* Status Badges */
 .status-badge {
-    padding: 0.3em 0.6em;
-    border-radius: 5px;
-    font-size: 0.85em;
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8em;
     font-weight: 600;
-    color: white;
     text-transform: capitalize;
+    color: #fff;
+    text-align: center;
 }
 
 .status-badge.active {
-    background-color: #28a745; /* Green */
+    background-color: #28a745; /* Green for active */
 }
 
 .status-badge.inactive {
-    background-color: #dc3545; /* Red */
+    background-color: #dc3545; /* Red for inactive */
 }
 
-/* Action Buttons in Table */
+/* Actions Column Styling */
 .actions-column {
     white-space: nowrap; /* Prevent buttons from wrapping */
     text-align: center;
@@ -97,100 +108,93 @@
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 1.1rem;
-    margin: 0 0.4rem;
-    padding: 0.5rem;
+    font-size: 1.1em;
+    margin: 0 5px;
+    padding: 5px;
     border-radius: 50%;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    display: inline-flex; /* To center icon if needed */
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
 }
 
 .action-icon-button:hover {
-    transform: translateY(-2px);
+    transform: scale(1.1);
 }
 
-.action-icon-button.edit-button {
-    color: #007bff; /* Blue */
-}
-.action-icon-button.edit-button:hover {
-    background-color: rgba(0, 123, 255, 0.1);
+.edit-button {
+    color: #007bff;
 }
 
-.action-icon-button.delete-button {
-    color: #dc3545; /* Red */
-}
-.action-icon-button.delete-button:hover {
-    background-color: rgba(220, 53, 69, 0.1);
+.edit-button:hover {
+    background-color: #e7f3ff;
 }
 
-/* No data and loading messages */
-.no-data-message, .loading-state {
-    text-align: center;
-    padding: 2rem;
-    font-size: 1.1rem;
-    color: #777;
-    background-color: #f8f8f8;
-    border-radius: 8px;
-    margin-top: 1.5rem;
+.delete-button {
+    color: #dc3545;
 }
 
-/* Table Controls (Search and PDF Button) */
+.delete-button:hover {
+    background-color: #ffe7e7;
+}
+
+/* Table Controls (Search, Filter, PDF) */
 .table-controls {
     display: flex;
+    flex-wrap: wrap; /* Allow items to wrap on smaller screens */
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap; /* Allow wrapping on small screens */
-    gap: 1rem; /* Space between items */
+    margin-bottom: 20px;
+    gap: 15px; /* Spacing between items */
 }
 
 .search-input-group {
     position: relative;
-    flex-grow: 1; /* Allow search input to take available space */
-    max-width: 300px; /* Limit max width for desktop */
+    flex-grow: 1; /* Allows search input to take available space */
+    max-width: 300px; /* Limit max width for search */
 }
 
 .search-input {
     width: 100%;
-    padding: 0.8rem 1rem 0.8rem 2.5rem; /* Left padding for icon */
-    border: 1px solid #dcdcdc;
-    border-radius: 8px;
-    font-size: 1rem;
-    color: #555;
-    background-color: #fcfcfc;
+    padding: 10px 15px 10px 40px; /* Left padding for icon */
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    font-size: 1em;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.075);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .search-input:focus {
-    border-color: #3498db;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-    outline: none;
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
 }
 
 .search-icon {
     position: absolute;
-    left: 1rem;
+    left: 15px;
     top: 50%;
     transform: translateY(-50%);
-    color: #777;
+    color: #6c757d;
+    font-size: 0.9em;
 }
 
 .download-pdf-btn {
-    background-color: #e74c3c; /* Red color for PDF */
+    background-color: #17a2b8; /* Info blue */
     color: white;
-    padding: 0.8rem 1.5rem;
-    border-radius: 8px;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
-    transition: background-color 0.2s ease;
+    gap: 8px;
+    transition: background-color 0.3s ease;
 }
 
 .download-pdf-btn:hover {
-    background-color: #c0392b;
+    background-color: #138496;
 }
 
 /* Pagination Controls */
@@ -198,46 +202,60 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1.5rem;
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid #eee;
+    margin-top: 25px;
+    gap: 15px;
 }
 
-.pagination-controls .btn-page {
-    background-color: #3498db;
+.btn-page {
+    background-color: #007bff;
     color: white;
-    padding: 0.7rem 1.2rem;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    transition: background-color 0.2s ease;
-    display: inline-flex;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 5px;
+    transition: background-color 0.3s ease;
 }
 
-.pagination-controls .btn-page:hover:not(:disabled) {
-    background-color: #2980b9;
-}
-
-.pagination-controls .btn-page:disabled {
+.btn-page:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
-    opacity: 0.7;
 }
 
-.pagination-controls span {
-    font-size: 1rem;
-    color: #555;
-    font-weight: 500;
+.btn-page:hover:not(:disabled) {
+    background-color: #0056b3;
 }
 
-
-/* Responsive adjustments */
+/* Responsive Adjustments */
 @media (max-width: 768px) {
+    .data-table th,
+    .data-table td {
+        padding: 8px 10px;
+    }
+
+    .table-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-input-group,
+    .form-group.branch-filter,
+    .download-pdf-btn {
+        width: 100%;
+        max-width: none; /* Remove max-width on small screens */
+    }
+
+    .search-input {
+        padding-right: 15px; /* Adjust padding if search icon is not needed on right */
+    }
+}
+
+@media (max-width: 480px) {
     .table-container {
-        padding: 1rem;
+        padding: 15px;
     }
 
     .table-title {
@@ -245,32 +263,12 @@
     }
 
     .data-table {
-        font-size: 0.85rem;
-    }
-
-    .data-table th,
-    .data-table td {
-        padding: 0.8rem 1rem;
+        font-size: 0.8em;
     }
 
     .action-icon-button {
-        font-size: 1rem;
-        margin: 0 0.2rem;
-        padding: 0.4rem;
-    }
-
-    .table-controls {
-        flex-direction: column;
-        align-items: stretch; /* Stretch items to full width */
-    }
-
-    .search-input-group {
-        max-width: 100%; /* Full width on small screens */
-    }
-
-    .download-pdf-btn,
-    .pagination-controls .btn-page {
-        width: 100%; /* Full width buttons */
-        justify-content: center;
+        font-size: 1em;
+        margin: 0 3px;
+        padding: 3px;
     }
 }

@@ -2,12 +2,15 @@
 const express = require('express');
 const router = express.Router();
 
-// Import only the necessary models that are currently implemented
+// Import all necessary models that are currently implemented
 const Zone = require('../models/Zone');
 const City = require('../models/City');
 const Class = require('../models/Class');
 const Publication = require('../models/Publication');
-const Language = require('../models/Language'); // NEW: Import Language model
+const Language = require('../models/Language');
+const BookCatalog = require('../models/BookCatalog');
+const StationeryItem = require('../models/StationeryItem');
+const Customer = require('../models/Customer'); // NEW: Import Customer model
 
 // Import utility and middleware (assuming these are correctly implemented)
 const AppError = require('../utils/appError');
@@ -43,12 +46,29 @@ router.get('/publications', authController.protect, authController.restrictTo('s
     res.status(200).json({ success: true, data: { count }, message: 'Total Publications fetched successfully' });
 }));
 
-// NEW: Route to get the total count of Languages
+// Route to get the total count of Languages
 router.get('/languages', authController.protect, authController.restrictTo('super_admin', 'branch_admin', 'stock_manager'), catchAsync(async (req, res, next) => {
     const count = await getCount(Language);
     res.status(200).json({ success: true, data: { count }, message: 'Total Languages fetched successfully' });
 }));
 
+// Route to get the total count of BookCatalogs
+router.get('/book-catalogs', authController.protect, authController.restrictTo('super_admin', 'branch_admin', 'stock_manager'), catchAsync(async (req, res, next) => {
+    const count = await getCount(BookCatalog);
+    res.status(200).json({ success: true, data: { count }, message: 'Total Book Catalogs fetched successfully' });
+}));
+
+// Route to get the total count of StationeryItems
+router.get('/stationery-items', authController.protect, authController.restrictTo('super_admin', 'branch_admin', 'stock_manager'), catchAsync(async (req, res, next) => {
+    const count = await getCount(StationeryItem);
+    res.status(200).json({ success: true, data: { count }, message: 'Total Stationery Items fetched successfully' });
+}));
+
+// NEW: Route to get the total count of Customers
+router.get('/customers', authController.protect, authController.restrictTo('super_admin', 'branch_admin', 'stock_manager'), catchAsync(async (req, res, next) => {
+    const count = await getCount(Customer);
+    res.status(200).json({ success: true, data: { count }, message: 'Total Customers fetched successfully' });
+}));
 
 // --- Removed/Commented out routes for unimplemented models to prevent 404 errors ---
 // (These remain commented out as per previous decision)

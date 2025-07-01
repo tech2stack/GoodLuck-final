@@ -12,6 +12,9 @@ const zoneRoutes = require('./zoneRoutes'); // NEW: Import Zone routes
 const cityRoutes = require('./cityRoutes'); // NEW: Import City routes
 const publicationRoutes = require('./publicationRoutes'); // NEW: Import publication routes
 const languageRoutes = require('./languageRoutes'); // NEW: Import language routes
+const bookCatalogRoutes = require('./bookCatalogRoutes'); // NEW: Import bookCatalog routes
+const stationeryItemRoutes = require('./stationeryItemRoutes'); // NEW: Import stationeryItem routes
+const customerRoutes = require('./customerRoutes'); // NEW: Import customer routes
 
 const router = express.Router();
 
@@ -28,5 +31,8 @@ router.use('/zones', zoneRoutes);
 router.use('/cities', cityRoutes); // NEW: City management routes
 router.use('/publications', publicationRoutes); // NEW: Use publication routes
 router.use('/languages', languageRoutes); // NEW: Use language routes
+router.use('/book-catalogs', bookCatalogRoutes); // NEW: Use bookCatalog routes
+router.use('/stationery-items', stationeryItemRoutes); // NEW: Use stationeryItem routes
+router.use('/customers', customerRoutes); // NEW: Use customer routes
 
 module.exports = router;
