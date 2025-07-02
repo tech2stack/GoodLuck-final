@@ -1,15 +1,13 @@
-// controllers/branchController.js
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const Branch = require('../models/Branch');
-const multer = require('multer'); // Import multer
-const path = require('path'); // Import path module for directory joining
+const BranchAdmin = require('../models/BranchAdmin'); // <-- NEW: Import BranchAdmin model
+const multer = require('multer');
+const path = require('path');
 
 // --- Multer Setup for Image Uploads ---
 const multerStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // Assuming branchController.js is in 'controllers' folder and 'uploads' is in project root.
-        // This makes the path relative to the project root.
         cb(null, path.join(__dirname, '..', 'uploads', 'branch-logos'));
     },
     filename: (req, file, cb) => {
@@ -32,42 +30,33 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB file size limit
 });
 
-// Middleware for a single logo image upload
-// 'logoImage' here must match the 'name' attribute of your file input field in the frontend form
 exports.uploadBranchLogo = upload.single('logoImage');
 
 // --- Branch Controller Functions ---
 exports.createBranch = catchAsync(async (req, res, next) => {
-    // Destructure all fields from req.body (parsed by Multer after file upload)
     const { name, location, shopOwnerName, shopGstId, address, mobileNumber, status } = req.body;
-
-    // The path to the uploaded file will be available in req.file.filename after Multer processes it
     const logoImage = req.file ? `/uploads/branch-logos/${req.file.filename}` : 'no-photo.jpg';
 
-    // Validation for REQUIRED fields only
     if (!name || !location || !shopOwnerName || !address) {
-        // Please provide the branch name, location, owner name, and address.
         return next(new AppError('Please provide the branch name, location, owner name, and address.', 400));
     }
 
-    // Check for existing branch name (still unique and required)
     const existingBranchName = await Branch.findOne({ name });
     if (existingBranchName) {
-        return next(new AppError('A branch with this name already exists.', 409)); // इस नाम की शाखा पहले से मौजूद है।
+        return next(new AppError('A branch with this name already exists.', 409));
     }
 
-    // Optional uniqueness checks if the fields are provided
     if (shopGstId) {
         const existingGstId = await Branch.findOne({ shopGstId });
         if (existingGstId) {
-            return next(new AppError('A branch with this GST ID already exists.', 409)); // इस GST ID वाली शाखा पहले से मौजूद है।
+            return next(new AppError('A branch with this GST ID already exists.', 409));
         }
     }
 
     if (mobileNumber) {
         const existingMobileNumber = await Branch.findOne({ mobileNumber });
         if (existingMobileNumber) {
-            return next(new AppError('A branch with this mobile number already exists.', 409)); // इस मोबाइल नंबर वाली शाखा पहले से मौजूद है।
+            return next(new AppError('A branch with this mobile number already exists.', 409));
         }
     }
 
@@ -75,17 +64,17 @@ exports.createBranch = catchAsync(async (req, res, next) => {
         name,
         location,
         shopOwnerName,
-        shopGstId: shopGstId || undefined, // Set to undefined if not provided, so Mongoose doesn't save empty string for optional fields
+        shopGstId: shopGstId || undefined,
         address,
-        mobileNumber: mobileNumber || undefined, // Set to undefined if not provided
-        logoImage, // Use the path from multer
-        createdBy: req.user._id, // This requires req.user to be set by auth middleware
+        mobileNumber: mobileNumber || undefined,
+        logoImage,
+        createdBy: req.user._id,
         status: status || 'active'
     });
 
     res.status(201).json({
         success: true,
-        message: 'Branch created successfully!', // शाखा सफलतापूर्वक बनाई गई!
+        message: 'Branch created successfully!',
         data: newBranch
     });
 });
@@ -110,7 +99,7 @@ exports.getBranch = catchAsync(async (req, res, next) => {
     });
 
     if (!branch) {
-        return next(new AppError('No branch found with that ID.', 404)); // इस ID के साथ कोई शाखा नहीं मिली।
+        return next(new AppError('No branch found with that ID.', 404));
     }
 
     res.status(200).json({
@@ -131,7 +120,6 @@ exports.updateBranch = catchAsync(async (req, res, next) => {
         updatedAt: Date.now()
     };
 
-    // If a new logo file is uploaded during an update, override the logoImage field
     if (req.file) {
         allowedFields.logoImage = `/uploads/branch-logos/${req.file.filename}`;
     }
@@ -146,28 +134,42 @@ exports.updateBranch = catchAsync(async (req, res, next) => {
         req.params.id,
         allowedFields,
         {
-            new: true, // Return the modified document rather than the original
-            runValidators: true // Run schema validators on update
+            new: true,
+            runValidators: true
         }
     );
 
     if (!branch) {
-        return next(new AppError('No branch found with that ID to update.', 404)); // अपडेट करने के लिए इस ID के साथ कोई शाखा नहीं मिली।
+        return next(new AppError('No branch found with that ID to update.', 404));
     }
 
     res.status(200).json({
         success: true,
-        message: 'Branch updated successfully!', // शाखा सफलतापूर्वक अपडेट की गई!
+        message: 'Branch updated successfully!',
         data: branch
     });
 });
 
 exports.deleteBranch = catchAsync(async (req, res, next) => {
-    const branch = await Branch.findByIdAndDelete(req.params.id);
+    const branchId = req.params.id;
+
+    // --- NEW LOGIC: Check for associated Branch Admins ---
+    const associatedAdmins = await BranchAdmin.find({ branchId: branchId });
+
+    if (associatedAdmins.length > 0) {
+        return next(new AppError(
+            'Cannot delete this branch. Please unassign or delete all associated branch administrators first.',
+            400 // Bad Request
+        ));
+    }
+    // --- END NEW LOGIC ---
+
+    const branch = await Branch.findByIdAndDelete(branchId); // Use branchId directly
 
     if (!branch) {
-        return next(new AppError('No branch found with that ID to delete.', 404)); // डिलीट करने के लिए इस ID के साथ कोई शाखा नहीं मिली।
+        return next(new AppError('No branch found with that ID to delete.', 404));
     }
+
     res.status(204).json({
         success: true,
         data: null
