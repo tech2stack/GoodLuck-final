@@ -10,7 +10,8 @@ const Publication = require('../models/Publication');
 const Language = require('../models/Language');
 const BookCatalog = require('../models/BookCatalog');
 const StationeryItem = require('../models/StationeryItem');
-const Customer = require('../models/Customer'); // NEW: Import Customer model
+const Customer = require('../models/Customer');
+const Transport = require('../models/Transport'); // <--- NEW: Import Transport model
 
 // Import utility and middleware (assuming these are correctly implemented)
 const AppError = require('../utils/appError');
@@ -64,13 +65,16 @@ router.get('/stationery-items', authController.protect, authController.restrictT
     res.status(200).json({ success: true, data: { count }, message: 'Total Stationery Items fetched successfully' });
 }));
 
-// NEW: Route to get the total count of Customers
+// Route to get the total count of Customers
 router.get('/customers', authController.protect, authController.restrictTo('super_admin', 'branch_admin', 'stock_manager'), catchAsync(async (req, res, next) => {
     const count = await getCount(Customer);
     res.status(200).json({ success: true, data: { count }, message: 'Total Customers fetched successfully' });
 }));
 
-// --- Removed/Commented out routes for unimplemented models to prevent 404 errors ---
-// (These remain commented out as per previous decision)
+// <--- NEW: Route to get the total count of Transports
+router.get('/transports', authController.protect, authController.restrictTo('super_admin', 'branch_admin', 'stock_manager'), catchAsync(async (req, res, next) => {
+    const count = await getCount(Transport);
+    res.status(200).json({ success: true, data: { count }, message: 'Total Transports fetched successfully' });
+}));
 
 module.exports = router;

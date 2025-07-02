@@ -1,10 +1,9 @@
 /* src/styles/FlashMessage.css */
 
 .flash-message-container {
-    position: fixed; /* Stays in place */
-    top: 20px; /* Adjust as needed */
-    left: 50%;
-    transform: translateX(-50%); /* Center horizontally */
+    position: fixed; /* Stays in place relative to the viewport */
+    top: 100px; /* <--- UPDATED: Distance from the top (original 20px + requested 20px) */
+    right: 20px; /* Distance from the right corner */
     z-index: 2000; /* Ensure it's on top of almost everything */
     padding: 15px 25px;
     border-radius: 10px;
@@ -14,12 +13,15 @@
     font-size: 1.1rem;
     color: white;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    min-width: 300px;
-    max-width: 90%;
-    text-align: center;
+    max-width: 350px; /* Set a reasonable max-width for larger screens */
+    width: 90%; /* Responsive width: takes 90% of parent width, ensuring responsiveness */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    text-align: left; /* Changed to left for better text alignment in top-right */
     opacity: 0; /* Hidden by default for animation */
     pointer-events: none; /* Allows clicks to pass through when hidden */
-    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+    /* Initial state for slide-in from right */
+    transform: translateX(100%); /* Start off-screen to the right */
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out; /* Smooth transition */
 }
 
 /* Specific styles for different message types */
@@ -38,13 +40,13 @@
 /* Animation classes controlled by App.js/StockManagerDashboard.jsx */
 .flash-message-container.show {
     opacity: 1;
-    transform: translateX(-50%) translateY(0); /* Move into view */
+    transform: translateX(0); /* Slide into view from the right */
     pointer-events: all; /* Enable clicks when visible */
 }
 
 .flash-message-container.hide {
     opacity: 0;
-    transform: translateX(-50%) translateY(-20px); /* Move slightly up and fade out */
+    transform: translateX(100%); /* Slide out to the right */
     pointer-events: none;
 }
 
@@ -52,6 +54,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-grow: 1; /* Allow content to grow and take available space */
 }
 
 .flash-icon {
@@ -73,11 +76,23 @@
     opacity: 1;
 }
 
-@media (max-width: 600px) {
+/* Responsive adjustments */
+@media (max-width: 768px) { /* Tablet breakpoint */
     .flash-message-container {
+        top: 30px; /* Adjusted for tablet: 15px (original) + 15px (more) */
+        right: 15px;
+        max-width: 90%;
+        font-size: 1rem;
+        padding: 12px 20px;
+    }
+}
+
+@media (max-width: 600px) { /* Mobile breakpoint */
+    .flash-message-container {
+        top: 25px; /* Adjusted for mobile: 10px (original) + 15px (more) */
+        right: 10px;
         padding: 10px 15px;
         font-size: 0.9rem;
-        min-width: unset;
         width: 95%;
     }
 

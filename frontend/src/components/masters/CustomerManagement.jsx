@@ -16,13 +16,18 @@ import '../../styles/Modal.css';
 
 
 const CustomerManagement = ({ showFlashMessage }) => {
+    // Backend base URL ko environment variable se fetch karein.
+    // Ismein sirf domain aur port hoga, /api/v1 nahi.
+    const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'; 
+    // Agar REACT_APP_BACKEND_URL define nahi hai, toh default ke roop mein localhost:5000 ka upyog karein.
+
     // State for managing list of customers
     const [customers, setCustomers] = useState([]);
     // States for dropdown data (Branches and Cities)
     const [branches, setBranches] = useState([]);
     const [cities, setCities] = useState([]);
     // State for form inputs
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState({ // Corrected: useState for formData
         customerName: '',
         schoolCode: '',
         branch: '', // Will store Branch ID
@@ -80,6 +85,29 @@ const CustomerManagement = ({ showFlashMessage }) => {
         const date = new Date(dateString);
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
+
+    // --- Helper function to safely get string value or 'N/A' ---
+    const getStringValue = (field) => field ? String(field).trim() : 'N/A';
+
+    // --- Helper function to get address string ---
+    const getAddressString = (customer) => {
+        const shop = getStringValue(customer.shopAddress);
+        const home = getStringValue(customer.homeAddress);
+        let addressParts = [];
+        if (shop !== 'N/A') addressParts.push(`Shop: ${shop}`);
+        if (home !== 'N/A') addressParts.push(`Home: ${home}`);
+        return addressParts.length > 0 ? addressParts.join('\n') : 'N/A';
+    };
+
+    // --- Helper function to get documents string ---
+    const getDocumentsString = (customer) => {
+        const docs = [];
+        if (customer.aadharNumber) docs.push(`Aadhar: ${getStringValue(customer.aadharNumber)}`);
+        if (customer.panNumber) docs.push(`PAN: ${getStringValue(customer.panNumber)}`);
+        if (customer.gstNumber) docs.push(`GST: ${getStringValue(customer.gstNumber)}`);
+        return docs.length > 0 ? docs.join('\n') : 'N/A';
+    };
+
 
     // --- Fetch Customers ---
     const fetchCustomers = useCallback(async (scrollToNew = false) => {
@@ -159,7 +187,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     fetchedBranches = branchesRes.data.data;
                     console.log('DEBUG: Branches found directly under data.data');
                 } else if (branchesRes.data.data && Array.isArray(branchesRes.data.data.branches)) { // Fallback: if array is under 'data.branches'
-                    fetchedBranches = branches.data.data.branches;
+                    fetchedBranches = branchesRes.data.data.branches; 
                     console.log('DEBUG: Branches found under data.data.branches');
                 } else if (Array.isArray(branchesRes.data)) { // Fallback: if array is directly under the root response.data
                     fetchedBranches = branchesRes.data;
@@ -210,7 +238,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
             const errorMessage = err.response?.data?.message || 'Network error fetching dropdown data (Branches/Cities). Please ensure backend is running and accessible.';
             showFlashMessage(errorMessage, 'error');
         } finally {
-            setLoading(false); // Set loading false after dropdowns are fetched (or failed)
+            setLoading(false);
         }
     }, [editingCustomerId, showFlashMessage]);
 
@@ -284,24 +312,46 @@ const CustomerManagement = ({ showFlashMessage }) => {
         const dataToSend = new FormData();
         // Append all form data fields
         // Ensure values are explicitly strings or File objects
+        console.log('--- Populating FormData ---');
         for (const key in formData) {
-            if (formData[key] !== null && formData[key] !== undefined) {
-                dataToSend.append(key, String(formData[key])); // Explicitly convert to string
+            const value = formData[key];
+            console.log(`Attempting to append: ${key}:`, value); // Log value before conversion
+            if (value !== null && value !== undefined) {
+                dataToSend.append(key, String(value)); // Explicitly convert to string
+                console.log(`Appended ${key}: "${String(value)}"`);
             } else {
                 dataToSend.append(key, ''); // Append empty string for null/undefined fields
+                console.log(`Appended ${key}: "" (empty string for null/undefined)`);
             }
         }
 
-        // Append the selected image file
+        // --- Image Handling Logic for FormData ---
         if (selectedImageFile) {
+            // Case 1: A new image file has been selected by the user.
             dataToSend.append('image', selectedImageFile);
-        } else if (imagePreviewUrl && !imagePreviewUrl.startsWith('data:image/')) {
-            // If there's an existing image URL (not a Base64 preview) and no new file, send the URL back
+            console.log('Appended new image file:', selectedImageFile.name);
+        } else if (editingCustomerId && imagePreviewUrl && !imagePreviewUrl.startsWith('data:image/')) {
+            // Case 2: In edit mode, and there's an existing image URL (not a new base64 preview).
+            // This means the user did not select a new file, and we should retain the existing one.
+            // Send the existing URL back to the backend.
             dataToSend.append('image', imagePreviewUrl);
-        } else {
-            // If no image and no existing URL, send an empty string or default placeholder
+            console.log('Appended existing image URL (no new file selected):', imagePreviewUrl);
+        } else if (editingCustomerId && imagePreviewUrl === '') {
+            // Case 3: In edit mode, and imagePreviewUrl is explicitly empty.
+            // This means the user cleared the image. Send an empty string to signal removal.
             dataToSend.append('image', '');
+            console.log('Appended empty string for image (user cleared existing image).');
+        } else if (!editingCustomerId && imagePreviewUrl === '') {
+            // Case 4: In add mode, and no image selected.
+            dataToSend.append('image', '');
+            console.log('Appended empty string for image (add mode, no image selected).');
         }
+        // Implicit Case: If in edit mode, selectedImageFile is null, and imagePreviewUrl is a base64 string,
+        // it means a file was selected for *preview* but not for *upload* in this specific update action.
+        // In this scenario, we do NOT append the 'image' field to FormData.
+        // The backend will then correctly infer that no new image was provided and retain the old image.
+        // This prevents sending large base64 strings unnecessarily.
+        console.log('--- FormData Population Complete ---');
 
 
         try {
@@ -473,28 +523,29 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
         customers.forEach((customer, index) => { // Use 'customers' directly for PDF generation
             const documents = [];
-            if (customer.aadharNumber) documents.push(`Aadhar: ${customer.aadharNumber}`);
-            if (customer.panNumber) documents.push(`PAN: ${customer.panNumber}`);
-            if (customer.gstNumber) documents.push(`GST: ${customer.gstNumber}`);
+            if (customer.aadharNumber) documents.push(`Aadhar: ${getStringValue(customer.aadharNumber)}`);
+            if (customer.panNumber) documents.push(`PAN: ${getStringValue(customer.panNumber)}`);
+            if (customer.gstNumber) documents.push(`GST: ${getStringValue(customer.gstNumber)}`);
 
-            // Construct the full image URL for PDF (if needed, though currently it just says "Image Available")
-            const imageUrlForPdf = customer.image && customer.image.startsWith('/api/v1/uploads')
-                ? `${window.location.origin}${customer.image}`
+            // Construct the full image URL for PDF
+            // Now, customer.image will be like '/customer-logos/image.jpg'
+            const imageUrlForPdf = customer.image && customer.image.startsWith('/customer-logos/') 
+                ? `${BACKEND_BASE_URL}/uploads${customer.image}` 
                 : customer.image;
 
             const customerData = [
                 String(index + 1), // S.No.
-                `${customer.customerName || 'N/A'} ${customer.schoolCode ? `(${customer.schoolCode})` : ''}`.trim(), // Name and School Code
-                customer.branch ? String(customer.branch.name || 'N/A').trim() : 'N/A',
-                customer.city ? String(customer.city.name || 'N/A').trim() : 'N/A',
-                String(customer.contactPerson || 'N/A').trim(),
-                String(customer.mobileNumber || 'N/A').trim(),
-                String(customer.email || 'N/A').trim(),
+                `${getStringValue(customer.customerName)} ${customer.schoolCode ? `(${getStringValue(customer.schoolCode)})` : ''}`.trim(), // Name and School Code
+                customer.branch ? getStringValue(customer.branch.name) : 'N/A',
+                customer.city ? getStringValue(customer.city.name) : 'N/A',
+                getStringValue(customer.contactPerson),
+                getStringValue(customer.mobileNumber),
+                getStringValue(customer.email),
                 documents.join('\n') || 'N/A', // Combine documents
-                `${String(customer.shopAddress || 'N/A').trim()}\n${String(customer.homeAddress || 'N/A').trim()}`.trim() || 'N/A', // Combine addresses
+                `${getStringValue(customer.shopAddress)}\n${getStringValue(customer.homeAddress)}`.trim() || 'N/A', // Combine addresses
                 imageUrlForPdf && (imageUrlForPdf.startsWith('data:image/') || imageUrlForPdf.startsWith('http')) ? 'Image Available' : 'No Image', // Check if it's a Base64 image or URL
                 formatDateWithTime(customer.createdAt),
-                String(customer.status || 'N/A').trim().charAt(0).toUpperCase() + String(customer.status || 'N/A').trim().slice(1)
+                getStringValue(customer.status).charAt(0).toUpperCase() + getStringValue(customer.status).slice(1)
             ];
             tableRows.push(customerData);
         });
@@ -717,11 +768,15 @@ const CustomerManagement = ({ showFlashMessage }) => {
                         {/* Display preview of selected image or placeholder */}
                         {imagePreviewUrl ? (
                             <img 
-                                src={imagePreviewUrl.startsWith('/api/v1/uploads') ? `${window.location.origin}${imagePreviewUrl}` : imagePreviewUrl}
+                                src={imagePreviewUrl.startsWith('/customer-logos/') ? `${BACKEND_BASE_URL}/uploads${imagePreviewUrl}` : imagePreviewUrl} 
                                 alt="Customer Logo Preview" 
                                 className="mt-2 rounded-lg" 
                                 style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }} 
-                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/200x200/cccccc/ffffff?text=No+Image'; }} 
+                                onError={(e) => { 
+                                    console.error("Image preview failed to load:", e.target.src);
+                                    e.target.onerror = null; // Prevent infinite loop if fallback also fails
+                                    e.target.src = 'https://placehold.co/200x200/cccccc/ffffff?text=No+Image'; // Fallback to placeholder
+                                }} 
                             />
                         ) : (
                             <img src="https://placehold.co/200x200/cccccc/ffffff?text=No+Image" alt="Placeholder" className="mt-2 rounded-lg" style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }} />
@@ -855,45 +910,27 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     // Log the entire customer object for debugging
                                     console.log(`Customer data for row ${index + 1}:`, customer);
 
-                                    // Construct the full image URL if it's a relative path from the backend
-                                    const imageUrl = customer.image && customer.image.startsWith('/api/v1/uploads')
-                                        ? `${window.location.origin}${customer.image}`
+                                    // Construct the full image URL
+                                    // customer.image will be like '/customer-logos/image.jpg'
+                                    const imageUrl = customer.image && customer.image.startsWith('/customer-logos/') 
+                                        ? `${BACKEND_BASE_URL}/uploads${customer.image}` 
                                         : customer.image;
+                                    
+                                    console.log(`Row ${index + 1}: customer.image (from DB) =`, customer.image);
+                                    console.log(`Row ${index + 1}: Constructed imageUrl =`, imageUrl);
 
-                                    // Helper function to safely get string value or 'N/A'
-                                    const getStringValue = (field) => field ? String(field).trim() : 'N/A';
-
-                                    const getAddressString = () => {
-                                        const shop = getStringValue(customer.shopAddress);
-                                        const home = getStringValue(customer.homeAddress);
-                                        let addressParts = [];
-                                        if (shop !== 'N/A') addressParts.push(`Shop: ${shop}`);
-                                        if (home !== 'N/A') addressParts.push(`Home: ${home}`);
-                                        return addressParts.length > 0 ? addressParts.join('\n') : 'N/A';
-                                    };
-
-                                    const getDocumentsString = () => {
-                                        const docs = [];
-                                        if (customer.aadharNumber) docs.push(`Aadhar: ${getStringValue(customer.aadharNumber)}`);
-                                        if (customer.panNumber) docs.push(`PAN: ${getStringValue(customer.panNumber)}`);
-                                        if (customer.gstNumber) docs.push(`GST: ${getStringValue(customer.gstNumber)}`);
-                                        return docs.length > 0 ? docs.join('\n') : 'N/A';
-                                    };
 
                                     return (
                                     <tr key={customer._id}>
                                         <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td>
-                                            {getStringValue(customer.customerName)}
-                                            {customer.schoolCode && `\n(${getStringValue(customer.schoolCode)})`}
-                                        </td>
+                                        <td>{getStringValue(customer.customerName)}{customer.schoolCode && `\n(${getStringValue(customer.schoolCode)})`}</td>
                                         <td>{customer.branch ? getStringValue(customer.branch.name) : 'N/A'}</td>
                                         <td>{customer.city ? getStringValue(customer.city.name) : 'N/A'}</td>
                                         <td>{getStringValue(customer.contactPerson)}</td>
                                         <td>{getStringValue(customer.mobileNumber)}</td>
                                         <td>{getStringValue(customer.email)}</td>
-                                        <td>{getDocumentsString()}</td>
-                                        <td>{getAddressString()}</td>
+                                        <td>{getDocumentsString(customer)}</td> 
+                                        <td>{getAddressString(customer)}</td>   
                                         <td>
                                             {/* Display image if it's a valid URL or Base64 string, otherwise a placeholder */}
                                             {imageUrl && (imageUrl.startsWith('data:image/') || imageUrl.startsWith('http')) ? (
@@ -901,7 +938,11 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                                     src={imageUrl} 
                                                     alt="Customer Logo" 
                                                     className="table-img" 
-                                                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/50x50/cccccc/ffffff?text=No+Img'; }}
+                                                    onError={(e) => { 
+                                                        console.error("Image failed to load in table:", e.target.src);
+                                                        e.target.onerror = null; // Prevent infinite loop
+                                                        e.target.src = 'https://placehold.co/50x50/cccccc/ffffff?text=No+Img'; // Fallback to placeholder
+                                                    }}
                                                 />
                                             ) : (
                                                 <img src="https://placehold.co/50x50/cccccc/ffffff?text=No+Img" alt="Placeholder" className="table-img" />

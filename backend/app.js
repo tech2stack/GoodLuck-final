@@ -1,4 +1,4 @@
-// backend/server.js (or app.js, index.js)
+// backend/app.js
 
 const express = require('express');
 const morgan = require('morgan');
@@ -29,29 +29,29 @@ const app = express();
 
 // ✅ Allowed frontend domains (ensure these are correct for your setup)
 const allowedOrigins = [
-    'https://goodluckstore.tech2stack.com',
-    'http://localhost:3000',
-    'http://localhost:5173'
+    'https://goodluckstore.tech2stack.com',
+    'http://localhost:3000',
+    'http://localhost:5173'
 ];
 
 // ✅ Global CORS middleware for APIs
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
 }));
 
 // ✅ Optional logging for origin
 app.use((req, res, next) => {
-    console.log('🔍 Origin:', req.headers.origin);
-    next();
+    console.log('🔍 Origin:', req.headers.origin);
+    next();
 });
 
 // ✅ Security headers
@@ -59,14 +59,14 @@ app.use(helmet());
 
 // ✅ Logging for development
 if (process.env.NODE_ENV === 'development') {
-    app.use(morgan('dev'));
+    app.use(morgan('dev'));
 }
 
 // ✅ Rate limiting
 const limiter = rateLimit({
-    max: 1000, // Max requests per windowMs
-    windowMs: 60 * 60 * 1000, // 1 hour
-    message: 'Too many requests from this IP, please try again in an hour!'
+    max: 1000, // Max requests per windowMs
+    windowMs: 60 * 60 * 1000, // 1 hour
+    message: 'Too many requests from this IP, please try again in an hour!'
 });
 app.use('/api', limiter); // Apply to all API routes
 
@@ -83,34 +83,22 @@ app.use(xss());
 // ✅ Prevent parameter pollution
 app.use(hpp());
 
-// ✅ Custom CORS handling for static file uploads (images) - Adjust paths as needed
-app.use('/api/v1/uploads/branch-logos', (req, res, next) => {
-    const requestOrigin = req.headers.origin;
-    if (allowedOrigins.includes(requestOrigin)) {
-        res.setHeader('Access-Control-Allow-Origin', requestOrigin);
-        res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
-        res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
-        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'); // Needed for some browsers
+// ✅ Serve static files (e.g., uploaded images) from the 'uploads' directory
+// This will serve files from 'uploads' folder when requested at '/uploads' URL path
+// The Cross-Origin-Resource-Policy header is crucial for images loaded from a different origin (even if same domain, different port)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+    setHeaders: (res, path, stat) => {
+        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
     }
+}));
 
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(204); // Respond to preflight requests
-    }
-
-    next();
-});
-
-// ✅ Serve static files (e.g., uploaded images) - Adjust paths as needed
-app.use('/api/v1/uploads/branch-logos', express.static(path.join(__dirname, 'uploads', 'branch-logos')));
 
 // ✅ Main API routes
 app.use('/api/v1', mainRouter); // All your specific routes are mounted here
 
 // ✅ Test route
 app.get('/', (req, res) => {
-    res.status(200).json({ status: 'success', message: '✅ GoodLuck API is running.' });
+    res.status(200).json({ status: 'success', message: '✅ GoodLuck API is running.' });
 });
 
 // ✅ Favicon route
@@ -118,15 +106,15 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 // ✅ Temporary CORS check endpoint (optional, can be deleted later)
 app.get('/cors-check', (req, res) => {
-    const origin = req.headers.origin;
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.status(200).json({ msg: 'CORS check passed.' });
+    const origin = req.headers.origin;
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.status(200).json({ msg: 'CORS check passed.' });
 });
 
 // ✅ Handle unknown routes (404)
 app.all('*', (req, res, next) => {
-    next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
+ next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 
 // ✅ Global error handler
@@ -138,5 +126,5 @@ module.exports = app;
 // If this file is your direct server entry point, then also add:
 // const PORT = process.env.PORT || 5000;
 // app.listen(PORT, () => {
-//     console.log(`Server running on port ${PORT}`);
+//     console.log(`Server running on port ${PORT}`);
 // });

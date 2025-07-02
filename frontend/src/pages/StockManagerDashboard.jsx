@@ -2,62 +2,63 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-// Removed: import api from '../utils/api'; // This import was unused in this file
 
 // UI Components and Utilities
 import FlashMessage from '../components/FlashMessage';
 import StockManagerDashboardSummary from '../components/dashboard/StockManagerDashboardSummary';
-import ClassManagement from '../components/masters/ClassManagement'; // Import ClassManagement component
-import ZoneManagement from '../components/masters/ZoneManagement'; // Import ZoneManagement component
-import CityManagement from '../components/masters/CityManagement'; // Import CityManagement component
-import PublicationManagement from '../components/masters/PublicationManagement'; // Import PublicationManagement component
-import LanguageManagement from '../components/masters/LanguageManagement'; // Import LanguageManagement component
-import BookCatalogManagement from '../components/masters/BookCatalogManagement'; // Import BookCatalogManagement component
-import StationeryItemManagement from '../components/masters/StationeryItemManagement'; // Import StationeryItemManagement component
-import CustomerManagement from '../components/masters/CustomerManagement'; // NEW: Import CustomerManagement component
+import ClassManagement from '../components/masters/ClassManagement';
+import ZoneManagement from '../components/masters/ZoneManagement';
+import CityManagement from '../components/masters/CityManagement';
+import PublicationManagement from '../components/masters/PublicationManagement';
+import LanguageManagement from '../components/masters/LanguageManagement';
+import BookCatalogManagement from '../components/masters/BookCatalogManagement';
+import StationeryItemManagement from '../components/masters/StationeryItemManagement';
+import CustomerManagement from '../components/masters/CustomerManagement';
+import TransportManagement from '../components/masters/TransportManagement';
+import PendingBookManagement from '../components/masters/PendingBookManagement'; // Import PendingBookManagement component
 
-// Icons for navigation and UI (Make sure you have react-icons installed: npm install react-icons)
+// Icons for navigation and UI
 import {
-    FaChartBar,        // For Dashboard Summary
-    FaThLarge,         // For Master Options
-    FaChevronDown,     // For dropdown arrow
-    FaShoppingCart,    // NEW: For Purchase
-    FaDollarSign,      // NEW: For Sales
+    FaChartBar,
+    FaThLarge,
+    FaChevronDown,
+    FaShoppingCart,
+    FaDollarSign,
 
     // Master Option Icons:
-    FaGraduationCap,   // For Class
-    FaGlobeAsia,       // For Zone (reused for Master option)
-    FaCity,            // For City (reused for Master option)
-    FaBook,            // For Publication
-    FaBookOpen,        // For Book Catalog
-    FaPencilRuler,     // For Stationery Item
-    FaUserFriends,     // For Customers // This icon is already here!
-    FaTruck,           // For Transports
-    FaLayerGroup,      // For Create Sets
-    FaLanguage,        // For Language
-    FaHourglassHalf,   // For Pending Book
+    FaGraduationCap,
+    FaGlobeAsia,
+    FaCity,
+    FaBook,
+    FaBookOpen,
+    FaPencilRuler,
+    FaUserFriends,
+    FaTruck,
+    FaLayerGroup,
+    FaLanguage,
+    FaHourglassHalf, // For Pending Book
 
-    // NEW: Purchase Option Icons:
-    FaClipboardList,   // Purchase Order
-    FaFileInvoice,     // Purchase Invoice
-    FaMoneyBillAlt,    // Payment Voucher
-    FaUndo,            // Purchase Return (Debit Note)
-    FaBook as FaBookLedger, // ALIASED: FaBook for Purchase Ledgers
-    FaChartLine,       // Purchase Reports
-    FaWarehouse,       // Stock Balance
+    // Purchase Option Icons:
+    FaClipboardList,
+    FaFileInvoice,
+    FaMoneyBillAlt,
+    FaUndo,
+    FaBook as FaBookLedger,
+    FaChartLine,
+    FaWarehouse,
 
-    // NEW: Sales Option Icons:
-    FaReceipt,         // Sale Bill
-    FaHourglass,       // Manual Pending Sale (reusing FaHourglass)
-    FaBookDead,        // Pending Books (using a different book icon)
-    FaFileContract,    // Pending Books Ledger
-    FaMoneyCheckAlt,   // Receipt Voucher
-    FaWallet,          // Advance Deposit (using FaWallet)
-    FaExchangeAlt,     // Sale Return (Credit Note)
-    FaChartBar as FaChartBarLedger, // ALIASED: FaChartBar for Sale Ledgers
-    FaBan,             // Books Not Sold (using FaBan for 'not sold')
-    FaChartPie,        // Sale Reports
-    FaChartArea        // Books Sale Reports (using FaChartArea)
+    // Sales Option Icons:
+    FaReceipt,
+    FaHourglass,
+    FaBookDead,
+    FaFileContract,
+    FaMoneyCheckAlt,
+    FaWallet,
+    FaExchangeAlt,
+    FaChartBar as FaChartBarLedger,
+    FaBan,
+    FaChartPie,
+    FaChartArea
 
 } from 'react-icons/fa';
 
@@ -67,12 +68,12 @@ import '../styles/Dashboard.css';
 import '../styles/StockManagerDashboard.css';
 
 
-const StockManagerDashboard = () => {
+const StockManagerDashboard = ({ showFlashMessage: propShowFlashMessage }) => {
     const { userData, isLoggedIn, loading: authLoading } = useAuth();
     const navigate = useNavigate();
 
     const [activeView, setActiveView] = useState('dashboard');
-    const [flashMessage, setFlashMessage] = useState(null); // State to hold the flash message
+    const [flashMessage, setFlashMessage] = useState(null);
 
     // State to control the visibility of dropdown menus
     const [showMasterDropdown, setShowMasterDropdown] = useState(false);
@@ -82,7 +83,7 @@ const StockManagerDashboard = () => {
     // Refs for click-outside detection
     const masterDropdownRef = useRef(null);
     const purchaseDropdownRef = useRef(null);
-    const salesDropdownRef = useRef(null);
+    const salesDropdownRef = useRef(null); // <--- FIX: Added useRef declaration for salesDropdownRef
 
     // Effect hook for authentication check and redirection.
     useEffect(() => {
@@ -94,31 +95,34 @@ const StockManagerDashboard = () => {
 
     // Callback function to display flash messages.
     const showFlashMessage = useCallback((message, type) => {
-        console.log(`FlashMessage: ${message} (Type: ${type})`); // Debugging: Log when a flash message is set
-        setFlashMessage({ message, type });
-        // Clear message after 5 seconds
-        setTimeout(() => setFlashMessage(null), 5000);
-    }, []);
+        if (propShowFlashMessage) {
+            propShowFlashMessage(message, type);
+        } else {
+            console.log(`FlashMessage: ${message} (Type: ${type})`);
+            setFlashMessage({ message, type });
+            setTimeout(() => setFlashMessage(null), 5000);
+        }
+    }, [propShowFlashMessage]);
 
     // Function to toggle Master dropdown visibility
     const toggleMasterDropdown = () => {
         setShowMasterDropdown(prev => !prev);
-        setShowPurchaseDropdown(false); // Close other dropdowns
-        setShowSalesDropdown(false);    // Close other dropdowns
+        setShowPurchaseDropdown(false);
+        setShowSalesDropdown(false);
     };
 
     // Function to toggle Purchase dropdown visibility
     const togglePurchaseDropdown = () => {
         setShowPurchaseDropdown(prev => !prev);
-        setShowMasterDropdown(false); // Close other dropdowns
-        setShowSalesDropdown(false);    // Close other dropdowns
+        setShowMasterDropdown(false);
+        setShowSalesDropdown(false);
     };
 
     // Function to toggle Sales dropdown visibility
     const toggleSalesDropdown = () => {
         setShowSalesDropdown(prev => !prev);
-        setShowMasterDropdown(false); // Close other dropdowns
-        setShowPurchaseDropdown(false); // Close other dropdowns
+        setShowMasterDropdown(false);
+        setShowPurchaseDropdown(false);
     };
 
     // Effect hook to close any open dropdown when a click occurs outside of it.
@@ -141,7 +145,7 @@ const StockManagerDashboard = () => {
     }, []);
 
     // Handler for when a Master/Purchase/Sales dropdown option is clicked.
-    const handleOptionClick = useCallback((option) => { // Renamed from handleMasterOptionClick
+    const handleOptionClick = useCallback((option) => {
         setActiveView(option);
         // Close all dropdowns after an option is clicked
         setShowMasterDropdown(false);
@@ -176,7 +180,7 @@ const StockManagerDashboard = () => {
                             <button
                                 className={activeView === 'dashboard' ? 'active' : ''}
                                 onClick={() => {
-                                    handleOptionClick('dashboard'); // Use general handler
+                                    handleOptionClick('dashboard');
                                 }}
                             >
                                 <FaChartBar className="nav-icon" /> Dashboard Summary
@@ -216,7 +220,7 @@ const StockManagerDashboard = () => {
                                         <FaPencilRuler className="dropdown-icon" /> Stationery Item
                                     </button>
                                     <button onClick={() => handleOptionClick('customers')}>
-                                        <FaUserFriends className="dropdown-icon" /> Customers {/* NEW: Customer button */}
+                                        <FaUserFriends className="dropdown-icon" /> Customers
                                     </button>
                                     <button onClick={() => handleOptionClick('transports')}>
                                         <FaTruck className="dropdown-icon" /> Transports
@@ -268,7 +272,7 @@ const StockManagerDashboard = () => {
                         </li>
 
                         {/* Sales Options Dropdown */}
-                        <li className="relative-dropdown" ref={salesDropdownRef}>
+                        <li className="relative-dropdown" ref={salesDropdownRef}> {/* <--- FIX: Used salesDropdownRef here */}
                             <button
                                 className={`${showSalesDropdown ? 'active' : ''}`}
                                 onClick={toggleSalesDropdown}
@@ -366,14 +370,19 @@ const StockManagerDashboard = () => {
                         <StationeryItemManagement showFlashMessage={showFlashMessage} />
                     )}
                     
-                    {activeView === 'customers' && ( // NEW: Render CustomerManagement component
+                    {activeView === 'customers' && (
                         <CustomerManagement showFlashMessage={showFlashMessage} />
                     )}
 
-                    {/* Placeholders for other Master Options */}
-                    {activeView === 'transports' && <div className="content-placeholder card"><h3>Transport Management (Coming Soon)</h3><p>Details related to Transports will be displayed and managed here.</p></div>}
+                    {activeView === 'transports' && (
+                        <TransportManagement showFlashMessage={showFlashMessage} />
+                    )}
+                    
                     {activeView === 'create-sets' && <div className="content-placeholder card"><h3>Create Sets (Coming Soon)</h3><p>Details related to creating sets will be displayed and managed here.</p></div>}
-                    {activeView === 'pending-book' && <div className="content-placeholder card"><h3>Pending Book Management (Coming Soon)</h3><p>Details related to Pending Books will be displayed and managed here.</p></div>}
+                    
+                    {activeView === 'pending-book' && (
+                        <PendingBookManagement showFlashMessage={showFlashMessage} />
+                    )}
 
                     {/* Placeholders for Purchase Options */}
                     {activeView === 'purchase-order' && <div className="content-placeholder card"><h3>Purchase Order (Coming Soon)</h3><p>Manage purchase orders here.</p></div>}

@@ -15,6 +15,9 @@ const languageRoutes = require('./languageRoutes'); // NEW: Import language rout
 const bookCatalogRoutes = require('./bookCatalogRoutes'); // NEW: Import bookCatalog routes
 const stationeryItemRoutes = require('./stationeryItemRoutes'); // NEW: Import stationeryItem routes
 const customerRoutes = require('./customerRoutes'); // NEW: Import customer routes
+const transportRouter = require('./transportRoutes'); // <--- NEW: Import transport routes
+const pendingBookRouter = require('./pendingBookRoutes'); // <--- NEW: Import pending book routes
+
 
 const router = express.Router();
 
@@ -34,5 +37,7 @@ router.use('/languages', languageRoutes); // NEW: Use language routes
 router.use('/book-catalogs', bookCatalogRoutes); // NEW: Use bookCatalog routes
 router.use('/stationery-items', stationeryItemRoutes); // NEW: Use stationeryItem routes
 router.use('/customers', customerRoutes); // NEW: Use customer routes
+router.use('/transports', transportRouter); // <--- NEW: Routes for transport management
+router.use('/pending-books', pendingBookRouter); // <--- NEW: Routes for pending book management
 
 module.exports = router;
