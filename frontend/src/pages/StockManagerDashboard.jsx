@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react'; // <--- FIX: Added useRef here
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 // Components
-import Sidebar from '../components/sidebar';
+// import Sidebar from '../components/sidebar'; // This import was commented out or not present in previous versions, keeping it commented.
 import FlashMessage from '../components/FlashMessage';
 import StockManagerDashboardSummary from '../components/dashboard/StockManagerDashboardSummary';
 import ClassManagement from '../components/masters/ClassManagement';
@@ -14,19 +14,78 @@ import LanguageManagement from '../components/masters/LanguageManagement';
 import BookCatalogManagement from '../components/masters/BookCatalogManagement';
 import StationeryItemManagement from '../components/masters/StationeryItemManagement';
 import CustomerManagement from '../components/masters/CustomerManagement';
+import TransportManagement from '../components/masters/TransportManagement';
+import PendingBookManagement from '../components/masters/PendingBookManagement'; // Import PendingBookManagement component
 
-// Styles
+// Icons for navigation and UI
+import {
+    FaChartBar,
+    FaThLarge,
+    FaChevronDown,
+    FaShoppingCart,
+    FaDollarSign,
+
+    // Master Option Icons:
+    FaGraduationCap,
+    FaGlobeAsia,
+    FaCity,
+    FaBook,
+    FaBookOpen,
+    FaPencilRuler,
+    FaUserFriends,
+    FaTruck,
+    FaLayerGroup,
+    FaLanguage,
+    FaHourglassHalf, // For Pending Book
+
+    // Purchase Option Icons:
+    FaClipboardList,
+    FaFileInvoice,
+    FaMoneyBillAlt,
+    FaUndo,
+    FaBook as FaBookLedger,
+    FaChartLine,
+    FaWarehouse,
+
+    // Sales Option Icons:
+    FaReceipt,
+    FaHourglass,
+    FaBookDead,
+    FaFileContract,
+    FaMoneyCheckAlt,
+    FaWallet,
+    FaExchangeAlt,
+    FaChartBar as FaChartBarLedger,
+    FaBan,
+    FaChartPie,
+    FaChartArea
+
+} from 'react-icons/fa';
+
+
+// Stylesheets
 import '../styles/Dashboard.css';
 import '../styles/StockManagerDashboard.css';
 
-const StockManagerDashboard = () => {
+
+const StockManagerDashboard = ({ showFlashMessage: propShowFlashMessage }) => {
     const { userData, isLoggedIn, loading: authLoading } = useAuth();
     const navigate = useNavigate();
 
     const [activeView, setActiveView] = useState('dashboard');
     const [flashMessage, setFlashMessage] = useState(null);
 
-    // Redirect if not authenticated or wrong role
+    // State to control the visibility of dropdown menus
+    const [showMasterDropdown, setShowMasterDropdown] = useState(false);
+    const [showPurchaseDropdown, setShowPurchaseDropdown] = useState(false);
+    const [showSalesDropdown, setShowSalesDropdown] = useState(false);
+
+    // Refs for click-outside detection
+    const masterDropdownRef = useRef(null);
+    const purchaseDropdownRef = useRef(null);
+    const salesDropdownRef = useRef(null); // <--- FIX: Added useRef declaration for salesDropdownRef
+
+    // Effect hook for authentication check and redirection.
     useEffect(() => {
         if (!authLoading && (!isLoggedIn || userData?.role !== 'stock_manager')) {
             navigate('/login', {
@@ -38,10 +97,65 @@ const StockManagerDashboard = () => {
 
     // Flash message handler
     const showFlashMessage = useCallback((message, type) => {
-        setFlashMessage({ message, type });
-        setTimeout(() => setFlashMessage(null), 5000);
+        if (propShowFlashMessage) {
+            propShowFlashMessage(message, type);
+        } else {
+            console.log(`FlashMessage: ${message} (Type: ${type})`);
+            setFlashMessage({ message, type });
+            setTimeout(() => setFlashMessage(null), 5000);
+        }
+    }, [propShowFlashMessage]);
+
+    // Function to toggle Master dropdown visibility
+    const toggleMasterDropdown = () => {
+        setShowMasterDropdown(prev => !prev);
+        setShowPurchaseDropdown(false);
+        setShowSalesDropdown(false);
+    };
+
+    // Function to toggle Purchase dropdown visibility
+    const togglePurchaseDropdown = () => {
+        setShowPurchaseDropdown(prev => !prev);
+        setShowMasterDropdown(false);
+        setShowSalesDropdown(false);
+    };
+
+    // Function to toggle Sales dropdown visibility
+    const toggleSalesDropdown = () => {
+        setShowSalesDropdown(prev => !prev);
+        setShowMasterDropdown(false);
+        setShowPurchaseDropdown(false);
+    };
+
+    // Effect hook to close any open dropdown when a click occurs outside of it.
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (masterDropdownRef.current && !masterDropdownRef.current.contains(event.target)) {
+                setShowMasterDropdown(false);
+            }
+            if (purchaseDropdownRef.current && !purchaseDropdownRef.current.contains(event.target)) {
+                setShowPurchaseDropdown(false);
+            }
+            if (salesDropdownRef.current && !salesDropdownRef.current.contains(event.target)) {
+                setShowSalesDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
     }, []);
 
+    // Handler for when a Master/Purchase/Sales dropdown option is clicked.
+    const handleOptionClick = useCallback((option) => {
+        setActiveView(option);
+        // Close all dropdowns after an option is clicked
+        setShowMasterDropdown(false);
+        setShowPurchaseDropdown(false);
+        setShowSalesDropdown(false);
+    }, []);
+
+    // Render a loading screen if authentication is in progress
     if (authLoading || (!isLoggedIn && !authLoading)) {
         return (
             <div className="flex justify-center items-center h-screen bg-gray-100">
@@ -56,10 +170,164 @@ const StockManagerDashboard = () => {
 
     return (
         <div className="dashboard-container">
-            {/* Sidebar */}
-            <Sidebar activeView={activeView} onOptionClick={setActiveView} userData={userData} />
+            {/* Sidebar Navigation */}
+            <aside className="sidebar">
+                <div className="sidebar-header">
+                    <h3>Stock Manager</h3>
+                    <p>{userData.name || userData.email}</p>
+                </div>
+                <nav className="sidebar-nav">
+                    <ul>
+                        <li>
+                            <button
+                                className={activeView === 'dashboard' ? 'active' : ''}
+                                onClick={() => {
+                                    handleOptionClick('dashboard');
+                                }}
+                            >
+                                <FaChartBar className="nav-icon" /> Dashboard Summary
+                            </button>
+                        </li>
 
-            {/* Main Content */}
+                        {/* Master Options Dropdown */}
+                        <li className="relative-dropdown" ref={masterDropdownRef}>
+                            <button
+                                className={`${showMasterDropdown ? 'active' : ''}`}
+                                onClick={toggleMasterDropdown}
+                            >
+                                <FaThLarge className="nav-icon" /> Masters
+                                <FaChevronDown className={`dropdown-arrow ${showMasterDropdown ? 'rotate-180' : ''}`} />
+                            </button>
+                            {showMasterDropdown && (
+                                <div className="dropdown-menu">
+                                    <button onClick={() => handleOptionClick('class')}>
+                                        <FaGraduationCap className="dropdown-icon" /> Class
+                                    </button>
+                                    <button onClick={() => handleOptionClick('zone')}>
+                                        <FaGlobeAsia className="dropdown-icon" /> Zone
+                                    </button>
+                                    <button onClick={() => handleOptionClick('city')}>
+                                        <FaCity className="dropdown-icon" /> City
+                                    </button>
+                                    <button onClick={() => handleOptionClick('publication')}>
+                                        <FaBook className="dropdown-icon" /> Publication
+                                    </button>
+                                    <button onClick={() => handleOptionClick('language')}>
+                                        <FaLanguage className="dropdown-icon" /> Language
+                                    </button>
+                                    <button onClick={() => handleOptionClick('book-catalog')}>
+                                        <FaBookOpen className="dropdown-icon" /> Book Catalog
+                                    </button>
+                                    <button onClick={() => handleOptionClick('stationery-item')}>
+                                        <FaPencilRuler className="dropdown-icon" /> Stationery Item
+                                    </button>
+                                    <button onClick={() => handleOptionClick('customers')}>
+                                        <FaUserFriends className="dropdown-icon" /> Customers
+                                    </button>
+                                    <button onClick={() => handleOptionClick('transports')}>
+                                        <FaTruck className="dropdown-icon" /> Transports
+                                    </button>
+                                    <button onClick={() => handleOptionClick('create-sets')}>
+                                        <FaLayerGroup className="dropdown-icon" /> Create Sets
+                                    </button>
+                                    <button onClick={() => handleOptionClick('pending-book')}>
+                                        <FaHourglassHalf className="dropdown-icon" /> Pending Book
+                                    </button>
+                                </div>
+                            )}
+                        </li>
+
+                        {/* Purchase Options Dropdown */}
+                        <li className="relative-dropdown" ref={purchaseDropdownRef}>
+                            <button
+                                className={`${showPurchaseDropdown ? 'active' : ''}`}
+                                onClick={togglePurchaseDropdown}
+                            >
+                                <FaShoppingCart className="nav-icon" /> Purchase
+                                <FaChevronDown className={`dropdown-arrow ${showPurchaseDropdown ? 'rotate-180' : ''}`} />
+                            </button>
+                            {showPurchaseDropdown && (
+                                <div className="dropdown-menu">
+                                    <button onClick={() => handleOptionClick('purchase-order')}>
+                                        <FaClipboardList className="dropdown-icon" /> Purchase Order
+                                    </button>
+                                    <button onClick={() => handleOptionClick('purchase-invoice')}>
+                                        <FaFileInvoice className="dropdown-icon" /> Purchase Invoice
+                                    </button>
+                                    <button onClick={() => handleOptionClick('payment-voucher')}>
+                                        <FaMoneyBillAlt className="dropdown-icon" /> Payment Voucher
+                                    </button>
+                                    <button onClick={() => handleOptionClick('purchase-return-debit-note')}>
+                                        <FaUndo className="dropdown-icon" /> Purchase Return (Debit Note)
+                                    </button>
+                                    <button onClick={() => handleOptionClick('purchase-ledgers')}>
+                                        <FaBookLedger className="dropdown-icon" /> Purchase Ledgers
+                                    </button>
+                                    <button onClick={() => handleOptionClick('purchase-reports')}>
+                                        <FaChartLine className="dropdown-icon" /> Purchase Reports
+                                    </button>
+                                    <button onClick={() => handleOptionClick('stock-balance')}>
+                                        <FaWarehouse className="dropdown-icon" /> Stock Balance
+                                    </button>
+                                </div>
+                            )}
+                        </li>
+
+                        {/* Sales Options Dropdown */}
+                        <li className="relative-dropdown" ref={salesDropdownRef}>
+                            <button
+                                className={`${showSalesDropdown ? 'active' : ''}`}
+                                onClick={toggleSalesDropdown}
+                            >
+                                <FaDollarSign className="nav-icon" /> Sales
+                                <FaChevronDown className={`dropdown-arrow ${showSalesDropdown ? 'rotate-180' : ''}`} />
+                            </button>
+                            {showSalesDropdown && (
+                                <div className="dropdown-menu">
+                                    <button onClick={() => handleOptionClick('sale-bill')}>
+                                        <FaReceipt className="dropdown-icon" /> Sale Bill
+                                    </button>
+                                    <button onClick={() => handleOptionClick('manual-pending-sale')}>
+                                        <FaHourglass className="dropdown-icon" /> Manual Pending Sale
+                                    </button>
+                                    <button onClick={() => handleOptionClick('pending-books')}>
+                                        <FaBookDead className="dropdown-icon" /> Pending Books
+                                    </button>
+                                    <button onClick={() => handleOptionClick('pending-books-ledger')}>
+                                        <FaFileContract className="dropdown-icon" /> Pending Books Ledger
+                                    </button>
+                                    <button onClick={() => handleOptionClick('receipt-voucher')}>
+                                        <FaMoneyCheckAlt className="dropdown-icon" /> Receipt Voucher
+                                    </button>
+                                    <button onClick={() => handleOptionClick('advance-deposit')}>
+                                        <FaWallet className="dropdown-icon" /> Advance Deposit
+                                    </button>
+                                    <button onClick={() => handleOptionClick('sale-return-credit-note')}>
+                                        <FaExchangeAlt className="dropdown-icon" /> Sale Return (Credit Note)
+                                    </button>
+                                    <button onClick={() => handleOptionClick('sale-ledgers')}>
+                                        <FaChartBarLedger className="dropdown-icon" /> Sale Ledgers
+                                    </button>
+                                    <button onClick={() => handleOptionClick('books-not-sold')}>
+                                        <FaBan className="dropdown-icon" /> Books Not Sold
+                                    </button>
+                                    <button onClick={() => handleOptionClick('sale-reports')}>
+                                        <FaChartPie className="dropdown-icon" /> Sale Reports
+                                    </button>
+                                    <button onClick={() => handleOptionClick('books-sale-reports')}>
+                                        <FaChartArea className="dropdown-icon" /> Books Sale Reports
+                                    </button>
+                                    <button onClick={() => handleOptionClick('sale-purchase-reports')}>
+                                        <FaChartBar className="dropdown-icon" /> Sale-Purchase Reports
+                                    </button>
+                                </div>
+                            )}
+                        </li>
+                    </ul>
+                </nav>
+            </aside>
+
+            {/* Main Content Area */}
             <main className="dashboard-main-content">
                 <header className="dashboard-header">
                     <h1>Stock Management Dashboard</h1>
@@ -82,10 +350,7 @@ const StockManagerDashboard = () => {
 
                     {/* Coming Soon Placeholders */}
                     {activeView === 'transports' && (
-                        <div className="content-placeholder card">
-                            <h3>Transport Management (Coming Soon)</h3>
-                            <p>Details related to Transports will be displayed and managed here.</p>
-                        </div>
+                        <TransportManagement showFlashMessage={showFlashMessage} />
                     )}
                     {activeView === 'create-sets' && (
                         <div className="content-placeholder card">
@@ -94,13 +359,10 @@ const StockManagerDashboard = () => {
                         </div>
                     )}
                     {activeView === 'pending-book' && (
-                        <div className="content-placeholder card">
-                            <h3>Pending Book Management (Coming Soon)</h3>
-                            <p>Details related to Pending Books will be displayed and managed here.</p>
-                        </div>
+                        <PendingBookManagement showFlashMessage={showFlashMessage} />
                     )}
 
-                    {/* Purchase Placeholder Views */}
+                    {/* Placeholders for Purchase Options */}
                     {activeView === 'purchase-order' && (
                         <div className="content-placeholder card"><h3>Purchase Order</h3><p>Coming Soon</p></div>
                     )}
@@ -123,7 +385,7 @@ const StockManagerDashboard = () => {
                         <div className="content-placeholder card"><h3>Stock Balance</h3><p>Coming Soon</p></div>
                     )}
 
-                    {/* Sales Placeholder Views */}
+                    {/* Placeholders for Sales Options */}
                     {activeView === 'sale-bill' && (
                         <div className="content-placeholder card"><h3>Sale Bill</h3><p>Coming Soon</p></div>
                     )}
