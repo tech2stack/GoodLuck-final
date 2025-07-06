@@ -1,13 +1,12 @@
-// backend/models/Customer.js
-
+// backend/models/Customer.js (Ensure this file has the 'branch' field added)
 const mongoose = require('mongoose');
-const validator = require('validator'); // For email and mobile validation
+const validator = require('validator');
 
 const customerSchema = new mongoose.Schema({
     customerName: {
         type: String,
-        required: [true, 'Customer name is required'], // Customer name is required
-        unique: true, // Customer name must be unique
+        required: [true, 'Customer name is required'],
+        unique: true,
         trim: true,
         maxlength: [100, 'Customer name cannot exceed 100 characters']
     },
@@ -16,17 +15,17 @@ const customerSchema = new mongoose.Schema({
         trim: true,
         uppercase: true,
         maxlength: [20, 'School code cannot exceed 20 characters'],
-        default: null // Default to null for optional fields
+        default: null
     },
-    branch: {
+    branch: { // THIS FIELD IS CRUCIAL FOR THE CASCADING DROPDOWN
         type: mongoose.Schema.ObjectId,
-        ref: 'Branch', // Reference to the Branch model
-        required: [true, 'Branch is required'] // Branch is required
+        ref: 'Branch',
+        required: [true, 'Branch is required']
     },
     city: {
         type: mongoose.Schema.ObjectId,
-        ref: 'City', // Reference to the City model
-        required: [true, 'City is required'] // City is required
+        ref: 'City',
+        required: [true, 'City is required']
     },
     contactPerson: {
         type: String,
@@ -37,10 +36,8 @@ const customerSchema = new mongoose.Schema({
     mobileNumber: {
         type: String,
         trim: true,
-        // Custom validator for mobile number: only validates if a value is provided
         validate: {
             validator: function(val) {
-                // If value is null or empty, consider it valid (optional field)
                 return val === null || val === '' || (validator.isMobilePhone(val, 'en-IN') && val.length === 10);
             },
             message: 'Please provide a valid 10-digit Indian mobile number if specified'
@@ -51,10 +48,8 @@ const customerSchema = new mongoose.Schema({
         type: String,
         trim: true,
         lowercase: true,
-        // Custom validator for email: only validates if a value is provided
         validate: {
             validator: function(val) {
-                // If value is null or empty, consider it valid (optional field)
                 return val === null || val === '' || validator.isEmail(val);
             },
             message: 'Please provide a valid email if specified'
@@ -65,11 +60,9 @@ const customerSchema = new mongoose.Schema({
         type: String,
         trim: true,
         uppercase: true,
-        // Custom validator for GST number: only validates if a value is provided
         validate: {
             validator: function(val) {
-                // If value is null or empty, consider it valid (optional field)
-                return val === null || val === '' || (val.length === 15); // GST number must be 15 characters
+                return val === null || val === '' || (val.length === 15);
             },
             message: 'GST number must be 15 characters if specified'
         },
@@ -78,11 +71,9 @@ const customerSchema = new mongoose.Schema({
     aadharNumber: {
         type: String,
         trim: true,
-        // Custom validator for Aadhar number: only validates if a value is provided
         validate: {
             validator: function(val) {
-                // If value is null or empty, consider it valid (optional field)
-                return val === null || val === '' || (val.length === 12); // Aadhar number must be 12 digits
+                return val === null || val === '' || (val.length === 12);
             },
             message: 'Aadhar number must be 12 digits if specified'
         },
@@ -92,11 +83,9 @@ const customerSchema = new mongoose.Schema({
         type: String,
         trim: true,
         uppercase: true,
-        // Custom validator for PAN number: only validates if a value is provided
         validate: {
             validator: function(val) {
-                // If value is null or empty, consider it valid (optional field)
-                return val === null || val === '' || (val.length === 10); // PAN number must be 10 characters
+                return val === null || val === '' || (val.length === 10);
             },
             message: 'PAN number must be 10 characters if specified'
         },
@@ -132,14 +121,12 @@ const customerSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Indexing for faster queries.
-// Only customerName is unique. Other fields can have duplicates or be null.
-customerSchema.index({ customerName: 1 }, { unique: true }); // Unique index for customerName
-customerSchema.index({ mobileNumber: 1 }); // Index for mobileNumber (not unique)
-customerSchema.index({ email: 1 });       // Index for email (not unique)
-customerSchema.index({ gstNumber: 1 });   // Index for gstNumber (not unique)
-customerSchema.index({ aadharNumber: 1 });// Index for aadharNumber (not unique)
-customerSchema.index({ panNumber: 1 });   // Index for panNumber (not unique)
+customerSchema.index({ customerName: 1 }, { unique: true });
+customerSchema.index({ mobileNumber: 1 });
+customerSchema.index({ email: 1 });
+customerSchema.index({ gstNumber: 1 });
+customerSchema.index({ aadharNumber: 1 });
+customerSchema.index({ panNumber: 1 });
 
 
 const Customer = mongoose.model('Customer', customerSchema);

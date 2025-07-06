@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'; // <--- FIX: Added useRef here
+// src/pages/StockManagerDashboard.jsx
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-// Components
-// import Sidebar from '../components/sidebar'; // This import was commented out or not present in previous versions, keeping it commented.
+// UI Components and Utilities
 import FlashMessage from '../components/FlashMessage';
 import StockManagerDashboardSummary from '../components/dashboard/StockManagerDashboardSummary';
 import ClassManagement from '../components/masters/ClassManagement';
@@ -15,7 +15,8 @@ import BookCatalogManagement from '../components/masters/BookCatalogManagement';
 import StationeryItemManagement from '../components/masters/StationeryItemManagement';
 import CustomerManagement from '../components/masters/CustomerManagement';
 import TransportManagement from '../components/masters/TransportManagement';
-import PendingBookManagement from '../components/masters/PendingBookManagement'; // Import PendingBookManagement component
+import PendingBookManagement from '../components/PendingBookManagement';
+import CreateSetManagement from '../components/masters/CreateSetManagement'; // <--- CRITICAL: Ensure this import is present and correct
 
 // Icons for navigation and UI
 import {
@@ -34,7 +35,7 @@ import {
     FaPencilRuler,
     FaUserFriends,
     FaTruck,
-    FaLayerGroup,
+    FaLayerGroup, // For Create Sets
     FaLanguage,
     FaHourglassHalf, // For Pending Book
 
@@ -83,24 +84,23 @@ const StockManagerDashboard = ({ showFlashMessage: propShowFlashMessage }) => {
     // Refs for click-outside detection
     const masterDropdownRef = useRef(null);
     const purchaseDropdownRef = useRef(null);
-    const salesDropdownRef = useRef(null); // <--- FIX: Added useRef declaration for salesDropdownRef
+    const salesDropdownRef = useRef(null);
 
     // Effect hook for authentication check and redirection.
     useEffect(() => {
         if (!authLoading && (!isLoggedIn || userData?.role !== 'stock_manager')) {
-            navigate('/login', {
-                replace: true,
-                state: { message: 'Please log in as a Stock Manager to access this page.' },
-            });
+            console.log('StockManagerDashboard: Unauthorized or not logged in. Redirecting to login page.');
+            navigate('/login', { replace: true, state: { message: 'Please log in as a Stock Manager to access this page.' } });
         }
-    }, [authLoading, isLoggedIn, userData, navigate]);
+    }, [isLoggedIn, userData, navigate, authLoading]);
 
-    // Flash message handler
+    // Callback function to display flash messages.
     const showFlashMessage = useCallback((message, type) => {
         if (propShowFlashMessage) {
             propShowFlashMessage(message, type);
         } else {
             console.log(`FlashMessage: ${message} (Type: ${type})`);
+            setFlashMessage(null); // Clear previous message first
             setFlashMessage({ message, type });
             setTimeout(() => setFlashMessage(null), 5000);
         }
@@ -148,7 +148,7 @@ const StockManagerDashboard = ({ showFlashMessage: propShowFlashMessage }) => {
 
     // Handler for when a Master/Purchase/Sales dropdown option is clicked.
     const handleOptionClick = useCallback((option) => {
-        setActiveView(option);
+        setActiveView(option); // <--- This sets the active view state
         // Close all dropdowns after an option is clicked
         setShowMasterDropdown(false);
         setShowPurchaseDropdown(false);
@@ -228,7 +228,7 @@ const StockManagerDashboard = ({ showFlashMessage: propShowFlashMessage }) => {
                                         <FaTruck className="dropdown-icon" /> Transports
                                     </button>
                                     <button onClick={() => handleOptionClick('create-sets')}>
-                                        <FaLayerGroup className="dropdown-icon" /> Create Sets
+                                        <FaLayerGroup className="dropdown-icon" /> Create Sets {/* <--- This button sets activeView to 'create-sets' */}
                                     </button>
                                     <button onClick={() => handleOptionClick('pending-book')}>
                                         <FaHourglassHalf className="dropdown-icon" /> Pending Book
@@ -347,81 +347,39 @@ const StockManagerDashboard = ({ showFlashMessage: propShowFlashMessage }) => {
                     {activeView === 'book-catalog' && <BookCatalogManagement showFlashMessage={showFlashMessage} />}
                     {activeView === 'stationery-item' && <StationeryItemManagement showFlashMessage={showFlashMessage} />}
                     {activeView === 'customers' && <CustomerManagement showFlashMessage={showFlashMessage} />}
-
-                    {/* Coming Soon Placeholders */}
-                    {activeView === 'transports' && (
-                        <TransportManagement showFlashMessage={showFlashMessage} />
-                    )}
+                    {activeView === 'transports' && <TransportManagement showFlashMessage={showFlashMessage} />}
+                    
+                    {/* THIS IS THE CORRECT RENDERING FOR CreateSetManagement */}
                     {activeView === 'create-sets' && (
-                        <div className="content-placeholder card">
-                            <h3>Create Sets (Coming Soon)</h3>
-                            <p>Details related to creating sets will be displayed and managed here.</p>
-                        </div>
+                        <CreateSetManagement showFlashMessage={showFlashMessage} />
                     )}
+                    
                     {activeView === 'pending-book' && (
                         <PendingBookManagement showFlashMessage={showFlashMessage} />
                     )}
 
                     {/* Placeholders for Purchase Options */}
-                    {activeView === 'purchase-order' && (
-                        <div className="content-placeholder card"><h3>Purchase Order</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'purchase-invoice' && (
-                        <div className="content-placeholder card"><h3>Purchase Invoice</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'payment-voucher' && (
-                        <div className="content-placeholder card"><h3>Payment Voucher</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'purchase-return-debit-note' && (
-                        <div className="content-placeholder card"><h3>Purchase Return (Debit Note)</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'purchase-ledgers' && (
-                        <div className="content-placeholder card"><h3>Purchase Ledgers</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'purchase-reports' && (
-                        <div className="content-placeholder card"><h3>Purchase Reports</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'stock-balance' && (
-                        <div className="content-placeholder card"><h3>Stock Balance</h3><p>Coming Soon</p></div>
-                    )}
+                    {activeView === 'purchase-order' && <div className="content-placeholder card"><h3>Purchase Order (Coming Soon)</h3><p>Manage purchase orders here.</p></div>}
+                    {activeView === 'purchase-invoice' && <div className="content-placeholder card"><h3>Purchase Invoice (Coming Soon)</h3><p>Manage purchase invoices here.</p></div>}
+                    {activeView === 'payment-voucher' && <div className="content-placeholder card"><h3>Payment Voucher (Coming Soon)</h3><p>Manage payment vouchers here.</p></div>}
+                    {activeView === 'purchase-return-debit-note' && <div className="content-placeholder card"><h3>Purchase Return (Debit Note) (Coming Soon)</h3><p>Manage purchase returns and debit notes here.</p></div>}
+                    {activeView === 'purchase-ledgers' && <div className="content-placeholder card"><h3>Purchase Ledgers (Coming Soon)</h3><p>View purchase ledgers here.</p></div>}
+                    {activeView === 'purchase-reports' && <div className="content-placeholder card"><h3>Purchase Reports (Coming Soon)</h3><p>Access purchase reports here.</p></div>}
+                    {activeView === 'stock-balance' && <div className="content-placeholder card"><h3>Stock Balance (Coming Soon)</h3><p>View current stock balance here.</p></div>}
 
                     {/* Placeholders for Sales Options */}
-                    {activeView === 'sale-bill' && (
-                        <div className="content-placeholder card"><h3>Sale Bill</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'manual-pending-sale' && (
-                        <div className="content-placeholder card"><h3>Manual Pending Sale</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'pending-books' && (
-                        <div className="content-placeholder card"><h3>Pending Books</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'pending-books-ledger' && (
-                        <div className="content-placeholder card"><h3>Pending Books Ledger</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'receipt-voucher' && (
-                        <div className="content-placeholder card"><h3>Receipt Voucher</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'advance-deposit' && (
-                        <div className="content-placeholder card"><h3>Advance Deposit</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'sale-return-credit-note' && (
-                        <div className="content-placeholder card"><h3>Sale Return (Credit Note)</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'sale-ledgers' && (
-                        <div className="content-placeholder card"><h3>Sale Ledgers</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'books-not-sold' && (
-                        <div className="content-placeholder card"><h3>Books Not Sold</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'sale-reports' && (
-                        <div className="content-placeholder card"><h3>Sale Reports</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'books-sale-reports' && (
-                        <div className="content-placeholder card"><h3>Books Sale Reports</h3><p>Coming Soon</p></div>
-                    )}
-                    {activeView === 'sale-purchase-reports' && (
-                        <div className="content-placeholder card"><h3>Sale-Purchase Reports</h3><p>Coming Soon</p></div>
-                    )}
+                    {activeView === 'sale-bill' && <div className="content-placeholder card"><h3>Sale Bill (Coming Soon)</h3><p>Create and manage sale bills here.</p></div>}
+                    {activeView === 'manual-pending-sale' && <div className="content-placeholder card"><h3>Manual Pending Sale (Coming Soon)</h3><p>Manage manually pending sales here.</p></div>}
+                    {activeView === 'pending-books' && <div className="content-placeholder card"><h3>Pending Books (Coming Soon)</h3><p>View pending book orders here.</p></div>}
+                    {activeView === 'pending-books-ledger' && <div className="content-placeholder card"><h3>Pending Books Ledger (Coming Soon)</h3><p>View pending books ledger here.</p></div>}
+                    {activeView === 'receipt-voucher' && <div className="content-placeholder card"><h3>Receipt Voucher (Coming Soon)</h3><p>Manage receipt vouchers here.</p></div>}
+                    {activeView === 'advance-deposit' && <div className="content-placeholder card"><h3>Advance Deposit (Coming Soon)</h3><p>Manage customer advance deposits here.</p></div>}
+                    {activeView === 'sale-return-credit-note' && <div className="content-placeholder card"><h3>Sale Return (Credit Note) (Coming Soon)</h3><p>Manage sale returns and credit notes here.</p></div>}
+                    {activeView === 'sale-ledgers' && <div className="content-placeholder card"><h3>Sale Ledgers (Coming Soon)</h3><p>View sale ledgers here.</p></div>}
+                    {activeView === 'books-not-sold' && <div className="content-placeholder card"><h3>Books Not Sold (Coming Soon)</h3><p>View reports on books not sold here.</p></div>}
+                    {activeView === 'sale-reports' && <div className="content-placeholder card"><h3>Sale Reports (Coming Soon)</h3><p>Access various sales reports here.</p></div>}
+                    {activeView === 'books-sale-reports' && <div className="content-placeholder card"><h3>Books Sale Reports (Coming Soon)</h3><p>Access book-specific sales reports here.</p></div>}
+                    {activeView === 'sale-purchase-reports' && <div className="content-placeholder card"><h3>Sale-Purchase Reports (Coming Soon)</h3><p>Access combined sale and purchase reports here.</p></div>}
                 </div>
             </main>
         </div>

@@ -1,24 +1,23 @@
 // backend/models/StationeryItem.js
 const mongoose = require('mongoose');
 
-const StationeryItemSchema = new mongoose.Schema({
-    name: {
+const stationeryItemSchema = new mongoose.Schema({
+    itemName: {
         type: String,
         required: [true, 'Stationery item name is required'],
-        unique: true, // Stationery item names should be unique
+        unique: true, // Item names should be unique
         trim: true,
-        maxlength: [100, 'Stationery item name cannot be more than 100 characters']
+        maxlength: [200, 'Stationery item name cannot exceed 200 characters']
     },
     price: {
         type: Number,
-        required: [true, 'Price is required'],
-        min: [0, 'Price cannot be negative'],
-        default: 0
+        required: [true, 'Price is required for the stationery item'],
+        min: [0, 'Price cannot be negative']
     },
-    status: { // Status field
+    status: {
         type: String,
-        enum: ['active', 'inactive'], // Define allowed values for status
-        default: 'active' // Default status is active
+        enum: ['active', 'inactive'],
+        default: 'active'
     },
     createdAt: {
         type: Date,
@@ -26,4 +25,6 @@ const StationeryItemSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model('StationeryItem', StationeryItemSchema);
+const StationeryItem = mongoose.model('StationeryItem', stationeryItemSchema);
+
+module.exports = StationeryItem;

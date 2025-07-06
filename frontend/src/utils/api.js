@@ -1,11 +1,14 @@
+// src/api/api.js
 import axios from 'axios';
 
 // ✅ Automatically use local or deployed backend URL
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// This variable should be just the base domain/port, e.g., 'http://localhost:5000'
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
 // Create an Axios instance
 const api = axios.create({
-    baseURL: `${API_BASE_URL}/api/v1`, // base URL from .env
+    // The baseURL for the instance now correctly includes /api/v1
+    baseURL: `${API_BASE_URL}/api/v1`, 
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',

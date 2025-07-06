@@ -7,37 +7,40 @@ const branchAdminRoutes = require('./branchAdminRoutes');
 const reportRoutes = require('./reportRoutes');
 const stockManagerRoutes = require('./stockManagerRoutes');
 const summaryRoutes = require('./summaryRoutes');
-const classRoutes = require('./classRoutes'); // <<< CONFIRMED: Import the class routes
-const zoneRoutes = require('./zoneRoutes'); // NEW: Import Zone routes
-const cityRoutes = require('./cityRoutes'); // NEW: Import City routes
-const publicationRoutes = require('./publicationRoutes'); // NEW: Import publication routes
-const languageRoutes = require('./languageRoutes'); // NEW: Import language routes
-const bookCatalogRoutes = require('./bookCatalogRoutes'); // NEW: Import bookCatalog routes
-const stationeryItemRoutes = require('./stationeryItemRoutes'); // NEW: Import stationeryItem routes
-const customerRoutes = require('./customerRoutes'); // NEW: Import customer routes
-const transportRouter = require('./transportRoutes'); // <--- NEW: Import transport routes
-const pendingBookRouter = require('./pendingBookRoutes'); // <--- NEW: Import pending book routes
+const classRoutes = require('./classRoutes');
+const zoneRoutes = require('./zoneRoutes');
+const cityRoutes = require('./cityRoutes');
+const publicationRoutes = require('./publicationRoutes');
+const languageRoutes = require('./languageRoutes');
+const bookCatalogRoutes = require('./bookCatalogRoutes');
+const stationeryItemRoutes = require('./stationeryItemRoutes');
+const customerRoutes = require('./customerRoutes');
+const transportRouter = require('./transportRoutes');
+const pendingBookRouter = require('./pendingBookRoutes');
+const setRouter = require('./setRoutes'); // <<< CRITICAL: Ensure this import is present
 
 
 const router = express.Router();
 
 // Mount different route modules under their respective paths
-router.use('/auth', authRoutes); // Authentication routes (login, register super admin, logout)
-router.use('/branches', branchRoutes); // Branch management routes
-router.use('/employees', employeeRoutes); // Employee management routes
-router.use('/branch-admins', branchAdminRoutes); // Branch Admin management routes
-router.use('/reports', reportRoutes); // Reporting routes
-router.use('/stock-managers', stockManagerRoutes); // Stock Manager management routes
-router.use('/summary', summaryRoutes); // Summary routes
-router.use('/classes', classRoutes); // <<< CONFIRMED: Mount class routes under /api/v1/classes
-router.use('/zones', zoneRoutes); 
-router.use('/cities', cityRoutes); // NEW: City management routes
-router.use('/publications', publicationRoutes); // NEW: Use publication routes
-router.use('/languages', languageRoutes); // NEW: Use language routes
-router.use('/book-catalogs', bookCatalogRoutes); // NEW: Use bookCatalog routes
-router.use('/stationery-items', stationeryItemRoutes); // NEW: Use stationeryItem routes
-router.use('/customers', customerRoutes); // NEW: Use customer routes
-router.use('/transports', transportRouter); // <--- NEW: Routes for transport management
-router.use('/pending-books', pendingBookRouter); // <--- NEW: Routes for pending book management
+router.use('/auth', authRoutes);
+router.use('/branches', branchRoutes);
+router.use('/employees', employeeRoutes);
+router.use('/branch-admins', branchAdminRoutes);
+router.use('/reports', reportRoutes);
+router.use('/stock-managers', stockManagerRoutes);
+router.use('/summary', summaryRoutes);
+router.use('/classes', classRoutes);
+router.use('/zones', zoneRoutes);
+router.use('/cities', cityRoutes);
+router.use('/publications', publicationRoutes);
+router.use('/languages', languageRoutes);
+router.use('/book-catalogs', bookCatalogRoutes);
+router.use('/stationery-items', stationeryItemRoutes);
+router.use('/customers', customerRoutes);
+router.use('/transports', transportRouter);
+router.use('/pending-books', pendingBookRouter);
+router.use('/sets', setRouter); // <<< CRITICAL: Ensure setRouter is mounted here under '/sets'
+
 
 module.exports = router;

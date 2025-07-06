@@ -2,55 +2,52 @@
 const StationeryItem = require('../models/StationeryItem');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
-const APIFeatures = require('../utils/apiFeatures');
 
-// Create a new Stationery Item
+// 1. Create a new Stationery Item
 exports.createStationeryItem = catchAsync(async (req, res, next) => {
-    const { name, price, status } = req.body;
+    const { itemName, price, status } = req.body;
 
-    if (!name || price === undefined || price === null) {
-        return next(new AppError('Item name and price are required', 400));
+    // Basic validation
+    if (!itemName || price === undefined || price === null || price < 0) {
+        return next(new AppError('Item Name and a non-negative Price are required.', 400));
     }
 
-    const newStationeryItem = await StationeryItem.create({ name, price, status });
+    // Check for duplicate item name
+    const existingItem = await StationeryItem.findOne({ itemName });
+    if (existingItem) {
+        return next(new AppError('A stationery item with this name already exists.', 409));
+    }
+
+    const newItem = await StationeryItem.create({ itemName, price, status });
 
     res.status(201).json({
         status: 'success',
         data: {
-            stationeryItem: newStationeryItem
+            stationeryItem: newItem
         },
         message: 'Stationery Item created successfully!'
     });
 });
 
-// Get all Stationery Items (with filtering, sorting, pagination)
+// 2. Get all Stationery Items
 exports.getAllStationeryItems = catchAsync(async (req, res, next) => {
-    const features = new APIFeatures(StationeryItem.find(), req.query)
-        .filter()
-        .sort()
-        .limitFields()
-        .paginate();
-
-    const stationeryItems = await features.query;
-
-    const totalCount = await StationeryItem.countDocuments(features.filterQuery);
+    const stationeryItems = await StationeryItem.find();
 
     res.status(200).json({
         status: 'success',
         results: stationeryItems.length,
         data: {
             stationeryItems
-        },
-        totalCount
+        }
     });
 });
 
-// Get a single Stationery Item by ID
+// 3. Get a single Stationery Item by ID
 exports.getStationeryItem = catchAsync(async (req, res, next) => {
     const stationeryItem = await StationeryItem.findById(req.params.id);
 
     if (!stationeryItem) {
-        return next(new AppError('No stationery item found with that ID', 404));
+        return next(new AppError('No stationery item found with that ID.', 404));
     }
 
     res.status(200).json({
@@ -61,42 +58,55 @@ exports.getStationeryItem = catchAsync(async (req, res, next) => {
     });
 });
 
-// Update a Stationery Item by ID
+// 4. Update a Stationery Item
 exports.updateStationeryItem = catchAsync(async (req, res, next) => {
-    const { name, price, status } = req.body;
-    const updateFields = {};
-    if (name !== undefined) updateFields.name = name;
-    if (price !== undefined) updateFields.price = price;
-    if (status !== undefined) updateFields.status = status;
+    const { id } = req.params;
+    const { itemName, price, status } = req.body;
 
-    if (Object.keys(updateFields).length === 0) {
-        return next(new AppError('No valid fields provided for update. Only name, price, and status can be updated.', 400));
+    // Fetch current item to check for duplicates if name changes
+    const currentItem = await StationeryItem.findById(id);
+    if (!currentItem) {
+        return next(new AppError('No stationery item found with that ID.', 404));
     }
 
-    const updatedStationeryItem = await StationeryItem.findByIdAndUpdate(req.params.id, updateFields, {
+    // Check for duplicate name if itemName is being changed
+    if (itemName && itemName !== currentItem.itemName) {
+        const existingItem = await StationeryItem.findOne({ itemName, _id: { $ne: id } }); // Exclude the current item being updated
+        if (existingItem) {
+            return next(new AppError('A stationery item with this name already exists.', 409));
+        }
+    }
+
+    // Basic validation for update
+    if (price !== undefined && (price === null || price < 0)) {
+        return next(new AppError('Price must be a non-negative number.', 400));
+    }
+
+    const updatedItem = await StationeryItem.findByIdAndUpdate(id, { itemName, price, status }, {
         new: true,
-        runValidators: true
+        runValidators: true,
+        context: 'query'
     });
 
-    if (!updatedStationeryItem) {
-        return next(new AppError('No stationery item found with that ID', 404));
+    if (!updatedItem) {
+        return next(new AppError('No stationery item found with that ID.', 404));
     }
 
     res.status(200).json({
         status: 'success',
         data: {
-            stationeryItem: updatedStationeryItem
+            stationeryItem: updatedItem
         },
         message: 'Stationery Item updated successfully!'
     });
 });
 
-// Delete a Stationery Item by ID
+// 5. Delete a Stationery Item
 exports.deleteStationeryItem = catchAsync(async (req, res, next) => {
-    const stationeryItem = await StationeryItem.findByIdAndDelete(req.params.id);
+    const item = await StationeryItem.findByIdAndDelete(req.params.id);
 
-    if (!stationeryItem) {
-        return next(new AppError('No stationery item found with that ID', 404));
+    if (!item) {
+        return next(new AppError('No stationery item found with that ID.', 404));
     }
 
     res.status(204).json({

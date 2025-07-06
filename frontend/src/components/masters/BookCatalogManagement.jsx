@@ -1,7 +1,7 @@
 // src/components/masters/BookCatalogManagement.jsx
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import api from '../../utils/api'; // API utility for backend calls
-import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight } from 'react-icons/fa'; // Icons for UI
+import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaSpinner, FaTimesCircle } from 'react-icons/fa'; // Icons for UI
 
 // Stylesheets (assuming these are already present and styled for consistency)
 import '../../styles/Form.css';
@@ -26,7 +26,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
     // State for form inputs (for creating new or editing existing book catalog)
     const [formData, setFormData] = useState({
-        name: '',
+        bookName: '', // Changed from 'name' to 'bookName'
         publication: '',
         subtitle: '', // Can be null
         language: '', // Can be null
@@ -41,7 +41,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     // State for loading indicators
     const [loading, setLoading] = useState(false);
     // State for managing local errors (e.g., form validation)
-    const [localError, setLocalError] = useState(null);
+    const [localError, setLocalError] = useState(null); 
     // State to track if we are in edit mode and which book catalog is being edited
     const [editingBookCatalogId, setEditingBookCatalogId] = useState(null);
 
@@ -49,6 +49,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [bookCatalogToDeleteId, setBookCatalogToDeleteId] = useState(null);
     const [bookCatalogToDeleteName, setBookCatalogToDeleteName] = useState('');
+    const [bookToDelete, setBookToDelete] = useState(null); 
 
     // Ref for scrolling to the new item in the table (if needed)
     const tableBodyRef = useRef(null);
@@ -58,11 +59,12 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
     // States for Pagination
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10; // Show 10 entries per page
+    const [itemsPerPage, setItemsPerPage] = useState(10); // Declared setItemsPerPage here
 
 
     // --- Helper function for date formatting ---
     const formatDateWithTime = (dateString) => {
+        if (!dateString) return 'N/A';
         const options = {
             year: 'numeric',
             month: 'long',
@@ -96,8 +98,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             }
 
             // Set initial default values for dropdowns if available
-            // Note: We don't set subtitle here initially, it's handled by fetchSubtitles based on publication
-            // This initial setting is for new form, not for edit
             if (!editingBookCatalogId) { // Only set defaults if not editing
                 setFormData(prev => ({
                     ...prev,
@@ -182,11 +182,11 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                         if (currentPage !== lastPageIndex) {
                            setCurrentPage(lastPageIndex);
                            setTimeout(() => {
-                                if (tableBodyRef.current.lastElementChild) {
-                                    tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                } else {
-                                    tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                                }
+                               if (tableBodyRef.current.lastElementChild) {
+                                   tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                               } else {
+                                   tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
+                               }
                            }, 50);
                         } else {
                             if (tableBodyRef.current.lastElementChild) {
@@ -198,15 +198,17 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                     }, 100);
                 }
             } else {
-                setLocalError(response.data.message || 'Failed to fetch book catalogs.');
+                showFlashMessage(response.data.message || 'Failed to fetch book catalogs.', 'error');
             }
         } catch (err) {
             console.error('Error fetching book catalogs:', err);
-            setLocalError(err.response?.data?.message || 'Failed to load book catalogs due to network error.');
+            const errorMessage = err.response?.data?.message || 'Failed to load book catalogs due to network error.'; 
+            setLocalError(errorMessage);
+            showFlashMessage(errorMessage, 'error');
         } finally {
             setLoading(false);
         }
-    }, [currentPage, itemsPerPage]);
+    }, [currentPage, itemsPerPage, showFlashMessage]); 
 
     // Initial data fetch on component mount
     useEffect(() => {
@@ -274,7 +276,8 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         setLocalError(null);
 
         // Basic validation
-        if (!formData.name || !formData.publication || !formData.bookType) {
+        // Changed formData.name to formData.bookName
+        if (!formData.bookName || !formData.publication || !formData.bookType) {
             setLocalError('Please fill in all required fields (Book Name, Publication, Book Type).');
             showFlashMessage('Please fill in all required fields.', 'error');
             setLoading(false);
@@ -355,7 +358,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             }
             // Reset form and re-fetch book catalogs
             setFormData({
-                name: '',
+                bookName: '', // Changed from 'name' to 'bookName'
                 publication: publications[0]?._id || '',
                 subtitle: '',
                 language: languages[0]?._id || '',
@@ -382,8 +385,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     const handleEdit = (bookCatalogItem) => {
         console.log('Editing book catalog item:', bookCatalogItem); // DEBUG LOG
         // FIX: Ensure pricesByClass is converted correctly from a plain object (if it came that way)
-        // Object.entries() converts a plain object into an array of [key, value] pairs,
-        // which Object.fromEntries() can then use to create a new plain object.
         const pricesMap = bookCatalogItem.pricesByClass
             ? Object.fromEntries(Object.entries(bookCatalogItem.pricesByClass))
             : {};
@@ -391,7 +392,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         // Temporarily set publication and language first, then fetch subtitles
         setFormData(prev => ({
             ...prev,
-            name: bookCatalogItem.name,
+            bookName: bookCatalogItem.bookName, // Changed from 'name' to 'bookName'
             publication: bookCatalogItem.publication?._id || '',
             language: bookCatalogItem.language?._id || '',
             bookType: bookCatalogItem.bookType,
@@ -406,16 +407,13 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to form
 
         // Explicitly fetch subtitles for the selected publication, passing the current subtitle ID
-        // This ensures the subtitle dropdown is correctly populated and the correct subtitle is selected.
-        // This call will update the subtitle in formData once subtitles are fetched.
         fetchSubtitles(bookCatalogItem.publication?._id, bookCatalogItem.subtitle?._id);
         
         console.log('Set formData for editing. Publication:', bookCatalogItem.publication?._id, 'Subtitle:', bookCatalogItem.subtitle?._id); // DEBUG LOG
     };
 
-    const openConfirmModal = (bookCatalogItem) => {
-        setBookCatalogToDeleteId(bookCatalogItem._id);
-        setBookCatalogToDeleteName(bookCatalogItem.name);
+    const handleDeleteClick = (bookCatalogItem) => {
+        setBookToDelete(bookCatalogItem); 
         setShowConfirmModal(true);
     };
 
@@ -423,15 +421,18 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         setShowConfirmModal(false);
         setBookCatalogToDeleteId(null);
         setBookCatalogToDeleteName('');
+        setBookToDelete(null); 
     };
 
     const confirmDelete = async () => {
+        if (!bookToDelete) return; 
+
         setLoading(true);
         setLocalError(null);
         closeConfirmModal();
 
         try {
-            const response = await api.delete(`/book-catalogs/${bookCatalogToDeleteId}`);
+            const response = await api.delete(`/book-catalogs/${bookToDelete._id}`); 
             if (response.status === 204) {
                 showFlashMessage('Book Catalog deleted successfully!', 'success');
                 fetchBookCatalogs();
@@ -448,43 +449,70 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         }
     };
 
-    // --- Search Filtering ---
-    const filteredBookCatalogs = bookCatalogs.filter(bookCatalogItem =>
-        bookCatalogItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (bookCatalogItem.publication && bookCatalogItem.publication.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (bookCatalogItem.language && bookCatalogItem.language.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (bookCatalogItem.subtitle && bookCatalogItem.subtitle.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const cancelDelete = () => { 
+        setShowConfirmModal(false);
+        setBookToDelete(null); 
+        showFlashMessage('Deletion cancelled.', 'info');
+    };
 
-    // --- Pagination Logic ---
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentBookCatalogs = filteredBookCatalogs.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(filteredBookCatalogs.length / itemsPerPage);
+    const handleCancelEdit = () => {
+        setFormData({ 
+            bookName: '', publication: publications[0]?._id || '', subtitle: '', 
+            language: languages[0]?._id || '', bookType: 'default', commonPrice: 0, 
+            pricesByClass: {}, discountPercentage: 0, gstPercentage: 0, status: 'active' 
+        });
+        setEditingBookCatalogId(null);
+        setLocalError(null);
+    };
 
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    // Filtered and paginated data
+    const filteredBookCatalogs = useMemo(() => { 
+        const lowerCaseSearchTerm = searchTerm.toLowerCase();
+        return bookCatalogs.filter(bookCatalogItem => {
+            // Defensive checks for undefined properties before calling toLowerCase()
+            const bookName = bookCatalogItem.bookName || ''; 
+            const publicationName = bookCatalogItem.publication?.name || '';
+            const languageName = bookCatalogItem.language?.name || '';
+            const subtitleName = bookCatalogItem.subtitle?.name || '';
+            
+            return (
+                bookName.toLowerCase().includes(lowerCaseSearchTerm) ||
+                publicationName.toLowerCase().includes(lowerCaseSearchTerm) ||
+                languageName.toLowerCase().includes(lowerCaseSearchTerm) ||
+                subtitleName.toLowerCase().includes(lowerCaseSearchTerm)
+            );
+        });
+    }, [bookCatalogs, searchTerm]); 
 
-    const goToNextPage = () => {
-        if (currentPage < totalPages) {
-            setCurrentPage(prev => prev + 1);
+    const totalRecords = filteredBookCatalogs.length;
+    const totalPages = Math.ceil(totalRecords / itemsPerPage);
+
+    const paginatedItems = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return filteredBookCatalogs.slice(startIndex, endIndex);
+    }, [filteredBookCatalogs, currentPage, itemsPerPage]);
+
+    const handlePageChange = (page) => { 
+        if (page > 0 && page <= totalPages) {
+            setCurrentPage(page);
         }
     };
 
-    const goToPrevPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(prev => prev - 1);
-        }
+    const handleItemsPerPageChange = (e) => {
+        setItemsPerPage(Number(e.target.value));
+        setCurrentPage(1); // Reset to first page when items per page changes
     };
 
     // --- Format Price for Table Display ---
     const formatPriceDisplay = (bookCatalogItem) => {
         if (bookCatalogItem.bookType === 'common_price') {
-            return `₹${bookCatalogItem.commonPrice}`;
+            return `₹${bookCatalogItem.commonPrice?.toFixed(2) || '0.00'}`; 
         } else if (bookCatalogItem.bookType === 'default' && bookCatalogItem.pricesByClass) {
             const prices = Object.entries(bookCatalogItem.pricesByClass)
                 .map(([classId, price]) => {
                     const className = classes.find(c => c._id === classId)?.name;
-                    return className ? `₹${price} - ${className}` : `₹${price} - Unknown Class`;
+                    return className ? `₹${price?.toFixed(2) || '0.00'} - ${className}` : `₹${price?.toFixed(2) || '0.00'} - Unknown Class`; 
                 })
                 .join(', ');
             return prices || 'N/A';
@@ -517,22 +545,50 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         const tableRows = [];
 
         filteredBookCatalogs.forEach((bookItem, index) => {
+            const formattedPrice = typeof bookItem.commonPrice === 'number' && !isNaN(bookItem.commonPrice)
+                                   ? `Rs. ${bookItem.commonPrice.toFixed(2)}`
+                                   : 'N/A';
+
             const bookData = [
-                index + 1,
-                bookItem.name,
-                bookItem.publication ? bookItem.publication.name : 'N/A',
-                bookItem.subtitle ? bookItem.subtitle.name : 'N/A',
-                bookItem.language ? bookItem.language.name : 'N/A',
+                String(index + 1),
+                String(bookItem.bookName || '').trim(),
+                String(bookItem.publication?.name || bookItem.publication || '').trim(),
+                String(bookItem.subtitle?.name || bookItem.subtitle || '').trim(),
+                String(bookItem.language?.name || bookItem.language || '').trim(), // Ensure language is displayed
                 formatPriceDisplay(bookItem), // Formatted price
-                `${bookItem.discountPercentage}%`,
-                `${bookItem.gstPercentage}%`,
-                bookItem.createdAt ? formatDateWithTime(bookItem.createdAt) : 'N/A', // Added check for createdAt
-                bookItem.status.charAt(0).toUpperCase() + bookItem.status.slice(1)
+                `${bookItem.discountPercentage?.toFixed(2) || '0.00'}%`, // Add fallback for discount, format to 2 decimal places
+                `${bookItem.gstPercentage?.toFixed(2) || '0.00'}%`, // Add fallback for GST, format to 2 decimal places
+                bookItem.createdAt ? formatDateWithTime(bookItem.createdAt) : 'N/A', 
+                (bookItem.status?.charAt(0).toUpperCase() + bookItem.status?.slice(1)) || 'N/A'
             ];
             tableRows.push(bookData);
         });
 
-        doc.autoTable(tableColumn, tableRows, { startY: 20 });
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 20,
+            theme: 'grid',
+            styles: {
+                font: 'helvetica',
+                fontSize: 9,
+                cellPadding: 2,
+                overflow: 'linebreak',
+                halign: 'left',
+                valign: 'middle'
+            },
+            headStyles: {
+                fillColor: [230, 230, 230],
+                textColor: [0, 0, 0],
+                fontStyle: 'bold'
+            },
+            didDrawPage: function (data) {
+                let str = "Page " + doc.internal.getNumberOfPages();
+                doc.setFontSize(8);
+                doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
+            }
+        });
+        
         doc.save(`Book_Catalog_List_${new Date().toLocaleDateString()}.pdf`);
         showFlashMessage('Book Catalog list downloaded as PDF!', 'success');
     };
@@ -543,7 +599,9 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             <h2 className="section-title">Book Catalog Management</h2>
 
             {localError && (
-                <p className="error-message text-center">{localError}</p>
+                <p className="error-message text-center">
+                    <FaTimesCircle className="error-icon" /> {localError}
+                </p>
             )}
 
             {/* Book Catalog Creation/Update Form - This section is visually separated as a card */}
@@ -553,16 +611,17 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                     
                     <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="name">Book Name:</label>
+                            <label htmlFor="bookName">Book Name:</label>
                             <input
                                 type="text"
-                                id="name"
-                                name="name"
-                                value={formData.name}
+                                id="bookName"
+                                name="bookName"
+                                value={formData.bookName}
                                 onChange={handleChange}
                                 placeholder="e.g., Science Textbook"
                                 required
                                 disabled={loading}
+                                className="form-input"
                             />
                         </div>
                         <div className="form-group">
@@ -574,6 +633,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 onChange={handleChange}
                                 required
                                 disabled={loading || publications.length === 0}
+                                className="form-select"
                             >
                                 {publications.length === 0 ? (
                                     <option value="">Loading Publications...</option>
@@ -600,6 +660,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 value={formData.subtitle}
                                 onChange={handleChange}
                                 disabled={loading || !formData.publication || subtitles.length === 0}
+                                className="form-select"
                             >
                                 {subtitles.length === 0 ? (
                                     <option value="">-- SELECT -- (No Subtitles for selected Publication)</option>
@@ -623,6 +684,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 value={formData.language}
                                 onChange={handleChange}
                                 disabled={loading || languages.length === 0}
+                                className="form-select"
                             >
                                 {languages.length === 0 ? (
                                     <option value="">Loading Languages...</option>
@@ -669,49 +731,55 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
                     {formData.bookType === 'common_price' && (
                         <div className="form-group">
-                            <label htmlFor="commonPrice">Common Price:</label>
+                            <label htmlFor="commonPrice">Common Price (₹):</label>
                             <input
                                 type="number"
                                 id="commonPrice"
                                 name="commonPrice"
                                 value={formData.commonPrice}
                                 onChange={handleChange}
-                                placeholder="e.g., 250"
+                                placeholder="e.g., 150.00"
                                 min="0"
+                                step="0.01"
                                 required
                                 disabled={loading}
+                                className="form-input"
                             />
                         </div>
                     )}
 
                     {formData.bookType === 'default' && (
-                        <div className="prices-by-class-grid">
-                            <label className="grid-label">Prices by Class:</label>
-                            {classes.length === 0 ? (
-                                <p>Loading Classes for pricing...</p>
-                            ) : (
-                                classes.map(cls => (
-                                    <div className="form-group price-input-group" key={cls._id}>
-                                        <label htmlFor={`price_${cls._id}`}>Price of {cls.name}:</label>
-                                        <input
-                                            type="number"
-                                            id={`price_${cls._id}`}
-                                            name={`price_${cls._id}`}
-                                            value={formData.pricesByClass[cls._id] === undefined ? '' : formData.pricesByClass[cls._id]} // Cast to string for input value
-                                            onChange={handleChange}
-                                            placeholder="0"
-                                            min="0"
-                                            disabled={loading}
-                                        />
-                                    </div>
-                                ))
-                            )}
+                        <div className="prices-by-class-section">
+                            <h4 className="sub-section-title">Prices by Class:</h4>
+                            <div className="form-grid-3-cols"> {/* You might need to define this grid in your CSS */}
+                                {classes.length === 0 ? (
+                                    <p className="loading-state">Loading classes for prices...</p>
+                                ) : (
+                                    classes.map(_class => (
+                                        <div className="form-group" key={_class._id}>
+                                            <label htmlFor={`price_${_class._id}`}>{_class.name} Price:</label>
+                                            <input
+                                                type="number"
+                                                id={`price_${_class._id}`}
+                                                name={`price_${_class._id}`}
+                                                value={formData.pricesByClass[_class._id] || ''}
+                                                onChange={handleChange}
+                                                placeholder="e.g., 120.00"
+                                                min="0"
+                                                step="0.01"
+                                                disabled={loading}
+                                                className="form-input"
+                                            />
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     )}
 
                     <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="discountPercentage">Discount %:</label>
+                            <label htmlFor="discountPercentage">Discount Percentage (%):</label>
                             <input
                                 type="number"
                                 id="discountPercentage"
@@ -721,11 +789,13 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 placeholder="e.g., 10"
                                 min="0"
                                 max="100"
+                                step="0.01"
                                 disabled={loading}
+                                className="form-input"
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="gstPercentage">GST %:</label>
+                            <label htmlFor="gstPercentage">GST Percentage (%):</label>
                             <input
                                 type="number"
                                 id="gstPercentage"
@@ -735,7 +805,9 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 placeholder="e.g., 18"
                                 min="0"
                                 max="100"
+                                step="0.01"
                                 disabled={loading}
+                                className="form-input"
                             />
                         </div>
                     </div>
@@ -748,6 +820,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                             value={formData.status}
                             onChange={handleChange}
                             disabled={loading}
+                            className="form-select"
                         >
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -756,29 +829,13 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
                     <div className="form-actions">
                         <button type="submit" className="btn btn-primary" disabled={loading}>
-                            {loading ? (editingBookCatalogId ? 'Updating...' : 'Adding...') : (editingBookCatalogId ? 'Update Book Catalog' : 'Add Book Catalog')}
-                            <FaPlusCircle className="ml-2" />
+                            {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingBookCatalogId ? 'Update Book' : 'Add Book')}
                         </button>
                         {editingBookCatalogId && (
                             <button
                                 type="button"
-                                className="btn btn-secondary"
-                                onClick={() => {
-                                    setEditingBookCatalogId(null);
-                                    setFormData({
-                                        name: '',
-                                        publication: publications[0]?._id || '',
-                                        subtitle: '',
-                                        language: languages[0]?._id || '',
-                                        bookType: 'default',
-                                        commonPrice: 0,
-                                        pricesByClass: {},
-                                        discountPercentage: 0,
-                                        gstPercentage: 0,
-                                        status: 'active',
-                                    });
-                                    setLocalError(null);
-                                }}
+                                className="btn btn-secondary ml-2"
+                                onClick={handleCancelEdit} 
                                 disabled={loading}
                             >
                                 Cancel Edit
@@ -788,39 +845,44 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 </form>
             </div>
 
-            {/* Book Catalog List Table - This section is also visually separated as a card/table container */}
-            <div className="table-container">
+            {/* Book Catalog List Table */}
+            <div className="table-section">
                 <h3 className="table-title">Existing Book Catalogs</h3>
 
-                {/* Search and PDF Download Section */}
                 <div className="table-controls">
                     <div className="search-input-group">
                         <input
                             type="text"
-                            placeholder="Search by Name, Publication, Language, Subtitle..."
+                            placeholder="Search books..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1);
+                            }}
                             className="search-input"
+                            disabled={loading}
                         />
                         <FaSearch className="search-icon" />
                     </div>
-                    <button onClick={downloadPdf} className="btn btn-info download-pdf-btn">
-                        <FaFilePdf className="mr-2" /> Download PDF
+                    <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredBookCatalogs.length === 0}>
+                        <FaFilePdf className="btn-icon-mr" /> Download PDF
                     </button>
                 </div>
 
                 {loading && bookCatalogs.length === 0 ? (
-                    <p className="loading-state">Loading book catalogs...</p>
+                    <p className="loading-state text-center">
+                        <FaSpinner className="animate-spin mr-2" /> Loading book catalogs...
+                    </p>
                 ) : filteredBookCatalogs.length === 0 ? (
-                    <p className="no-data-message">No book catalogs found matching your criteria. Start by adding one!</p>
+                    <p className="no-data-message text-center">No book catalogs found matching your criteria. Start by adding one!</p>
                 ) : (
-                    <>
+                    <div className="table-container">
                         <table className="data-table">
                             <thead>
                                 <tr>
                                     <th>S.No.</th>
-                                    <th>Name</th>
-                                    <th>Publisher</th>
+                                    <th>Book Name</th>
+                                    <th>Publication</th>
                                     <th>Subtitle</th>
                                     <th>Language</th>
                                     <th>Price</th>
@@ -831,26 +893,26 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                     <th>Action</th>
                                 </tr>
                             </thead>
-                            <tbody ref={tableBodyRef}>
-                                {currentBookCatalogs.map((bookItem, index) => (
-                                    <tr key={bookItem._id}>
+                            <tbody>
+                                {paginatedItems.map((book, index) => ( // Changed to paginatedItems
+                                    <tr key={book._id}>
                                         <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td>{bookItem.name}</td>
-                                        <td>{bookItem.publication ? bookItem.publication.name : 'N/A'}</td>
-                                        <td>{bookItem.subtitle ? bookItem.subtitle.name : 'N/A'}</td>
-                                        <td>{bookItem.language ? bookItem.language.name : 'N/A'}</td>
-                                        <td>{formatPriceDisplay(bookItem)}</td>
-                                        <td>{bookItem.discountPercentage}%</td>
-                                        <td>{bookItem.gstPercentage}%</td>
-                                        <td>{bookItem.createdAt ? formatDateWithTime(bookItem.createdAt) : 'N/A'}</td>
+                                        <td>{book.bookName}</td>
+                                        <td>{book.publication?.name || 'N/A'}</td>
+                                        <td>{book.subtitle?.name || 'N/A'}</td>
+                                        <td>{book.language?.name || 'N/A'}</td> 
+                                        <td>{formatPriceDisplay(book)}</td>
+                                        <td>{book.discountPercentage?.toFixed(2) || '0.00'}%</td>
+                                        <td>{book.gstPercentage?.toFixed(2) || '0.00'}%</td>
+                                        <td>{formatDateWithTime(book.createdAt)}</td>
                                         <td>
-                                            <span className={`status-badge ${bookItem.status}`}>
-                                                {bookItem.status.charAt(0).toUpperCase() + bookItem.status.slice(1)}
+                                            <span className={`status-badge ${book.status}`}>
+                                                {book.status.charAt(0).toUpperCase() + book.status.slice(1)}
                                             </span>
                                         </td>
                                         <td className="actions-column">
                                             <button
-                                                onClick={() => handleEdit(bookItem)}
+                                                onClick={() => handleEdit(book)}
                                                 className="action-icon-button edit-button"
                                                 title="Edit Book Catalog"
                                                 disabled={loading}
@@ -858,12 +920,12 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                                 <FaEdit />
                                             </button>
                                             <button
-                                                onClick={() => openConfirmModal(bookItem)}
+                                                onClick={() => handleDeleteClick(book)}
                                                 className="action-icon-button delete-button"
                                                 title="Delete Book Catalog"
                                                 disabled={loading}
                                             >
-                                                <FaTrashAlt />
+                                                {loading && bookToDelete?._id === book._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
                                             </button>
                                         </td>
                                     </tr>
@@ -874,28 +936,33 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                         {/* Pagination Controls */}
                         {totalPages > 1 && (
                             <div className="pagination-controls">
-                                <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
-                                    <FaChevronLeft /> Previous
+                                <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1 || loading} className="btn btn-page">
+                                    <FaChevronLeft className="btn-icon-mr" /> Previous
                                 </button>
                                 <span>Page {currentPage} of {totalPages}</span>
-                                <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
-                                    Next <FaChevronRight />
+                                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || loading} className="btn btn-page">
+                                    Next <FaChevronRight className="btn-icon-ml" />
                                 </button>
                             </div>
                         )}
-                    </>
+                        <div className="total-records text-center mt-2">
+                            Total Records: {filteredBookCatalogs.length}
+                        </div>
+                    </div>
                 )}
             </div>
 
             {/* Confirmation Modal */}
-            {showConfirmModal && (
+            {showConfirmModal && bookToDelete && (
                 <div className="modal-backdrop">
                     <div className="modal-content">
                         <h3>Confirm Deletion</h3>
-                        <p>Are you sure you want to delete book catalog: <strong>{bookCatalogToDeleteName}</strong>?</p>
+                        <p>Are you sure you want to delete book: <strong>{bookToDelete.bookName}</strong>?</p>
                         <div className="modal-actions">
-                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>Delete</button>
-                            <button onClick={closeConfirmModal} className="btn btn-secondary" disabled={loading}>Cancel</button>
+                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Delete'}
+                            </button>
+                            <button onClick={cancelDelete} className="btn btn-secondary" disabled={loading}>Cancel</button>
                         </div>
                     </div>
                 </div>

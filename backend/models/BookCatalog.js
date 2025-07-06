@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 
 const BookCatalogSchema = new mongoose.Schema({
-    name: {
+    bookName: { // Changed from 'name' to 'bookName' for consistency with frontend
         type: String,
         required: [true, 'Book name is required'],
         trim: true,
@@ -39,15 +39,10 @@ const BookCatalogSchema = new mongoose.Schema({
         }
     },
     // Using a Mixed type for dynamic class prices.
-    // It's generally better to define a strict schema if possible,
-    // but for dynamic keys like class names, Mixed is an option.
-    // A better approach for strictness would be an array of objects:
-    // pricesByClass: [{ class: String, price: Number }]
-    // For now, we'll use a Map to match the dynamic keys.
     pricesByClass: {
         type: Map,
         of: Number, // Values in the map will be Numbers
-        default: {},
+        default: {}, // Ensure it defaults to an empty object/map
         // Required only if bookType is 'default'
         required: function() {
             return this.bookType === 'default';
@@ -56,7 +51,13 @@ const BookCatalogSchema = new mongoose.Schema({
             validator: function(v) {
                 // If bookType is 'default', ensure at least one price is provided
                 if (this.bookType === 'default') {
-                    return Object.keys(v).length > 0;
+                    // Check if it's a Map and has entries, or if it's a plain object with keys
+                    if (v instanceof Map) {
+                        return v.size > 0;
+                    } else if (typeof v === 'object' && v !== null) {
+                        return Object.keys(v).length > 0;
+                    }
+                    return false; // Not a Map or a valid object
                 }
                 return true;
             },
@@ -84,7 +85,30 @@ const BookCatalogSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     }
+}, {
+    // Ensure virtuals are included when converting to JSON/Object
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
+
+// Virtual property for 'price' to simplify frontend consumption
+BookCatalogSchema.virtual('price').get(function() {
+    if (this.bookType === 'common_price') {
+        return this.commonPrice;
+    }
+    // For 'default' type, return the first price found in pricesByClass or 0
+    if (this.bookType === 'default' && this.pricesByClass) {
+        let prices = [];
+        if (this.pricesByClass instanceof Map) {
+            prices = Array.from(this.pricesByClass.values());
+        } else if (typeof this.pricesByClass === 'object' && this.pricesByClass !== null) {
+            prices = Object.values(this.pricesByClass);
+        }
+        return prices.length > 0 ? prices[0] : 0; // Return the first price or 0
+    }
+    return 0; // Default to 0 if bookType is not common_price or pricesByClass is not valid
+});
+
 
 // Pre-find hook to populate referenced fields
 BookCatalogSchema.pre(/^find/, function(next) {
@@ -103,9 +127,8 @@ BookCatalogSchema.pre(/^find/, function(next) {
     next();
 });
 
-// Add a unique compound index for name, publication, and subtitle to prevent duplicates
-// This ensures a book with the same name and subtitle cannot exist under the same publication.
-BookCatalogSchema.index({ name: 1, publication: 1, subtitle: 1 }, { unique: true });
+// Add a unique compound index for bookName, publication, and subtitle to prevent duplicates
+BookCatalogSchema.index({ bookName: 1, publication: 1, subtitle: 1 }, { unique: true });
 
 
 const BookCatalog = mongoose.model('BookCatalog', BookCatalogSchema);

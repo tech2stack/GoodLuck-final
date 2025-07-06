@@ -1,4 +1,5 @@
 // src/App.js
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
@@ -9,7 +10,7 @@ import ScrollToTop from './components/ScrollTop';
 import ScrollTopButton from "./components/ScrollTopButton";
 import Preloader from './components/Preloader';
 import ErrorBoundary from './components/ErrorBoundary';
-import FlashMessage from './components/FlashMessage'; // Corrected import path
+import FlashMessage from './components/FlashMessage'; 
 
 import Home from './pages/Home';
 import About from './pages/About';
@@ -25,6 +26,25 @@ import StockManagerDashboard from './pages/StockManagerDashboard';
 // Reports components (assuming these paths are correct in your project)
 import OverallReportsComponent from './components/reports/OverallReportsComponent';
 import BranchOverviewReport from './components/reports/BranchOverviewReport';
+
+// CORRECTED Imports for ALL Master Components (based on your provided file list)
+// These components are assumed to be in 'src/components/masters/'
+import BookCatalogManagement from './components/masters/BookCatalogManagement';
+import CityManagement from './components/masters/CityManagement';             
+import ClassManagement from './components/masters/ClassManagement';           
+import CreateSetManagement from './components/masters/CreateSetManagement';   
+import CustomerManagement from './components/masters/CustomerManagement';     
+import LanguageManagement from './components/masters/LanguageManagement';     
+import PublicationManagement from './components/masters/PublicationManagement'; 
+import StationeryItemManagement from './components/masters/StationeryItemManagement'; 
+import TransportManagement from './components/masters/TransportManagement';   
+import ZoneManagement from './components/masters/ZoneManagement';             
+
+// SubtitleManagement import is REMOVED for now as it was not found in your provided file list.
+// Please provide the correct filename/path for your Subtitle component.
+
+import PendingBookManagement from './components/PendingBookManagement'; // Confirmed path
+
 
 // A PrivateRoute component to protect routes based on user role
 const PrivateRoute = ({ children, allowedRoles }) => {
@@ -61,7 +81,7 @@ const RoleBasedRedirect = () => {
     // Show a loading message while user data is being fetched/determined
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-screen bg-gray-100">
+            <div className="flex justify-center items- D:\GoodLuck-Main\frontend\src\components\masters\SubtitleManagement.jsxcenter h-screen bg-gray-100">
                 <p className="text-xl text-gray-700">Determining user role for redirection...</p>
             </div>
         );
@@ -166,6 +186,8 @@ function App() {
                     />
 
                     <div className="main-content">
+                        {/* Sidebar is likely a separate component rendered globally or within the main layout */}
+                        {/* <Sidebar /> */} 
                         <Routes>
                             {/* Public Routes */}
                             <Route path="/" element={<Home />} />
@@ -203,9 +225,28 @@ function App() {
                                 }
                             />
 
+                            {/* Masters Routes - All paths and component names corrected based on your provided list */}
+                            <Route path="/customer-management" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><CustomerManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
+                            <Route path="/class-management" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><ClassManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
+                            <Route path="/book-catalog-management" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><BookCatalogManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
+                            <Route path="/publication-management" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><PublicationManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
+                            {/* SubtitleManagement route is REMOVED for now. Add it back once the correct filename is confirmed. */}
+                            <Route path="/stationery-item-management" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><StationeryItemManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
+                            <Route path="/create-set" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><CreateSetManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
+                            
+                            {/* New Master Routes based on your provided list */}
+                            <Route path="/city-management" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><CityManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
+                            <Route path="/language-management" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><LanguageManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
+                            <Route path="/transport-management" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><TransportManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
+                            <Route path="/zone-management" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><ZoneManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
+
+
                             {/* Reports Routes - showFlashMessage prop is passed */}
-                            <Route path="/reports/overall" element={<OverallReportsComponent showFlashMessage={showFlashMessage} />} />
-                            <Route path="/reports/branch-overview" element={<BranchOverviewReport showFlashMessage={showFlashMessage} />} />
+                            <Route path="/reports/overall" element={<PrivateRoute allowedRoles={['super_admin', 'branch_admin', 'stock_manager']}><OverallReportsComponent showFlashMessage={showFlashMessage} /></PrivateRoute>} />
+                            <Route path="/reports/branch-overview" element={<PrivateRoute allowedRoles={['super_admin', 'branch_admin', 'stock_manager']}><BranchOverviewReport showFlashMessage={showFlashMessage} /></PrivateRoute>} />
+
+                            {/* NEW Route for Pending Book Management */}
+                            <Route path="/pending-books" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><PendingBookManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
 
                             {/* Default fallback route: Redirects users based on their role after login */}
                             <Route path="*" element={<RoleBasedRedirect />} />

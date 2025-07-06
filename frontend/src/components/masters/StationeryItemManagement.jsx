@@ -1,7 +1,7 @@
 // src/components/masters/StationeryItemManagement.jsx
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import api from '../../utils/api'; // API utility for backend calls
-import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight } from 'react-icons/fa'; // Icons for UI
+import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaSpinner, FaTimesCircle } from 'react-icons/fa'; // Icons for UI
 
 // Stylesheets (assuming these are already present and styled for consistency)
 import '../../styles/Form.css';
@@ -20,7 +20,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
     const [stationeryItems, setStationeryItems] = useState([]);
     // State for form inputs (for creating new or editing existing stationery item)
     const [formData, setFormData] = useState({
-        name: '',
+        itemName: '', // Changed from 'name' to 'itemName' to match backend expectation
         price: '', // Use empty string for number input to allow clearing
         status: 'active', // Default status
     });
@@ -34,7 +34,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
     // States for confirmation modal
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [itemToDeleteId, setItemToDeleteId] = useState(null);
-    const [itemToDeleteName, setItemToDeleteName] = useState(''); // Corrected initialization
+    const [itemToDeleteName, setItemToDeleteName] = useState('');
 
     // Ref for scrolling to the new item in the table (if needed)
     const tableBodyRef = useRef(null);
@@ -49,6 +49,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
 
     // --- Helper function for date formatting ---
     const formatDateWithTime = (dateString) => {
+        if (!dateString) return 'N/A';
         const options = {
             year: 'numeric',
             month: 'long',
@@ -83,11 +84,11 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                         if (currentPage !== lastPageIndex) {
                            setCurrentPage(lastPageIndex);
                            setTimeout(() => {
-                                if (tableBodyRef.current.lastElementChild) {
-                                    tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                } else {
-                                    tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                                }
+                               if (tableBodyRef.current.lastElementChild) {
+                                   tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                               } else {
+                                   tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
+                               }
                            }, 50);
                         } else {
                             if (tableBodyRef.current.lastElementChild) {
@@ -107,7 +108,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, itemsPerPage]);
+    }, [currentPage, itemsPerPage, showFlashMessage]);
 
     // Fetch stationery items on component mount
     useEffect(() => {
@@ -142,7 +143,8 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         setLocalError(null);
 
         // Basic validation
-        if (!formData.name || formData.price === '' || formData.price === null || isNaN(formData.price)) {
+        // Changed formData.name to formData.itemName
+        if (!formData.itemName || formData.price === '' || formData.price === null || isNaN(formData.price)) {
             setLocalError('Please fill in all required fields (Item Name, Price). Price must be a valid number.');
             showFlashMessage('Please fill in all required fields.', 'error');
             setLoading(false);
@@ -158,7 +160,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         try {
             let response;
             const dataToSend = {
-                name: formData.name,
+                itemName: formData.itemName, // Changed from formData.name to formData.itemName
                 price: parseFloat(formData.price), // Ensure price is sent as a number
                 status: formData.status
             };
@@ -181,7 +183,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                 }
             }
             // Reset form and re-fetch stationery items
-            setFormData({ name: '', price: '', status: 'active' });
+            setFormData({ itemName: '', price: '', status: 'active' }); // Changed name to itemName
             setEditingItemId(null);
             fetchStationeryItems(true); // Re-fetch and indicate to scroll
         } catch (err) {
@@ -196,7 +198,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
 
     // --- Edit and Delete Operations ---
     const handleEdit = (item) => {
-        setFormData({ name: item.name, price: item.price, status: item.status });
+        setFormData({ itemName: item.itemName, price: item.price, status: item.status }); // Changed name to itemName
         setEditingItemId(item._id);
         setLocalError(null);
         window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to form
@@ -204,7 +206,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
 
     const openConfirmModal = (item) => {
         setItemToDeleteId(item._id);
-        setItemToDeleteName(item.name);
+        setItemToDeleteName(item.itemName); // Changed item.name to item.itemName
         setShowConfirmModal(true);
     };
 
@@ -217,11 +219,11 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
     const confirmDelete = async () => {
         setLoading(true);
         setLocalError(null);
-        closeConfirmModal();
+        closeConfirmModal(); // Close modal immediately
 
         try {
             const response = await api.delete(`/stationery-items/${itemToDeleteId}`);
-            if (response.status === 204) {
+            if (response.status === 204) { // 204 No Content is common for successful DELETE
                 showFlashMessage('Stationery Item deleted successfully!', 'success');
                 fetchStationeryItems();
             } else {
@@ -238,9 +240,22 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
     };
 
     // --- Search Filtering ---
-    const filteredItems = stationeryItems.filter(item =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredItems = useMemo(() => {
+        const lowercasedSearchTerm = searchTerm.toLowerCase();
+        return stationeryItems.filter(item => {
+            // Safely access properties and convert to string before toLowerCase()
+            // Changed item.name to item.itemName
+            const itemName = item.itemName ? String(item.itemName).toLowerCase() : ''; 
+            const price = item.price !== undefined && item.price !== null ? String(item.price).toLowerCase() : '';
+            const status = item.status ? String(item.status).toLowerCase() : '';
+
+            return (
+                itemName.includes(lowercasedSearchTerm) ||
+                price.includes(lowercasedSearchTerm) ||
+                status.includes(lowercasedSearchTerm)
+            );
+        });
+    }, [stationeryItems, searchTerm]);
 
     // --- Pagination Logic ---
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -248,7 +263,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
     const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
 
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    // const paginate = (pageNumber) => setCurrentPage(pageNumber); // This function is not used directly in buttons, but good to keep
 
     const goToNextPage = () => {
         if (currentPage < totalPages) {
@@ -281,21 +296,19 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         doc.text("Stationery Item List", 14, 15);
 
         // Define table columns explicitly. This is what should appear in the header.
-        // Changed "Price (₹)" to "Price (Rs.)" for better compatibility
         const tableColumn = ["S.No.", "Item Name", "Price (Rs.)", "Add Date", "Status"];
         const tableRows = [];
 
         filteredItems.forEach((item, index) => {
             // Ensure item.price is a valid number before formatting
             const formattedPrice = typeof item.price === 'number' && !isNaN(item.price)
-                                   ? `Rs. ${item.price.toFixed(2)}` // Changed ₹ to Rs.
-                                   : 'N/A'; // Display 'N/A' if price is not a valid number
+                                   ? `Rs. ${item.price.toFixed(2)}` 
+                                   : 'N/A'; 
 
             // Explicitly convert all data points to string and trim any leading/trailing whitespace
-            // This helps prevent unexpected characters or newlines from appearing in PDF cells.
             const itemData = [
-                String((currentPage - 1) * itemsPerPage + index + 1), // S.No.
-                String(item.name || '').trim(), // Item Name
+                String(index + 1), // S.No. (relative to filtered list, not current page)
+                String(item.itemName || '').trim(), // Changed item.name to item.itemName
                 formattedPrice, // Formatted Price
                 formatDateWithTime(item.createdAt), // Add Date
                 String(item.status || '').trim().charAt(0).toUpperCase() + String(item.status || '').trim().slice(1) // Status
@@ -303,13 +316,31 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
             tableRows.push(itemData);
         });
 
-        // Debugging: Log the exact columns and rows being passed to autoTable
-        console.log("PDF Table Columns for autoTable:", tableColumn);
-        console.log("PDF Table Rows for autoTable (first 5 rows):", tableRows.slice(0, 5));
-        console.log("If 'Price (1)' appears in the PDF header despite 'Price (Rs.)' in console, clear browser cache (Ctrl+Shift+R or Cmd+Shift+R) and restart frontend server.");
-
-
-        doc.autoTable(tableColumn, tableRows, { startY: 20 });
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 20,
+            theme: 'grid',
+            styles: {
+                font: 'helvetica',
+                fontSize: 9,
+                cellPadding: 2,
+                overflow: 'linebreak',
+                halign: 'left',
+                valign: 'middle'
+            },
+            headStyles: {
+                fillColor: [230, 230, 230],
+                textColor: [0, 0, 0],
+                fontStyle: 'bold'
+            },
+            didDrawPage: function (data) {
+                let str = "Page " + doc.internal.getNumberOfPages();
+                doc.setFontSize(8);
+                doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
+            }
+        });
+        
         doc.save(`Stationery_Item_List_${new Date().toLocaleDateString()}.pdf`);
         showFlashMessage('Stationery Item list downloaded as PDF!', 'success');
     };
@@ -320,7 +351,9 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
             <h2 className="section-title">Stationery Item Management</h2>
 
             {localError && (
-                <p className="error-message text-center">{localError}</p>
+                <p className="error-message text-center">
+                    <FaTimesCircle className="error-icon" /> {localError}
+                </p>
             )}
 
             {/* Stationery Item Creation/Update Form */}
@@ -329,16 +362,17 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                     <h3 className="form-title">{editingItemId ? 'Edit Stationery Item' : 'Add New Stationery Item'}</h3>
                     
                     <div className="form-group">
-                        <label htmlFor="name">Item's Name:</label>
+                        <label htmlFor="itemName">Item's Name:</label> {/* Changed htmlFor to itemName */}
                         <input
                             type="text"
-                            id="name"
-                            name="name"
-                            value={formData.name}
+                            id="itemName" // Changed id to itemName
+                            name="itemName" // Changed name to itemName
+                            value={formData.itemName} // Changed formData.name to formData.itemName
                             onChange={handleChange}
                             placeholder="e.g., Pencil, Notebook, School Bag"
                             required
                             disabled={loading}
+                            className="form-input"
                         />
                     </div>
 
@@ -355,6 +389,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                             step="0.01" // Allow decimal values for price
                             required
                             disabled={loading}
+                            className="form-input"
                         />
                     </div>
 
@@ -366,6 +401,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                             value={formData.status}
                             onChange={handleChange}
                             disabled={loading}
+                            className="form-select"
                         >
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -374,16 +410,15 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
 
                     <div className="form-actions">
                         <button type="submit" className="btn btn-primary" disabled={loading}>
-                            {loading ? (editingItemId ? 'Updating...' : 'Adding...') : (editingItemId ? 'Update Item' : 'Add Item')}
-                            <FaPlusCircle className="ml-2" />
+                            {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingItemId ? 'Update Item' : 'Add Item')}
                         </button>
                         {editingItemId && (
                             <button
                                 type="button"
-                                className="btn btn-secondary"
+                                className="btn btn-secondary ml-2"
                                 onClick={() => {
                                     setEditingItemId(null);
-                                    setFormData({ name: '', price: '', status: 'active' });
+                                    setFormData({ itemName: '', price: '', status: 'active' }); // Changed name to itemName
                                     setLocalError(null);
                                 }}
                                 disabled={loading}
@@ -397,7 +432,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
 
             {/* Stationery Item List Table */}
             <div className="table-container">
-                <h3 className="table-title">Stationery Items Management</h3>
+                <h3 className="table-title">Existing Stationery Items</h3>
 
                 {/* Search and PDF Download Section */}
                 <div className="table-controls">
@@ -406,27 +441,33 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                             type="text"
                             placeholder="Search by Item Name..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1); // Reset to first page on search
+                            }}
                             className="search-input"
+                            disabled={loading}
                         />
                         <FaSearch className="search-icon" />
                     </div>
-                    <button onClick={downloadPdf} className="btn btn-info download-pdf-btn">
-                        <FaFilePdf className="mr-2" /> Download PDF
+                    <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredItems.length === 0}>
+                        <FaFilePdf className="btn-icon-mr" /> Download PDF
                     </button>
                 </div>
 
                 {loading && stationeryItems.length === 0 ? (
-                    <p className="loading-state">Loading stationery items...</p>
+                    <p className="loading-state text-center">
+                        <FaSpinner className="animate-spin mr-2" /> Loading stationery items...
+                    </p>
                 ) : filteredItems.length === 0 ? (
-                    <p className="no-data-message">No stationery items found matching your criteria. Start by adding one!</p>
+                    <p className="no-data-message text-center">No stationery items found matching your criteria. Start by adding one!</p>
                 ) : (
                     <>
                         <table className="data-table">
                             <thead>
                                 <tr>
                                     <th>S.No.</th>
-                                    <th>Name</th>
+                                    <th>Item Name</th> {/* Changed from Name to Item Name */}
                                     <th>Price</th>
                                     <th>Add Date</th>
                                     <th>Status</th>
@@ -435,15 +476,16 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                             </thead>
                             <tbody ref={tableBodyRef}>
                                 {currentItems.map((item, index) => (
+                                    // Removed potential whitespace causing hydration error
                                     <tr key={item._id}>
                                         <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td>{item.name}</td>
+                                        <td>{item.itemName}</td> {/* Changed item.name to item.itemName */}
                                         <td>
                                             {typeof item.price === 'number' && !isNaN(item.price)
                                                 ? `₹ ${item.price.toFixed(2)}`
                                                 : 'N/A'
                                             }
-                                        </td> {/* Display price formatted */}
+                                        </td>
                                         <td>{formatDateWithTime(item.createdAt)}</td>
                                         <td>
                                             <span className={`status-badge ${item.status}`}>
@@ -455,6 +497,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                                                 onClick={() => handleEdit(item)}
                                                 className="action-icon-button edit-button"
                                                 title="Edit Stationery Item"
+                                                disabled={loading}
                                             >
                                                 <FaEdit />
                                             </button>
@@ -462,8 +505,9 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                                                 onClick={() => openConfirmModal(item)}
                                                 className="action-icon-button delete-button"
                                                 title="Delete Stationery Item"
+                                                disabled={loading}
                                             >
-                                                <FaTrashAlt />
+                                                {loading && itemToDeleteId === item._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
                                             </button>
                                         </td>
                                     </tr>
@@ -475,14 +519,17 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                         {totalPages > 1 && (
                             <div className="pagination-controls">
                                 <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
-                                    <FaChevronLeft /> Previous
+                                    <FaChevronLeft className="btn-icon-mr" /> Previous
                                 </button>
                                 <span>Page {currentPage} of {totalPages}</span>
                                 <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
-                                    Next <FaChevronRight />
+                                    Next <FaChevronRight className="btn-icon-ml" />
                                 </button>
                             </div>
                         )}
+                        <div className="total-records text-center mt-2">
+                            Total Records: {filteredItems.length}
+                        </div>
                     </>
                 )}
             </div>
@@ -494,7 +541,9 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                         <h3>Confirm Deletion</h3>
                         <p>Are you sure you want to delete stationery item: <strong>{itemToDeleteName}</strong>?</p>
                         <div className="modal-actions">
-                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>Delete</button>
+                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Delete'}
+                            </button>
                             <button onClick={closeConfirmModal} className="btn btn-secondary" disabled={loading}>Cancel</button>
                         </div>
                     </div>
