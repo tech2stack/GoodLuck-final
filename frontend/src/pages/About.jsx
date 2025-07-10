@@ -3,7 +3,7 @@ import styled from "styled-components";
 import background from "../assets/bgImg.png"; // Use your actual image here
 import shopImg from '../assets/shopImg.jpg';
 
-// Import the LazyImage component
+// Import kr diya hai 
 import LazyImage from '../components/LazyImage'; 
 
 const PageWrapper = styled.div`
