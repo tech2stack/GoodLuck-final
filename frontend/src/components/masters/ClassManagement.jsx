@@ -1,13 +1,21 @@
 // src/components/masters/ClassManagement.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import api from '../../utils/api'; // Corrected API import path
+import api from '../../utils/api';
 import FlashMessage from '../FlashMessage'; // Assuming FlashMessage is directly under src/components
-import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight } from 'react-icons/fa'; // Icons for actions and new features
+import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
-// Stylesheets
-import '../../styles/Form.css'; // For form styling
-import '../../styles/Table.css'; // For table styling
-import '../../styles/Modal.css'; // For modal styling
+// Import new common components
+import PageLayout from '../common/PageLayout';
+import TableSection from '../common/TableSection';
+import FormSection from '../common/FormSection';
+import ConfirmationModal from '../common/ConfirmationModal';
+
+// Stylesheets (generic ones for elements, specific for layout overrides)
+import '../../styles/Form.css'; // Generic form styles
+import '../../styles/Table.css'; // Generic table styles
+import '../../styles/Modal.css'; // Generic modal styles
+import '../../styles/ClassManagement.css'; // Component-specific layout overrides
+import '../../styles/CommonLayout.css'; // Ensure CommonLayout is imported
 
 // Import the logo image directly
 import companyLogo from '../../assets/glbs-logo.jpg'; 
@@ -37,7 +45,8 @@ const ClassManagement = ({ showFlashMessage }) => {
     // States for confirmation modal
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [classToDeleteId, setClassToDeleteId] = useState(null);
-    const [classToDeleteName, setClassToDeleteName] = useState('');
+    // FIX: Correctly initialize setClassToDeleteName with useState
+    const [classToDeleteName, setClassToDeleteName] = useState(''); 
 
     // Ref for scrolling to the new item in the table
     const tableBodyRef = useRef(null);
@@ -90,11 +99,11 @@ const ClassManagement = ({ showFlashMessage }) => {
                            setCurrentPage(lastPageIndex); // Move to the page where the new item exists
                            // Set a second timeout to scroll AFTER the page has potentially changed
                            setTimeout(() => {
-                                if (tableBodyRef.current.lastElementChild) {
-                                    tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                } else {
-                                    tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                                }
+                               if (tableBodyRef.current.lastElementChild) {
+                                   tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                               } else {
+                                   tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
+                               }
                            }, 50); // Small delay after page change
                         } else {
                             if (tableBodyRef.current.lastElementChild) {
@@ -184,7 +193,7 @@ const ClassManagement = ({ showFlashMessage }) => {
     // Function to open confirmation modal
     const openConfirmModal = (classItem) => {
         setClassToDeleteId(classItem._id);
-        setClassToDeleteName(classItem.name);
+        setClassToDeleteName(classItem.name); // This will now correctly call the state setter
         setShowConfirmModal(true);
     };
 
@@ -262,28 +271,35 @@ const ClassManagement = ({ showFlashMessage }) => {
         }
 
         // 3. **Define Company Details:**
-        const companyName = "GoodLuck Bharat Schools"; // Full company name for display
+        const companyName = "GOOD LUCK BOOK STORE"; // Full company name for display
+        const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
+        const companyMobile = "Mobile Number: 7024136476";
+        const companyGST = "GST NO: 23EAVPP3772F1Z8";
         const companyLogoUrl = companyLogo; // Use the imported logo directly
         
-        let startYPosition = 45; // A dynamic starting Y position for the table.
-
-        // 4. **Function to Add Header and Content:**
-        const addHeaderAndContent = () => {
-            // Add a professional title
-            doc.setFontSize(22);
+        // Function to generate the main report content (title, line, table, save)
+        // This function now accepts the dynamic startYPositionForTable as an argument
+        const generateReportBody = (startYPositionForTable) => {
+            // Add a professional report title (centered, below company info)
+            doc.setFontSize(18);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30); // Dark gray for title
-            doc.text("Class List Report", doc.internal.pageSize.width / 2, 30, { align: 'center' }); // Centered title
+            // Adjust Y position for the report title to be below company info
+            doc.text("Class List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
 
             // Add a line separator below the main title
             doc.setLineWidth(0.5);
-            doc.line(14, 35, doc.internal.pageSize.width - 14, 35); // Line spanning almost full width
+            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15); // Line spanning almost full width
+
+            // Update startYPositionForTable for autoTable
+            const tableStartY = startYPositionForTable + 20;
+
 
             // Generate table data
             const tableColumn = ["S.No.", "Class Name", "Status", "Add Date"];
             const tableRows = filteredClasses.map((classItem, index) => [
-                // CORRECTED: Ensure S.No. is always index + 1
-                (currentPage - 1) * itemsPerPage + index + 1, // Corrected S.No. to reflect current page and index
+                // S.No. is always index + 1 for the filtered data for PDF
+                index + 1, 
                 classItem.name,
                 classItem.status.charAt(0).toUpperCase() + classItem.status.slice(1),
                 formatDateWithTime(classItem.createdAt)
@@ -293,23 +309,28 @@ const ClassManagement = ({ showFlashMessage }) => {
             doc.autoTable({
                 head: [tableColumn],
                 body: tableRows,
-                startY: startYPosition, // Use our dynamic start position
-                theme: 'striped',
+                startY: tableStartY, // Use our dynamic start position
+                theme: 'plain', // Changed to 'plain' for a cleaner look like the reference PDF
                 styles: {
                     font: 'helvetica',
                     fontSize: 10,
                     cellPadding: 3,
                     textColor: [51, 51, 51], // Default text color for body
+                    valign: 'middle',
+                    halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [23, 162, 184], // A nice cyan-like color for the header
-                    textColor: [255, 255, 255], // White text for header
+                    fillColor: [240, 240, 240], // Light gray header
+                    textColor: [51, 51, 51], // Dark text for header
                     fontStyle: 'bold',
                     halign: 'center', // Center align header text
-                    valign: 'middle' // Vertically align header text
+                    valign: 'middle', // Vertically align header text
+                    lineWidth: 0.1, // Add a thin border to header cells
+                    lineColor: [200, 200, 200] // Light gray border
                 },
                 bodyStyles: {
-                    // No need to repeat textColor if defined in general styles, but can override here
+                    lineWidth: 0.1, // Add a thin border to body cells
+                    lineColor: [200, 200, 200] // Light gray border
                 },
                 columnStyles: {
                     0: { cellWidth: 15, halign: 'center' }, // S.No. column: narrow and centered
@@ -343,199 +364,177 @@ const ClassManagement = ({ showFlashMessage }) => {
             const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
             
             // Add the logo at the top-left
-            // Using 'JPEG' format for a .jpg file. If your logo is actually a PNG, change this back to 'PNG'
             doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
+            
+            // Add company name and details next to logo
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
+            
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12); // Address
+            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17); // Mobile
+            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22); // GST No.
 
-            // Add the company name next to the logo
-            doc.setFontSize(14); // Slightly smaller for company name next to logo
-            doc.setFont('helvetica', 'normal'); // Not too bold here, main title is bold
-            doc.setTextColor(50, 50, 50); // Slightly lighter gray for company name
-            // Position next to logo, roughly centered vertically relative to the logo's height
-            doc.text(companyName, logoX + imgWidth + 5, logoY + (imgHeight / 2) + 2); 
-
-            // Adjust startYPosition for the table based on header content
-            // Ensure table starts below the combined height of logo and company name, plus some padding,
-            // but not higher than the default startY (45) if logo/name space is small.
-            startYPosition = Math.max(logoY + imgHeight + 10, 45); 
-
-            // Now, add the rest of the content
-            addHeaderAndContent();
+            // Calculate startYPositionForTable based on logo and company info block
+            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10); // Ensure enough space
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
         };
 
         img.onerror = () => {
             console.warn("Logo image could not be loaded. Generating PDF without logo.");
-            // If logo fails, add only the company name at the top left
-            doc.setFontSize(18);
+            // If logo fails, add only company info block
+            doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
-            doc.text(companyName, 14, 20); // Position company name alone
+            doc.text(companyName, 14, 20); // Company Name
             
-            // Adjust the startY for the table since there's no logo
-            startYPosition = 35; // Moved up since no logo
-            addHeaderAndContent();
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, 14, 27); // Address
+            doc.text(companyMobile, 14, 32); // Mobile
+            doc.text(companyGST, 14, 37); // GST No.
+            
+            const calculatedStartY = 45; // Adjust startY since no logo
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
         };
 
         img.src = companyLogoUrl; // This will now use the imported image data
+
+        // Add generation date/time to the top right (this part can run immediately)
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100); // Gray color for date text
+        doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
     };
 
     // --- UI Rendering ---
     return (
-        <div className="class-management-container">
-            <h2 className="section-title">Class Management</h2>
-
-            {/* Local Error Display - Optional: Can show component-specific errors here */}
-            {localError && (
-                <p className="error-message text-center">{localError}</p> // Direct error message
-            )}
-
-            {/* Class Creation/Update Form */}
-            <div className="form-container-card">
-                <form onSubmit={handleSubmit} className="app-form">
-                    <h3 className="form-title">{editingClassId ? 'Edit Class' : 'Create New Class'}</h3>
-                    
-                    <div className="form-group">
-                        <label htmlFor="name">Class Name:</label>
-                        <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            placeholder="e.g., Class 1, 10th Standard"
-                            required
-                            disabled={loading}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="status">Status:</label>
-                        <select
-                            id="status"
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            disabled={loading}
-                        >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
-
-                    <div className="form-actions">
-                        <button type="submit" className="btn btn-primary" disabled={loading}>
-                            {loading ? (editingClassId ? 'Updating...' : 'Creating...') : (editingClassId ? 'Update Class' : 'Create Class')}
-                            <FaPlusCircle className="ml-2" />
-                        </button>
-                        {editingClassId && (
-                            <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={() => {
-                                    setEditingClassId(null);
-                                    setFormData({ name: '', status: 'active' });
-                                    setLocalError(null); // Clear error on cancel
-                                }}
-                                disabled={loading}
-                            >
-                                Cancel Edit
-                            </button>
-                        )}
-                    </div>
-                </form>
-            </div>
-
-            {/* Class List Table */}
-            <div className="table-container">
-                <h3 className="table-title">Existing Classes</h3>
-
-                {/* Search and PDF Download Section */}
-                <div className="table-controls">
-                    <div className="search-input-group">
-                        <input
-                            type="text"
-                            placeholder="Search by Class Name..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="search-input"
-                        />
-                        <FaSearch className="search-icon" />
-                    </div>
-                    <button onClick={downloadPdf} className="btn btn-info download-pdf-btn">
-                        <FaFilePdf className="mr-2" /> Download PDF
-                    </button>
-                </div>
-
-                {loading && classes.length === 0 ? (
-                    <p className="loading-state">Loading classes...</p>
-                ) : filteredClasses.length === 0 ? (
-                    <p className="no-data-message">No classes found matching your criteria. Start by creating one!</p>
-                ) : (
+        <PageLayout title="Class Management" errorMessage={localError}>
+            {/* Table Section - Left Side */}
+            <TableSection
+                sectionTitle="Existing Classes"
+                searchTerm={searchTerm}
+                onSearchChange={(e) => setSearchTerm(e.target.value)}
+                onDownloadPdf={downloadPdf} // Pass the updated downloadPdf function
+                loading={loading}
+                data={filteredClasses}
+                renderTableContent={() => (
                     <>
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>S.No.</th>
-                                    <th>Class Name</th>
-                                    <th>Status</th>
-                                    <th>Add Date</th>
-                                    <th>Actions</th>
+                        <thead>
+                            <tr>
+                                <th>S.No.</th>
+                                <th>Class Name</th>
+                                <th>Status</th>
+                                <th>Add Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody ref={tableBodyRef}>
+                            {currentClasses.map((classItem, index) => (
+                                <tr key={classItem._id}>
+                                    <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                    <td>{classItem.name}</td>
+                                    <td>
+                                        <span className={`status-badge ${classItem.status}`}>
+                                            {classItem.status.charAt(0).toUpperCase() + classItem.status.slice(1)}
+                                        </span>
+                                    </td>
+                                    <td>{formatDateWithTime(classItem.createdAt)}</td>
+                                    <td className="actions-column">
+                                        <button onClick={() => handleEdit(classItem)} className="action-icon-button edit-button" title="Edit Class">
+                                            <FaEdit />
+                                        </button>
+                                        <button onClick={() => openConfirmModal(classItem)} className="action-icon-button delete-button" title="Delete Class">
+                                            <FaTrashAlt />
+                                        </button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody ref={tableBodyRef}>
-                                {/* Ensured no whitespace text nodes inside <tbody> or <tr> elements */}
-                                {currentClasses.map((classItem, index) => (
-                                    <tr key={classItem._id}>
-                                        <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td>{classItem.name}</td>
-                                        <td>
-                                            <span className={`status-badge ${classItem.status}`}>
-                                                {classItem.status.charAt(0).toUpperCase() + classItem.status.slice(1)}
-                                            </span>
-                                        </td>
-                                        <td>{formatDateWithTime(classItem.createdAt)}</td>
-                                        <td className="actions-column">
-                                            <button onClick={() => handleEdit(classItem)} className="action-icon-button edit-button" title="Edit Class">
-                                                <FaEdit />
-                                            </button>
-                                            <button onClick={() => openConfirmModal(classItem)} className="action-icon-button delete-button" title="Delete Class">
-                                                <FaTrashAlt />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {/* Pagination Controls */}
-                        {totalPages > 1 && (
-                            <div className="pagination-controls">
-                                <button onClick={goToPrevPage} disabled={currentPage === 1} className="btn btn-page">
-                                    <FaChevronLeft /> Previous
-                                </button>
-                                <span>Page {currentPage} of {totalPages}</span>
-                                <button onClick={goToNextPage} disabled={currentPage === totalPages} className="btn btn-page">
-                                    Next <FaChevronRight />
-                                </button>
-                            </div>
-                        )}
+                            ))}
+                        </tbody>
                     </>
                 )}
-            </div>
+                currentPage={currentPage}
+                totalPages={totalPages}
+                goToPrevPage={goToPrevPage}
+                goToNextPage={goToNextPage}
+                itemsPerPage={itemsPerPage}
+                tableBodyRef={tableBodyRef}
+            />
+
+            {/* Form Section - Right Side */}
+            <FormSection
+                sectionTitle={editingClassId ? 'Edit Class' : 'Add Class'}
+                onSubmit={handleSubmit}
+            >
+                <div className="form-group">
+                    <label htmlFor="name" className="form-label">Class Name:</label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="e.g., Class 1, 10th Standard"
+                        required
+                        disabled={loading}
+                        className="form-input"
+                    />
+                </div>
+
+                <div className="form-group">
+                    <label htmlFor="status" className="form-label">Status:</label>
+                    <select
+                        id="status"
+                        name="status"
+                        value={formData.status}
+                        onChange={handleChange}
+                        disabled={loading}
+                        className="form-select"
+                    >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+
+                <div className="form-actions">
+                    <button type="submit" className="btn btn-primary" disabled={loading}>
+                        {loading ? (editingClassId ? 'Updating...' : 'Adding...') : (editingClassId ? 'Update Class' : 'Add Class')}
+                        <FaPlusCircle className="ml-2" />
+                    </button>
+                    {editingClassId && (
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => {
+                                setEditingClassId(null);
+                                setFormData({ name: '', status: 'active' });
+                                setLocalError(null); // Clear error on cancel
+                            }}
+                            disabled={loading}
+                        >
+                            Cancel Edit
+                        </button>
+                    )}
+                </div>
+            </FormSection>
 
             {/* Confirmation Modal */}
-            {showConfirmModal && (
-                <div className="modal-backdrop">
-                    <div className="modal-content">
-                        <h3>Confirm Deletion</h3>
-                        <p>Are you sure you want to delete class: <strong>{classToDeleteName}</strong>?</p>
-                        <div className="modal-actions">
-                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>Delete</button>
-                            <button onClick={closeConfirmModal} className="btn btn-secondary" disabled={loading}>Cancel</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+            <ConfirmationModal
+                show={showConfirmModal}
+                title="Confirm Deletion"
+                message={`Are you sure you want to delete class: ${classToDeleteName}?`}
+                onConfirm={confirmDelete}
+                onCancel={closeConfirmModal}
+                confirmText="Delete"
+                cancelText="Cancel"
+                loading={loading}
+            />
+        </PageLayout>
     );
 };
 

@@ -60,7 +60,7 @@
 }
 
 .site-title {
-  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  font-size: clamp(1.2rem, 1.8vw, 1.6rem);
   font-family: Arial, Verdana, Tahoma, sans-serif;
   font-weight: 700;
   margin: 0;
@@ -78,12 +78,12 @@
 .nav-links-container {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
 .main-nav {
   display: flex;
-  gap: 2rem;
+  gap: 1.5rem;
   align-items: center;
 }
 
@@ -95,6 +95,9 @@
   padding: 0.5rem 0.2rem;
   position: relative;
   transition: color 0.3s ease, transform 0.2s ease;
+  /* Ensure flex for icon alignment */
+  display: flex; /* Added */
+  align-items: center; /* Added */
 }
 
 .main-nav a:hover {
@@ -117,6 +120,13 @@
 .main-nav a.active::after {
   width: 100%;
 }
+
+/* Icons within main navigation */
+.main-nav a svg {
+  margin-right: 8px; /* Adjusted for better spacing */
+  vertical-align: middle; /* Ensure vertical alignment */
+}
+
 
 /* === HAMBURGER === */
 .hamburger-icon {
@@ -244,7 +254,7 @@
 
 .dropdown-item {
   display: flex;
-  align-items: center;
+  align-items: center; /* Ensure vertical alignment */
   width: 100%;
   padding: 12px 15px;
   background: none;
@@ -262,8 +272,9 @@
 }
 
 .dropdown-item svg {
-  margin-right: 10px;
+  margin-right: 10px; /* Adjusted for better spacing */
   color: var(--text-secondary-dark);
+  vertical-align: middle; /* Ensure vertical alignment */
 }
 
 .dropdown-item:hover svg {
@@ -326,6 +337,9 @@
     border-bottom: 1px solid var(--color-primary-darker);
     font-size: 1rem;
     text-align: left;
+    /* Ensure flex for icon alignment in mobile menu */
+    display: flex; /* Added */
+    align-items: center; /* Added */
   }
 
   .main-nav a:last-child {
@@ -359,7 +373,7 @@
     color: var(--text-primary-dark);
     padding: 0.5rem 0.2rem;
     display: flex;
-    align-items: center;
+    align-items: center; /* Ensure vertical alignment */
     transition: background-color 0.2s ease;
     cursor: pointer;
   }
@@ -370,8 +384,9 @@
   }
 
   .mobile-nav-button svg {
-    margin-right: 0.5rem;
+    margin-right: 0.5rem; /* Adjusted for better spacing */
     color: var(--text-secondary-dark);
+    vertical-align: middle; /* Ensure vertical alignment */
   }
 
   .mobile-nav-button:hover svg {

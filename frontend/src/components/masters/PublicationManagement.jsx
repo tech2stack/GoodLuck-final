@@ -1,12 +1,17 @@
 // src/components/masters/PublicationManagement.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../utils/api'; // API utility for backend calls
-import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaTimes, FaCity as FaCityIcon } from 'react-icons/fa'; // Icons for UI
+import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaTimes, FaSpinner } from 'react-icons/fa'; // Icons for UI
 
 // Stylesheets (assuming these are already present and styled for consistency)
 import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
+import '../../styles/PublicationManagement.css'; // Component-specific layout overrides
+import '../../styles/CommonLayout.css'; // Ensure CommonLayout is imported
+
+// Import the logo image directly
+import companyLogo from '../../assets/glbs-logo.jpg'; 
 
 // NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
 // If you are using npm, you'd do: npm install jspdf jspdf-autotable
@@ -18,13 +23,13 @@ import '../../styles/Modal.css';
 const PublicationManagement = ({ showFlashMessage }) => {
     // State for managing list of publications
     const [publications, setPublications] = useState([]);
-    // State for managing list of cities for the dropdown in the form
+    // State for managing list of cities for lookup/validation (not for dropdown anymore)
     const [cities, setCities] = useState([]);
     // State for form inputs (for creating new or editing existing publication)
     const [formData, setFormData] = useState({
         name: '',
         personName: '',
-        city: '', // Will store City ID
+        city: '', // Will now store City Name directly
         mobileNumber: '',
         bank: '',
         accountNumber: '',
@@ -53,14 +58,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
     const [subtitleModalLoading, setSubtitleModalLoading] = useState(false);
     const [subtitleModalError, setSubtitleModalError] = useState(null);
 
-    // NEW: States for Add New City Modal
-    const [showAddCityModal, setShowAddCityModal] = useState(false);
-    const [newCityName, setNewCityName] = useState('');
-    const [newCityStatus, setNewCityStatus] = useState('active');
-    const [addCityModalLoading, setAddCityModalLoading] = useState(false);
-    const [addCityModalError, setAddCityModalError] = useState(null);
-
-
     // Ref for scrolling to the new item in the table (if needed)
     const tableBodyRef = useRef(null);
 
@@ -74,6 +71,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
 
     // --- Helper function for date formatting ---
     const formatDateWithTime = (dateString) => {
+        if (!dateString) return 'N/A';
         const options = {
             year: 'numeric',
             month: 'long',
@@ -134,34 +132,31 @@ const PublicationManagement = ({ showFlashMessage }) => {
         }
     }, [currentPage, itemsPerPage]); // Re-fetch when page or itemsPerPage changes (searchTerm is handled by filteredPublications)
 
-    // --- Fetch Cities for Dropdown ---
-    const fetchCitiesForDropdown = useCallback(async () => {
+    // --- Fetch Cities for Lookup ---
+    const fetchCitiesForLookup = useCallback(async () => {
         try {
-            const response = await api.get('/cities?status=active&limit=1000'); // Fetch all active cities
+            // Fetch all active cities to use for validation/lookup
+            const response = await api.get('/cities?status=active&limit=1000'); 
             if (response.data.status === 'success') {
-                setCities(response.data.data.cities);
-                // If creating a new publication and no city is pre-selected, set the first one as default
-                if (!editingPublicationId && response.data.data.cities.length > 0 && !formData.city) {
-                    setFormData(prev => ({ ...prev, city: response.data.data.cities[0]._id }));
-                }
+                setCities(response.data.data.cities || []); // Safeguard: Ensure cities is always an array
             } else {
-                console.error('Failed to fetch cities for dropdown:', response.data.message);
-                showFlashMessage('Failed to load cities for dropdown.', 'error');
+                console.error('Failed to fetch cities for lookup:', response.data.message);
+                showFlashMessage('Failed to load cities for lookup.', 'error');
             }
         } catch (err) {
-            console.error('Error fetching cities for dropdown:', err);
-            showFlashMessage('Network error fetching cities for dropdown.', 'error');
+            console.error('Error fetching cities for lookup:', err);
+            showFlashMessage('Network error fetching cities for lookup.', 'error');
         }
-    }, [editingPublicationId, showFlashMessage, formData.city]); // Added formData.city to dependencies
+    }, [showFlashMessage]); 
 
     // Fetch publications and cities on component mount or relevant state changes
     useEffect(() => {
         fetchPublications();
-    }, [fetchPublications]); // Only fetch publications when dependencies change
+    }, [fetchPublications]); 
 
     useEffect(() => {
-        fetchCitiesForDropdown();
-    }, [fetchCitiesForDropdown]); // Only fetch cities when dependencies change
+        fetchCitiesForLookup();
+    }, [fetchCitiesForLookup]);
 
 
     // Debugging useEffect for PDF libraries
@@ -186,19 +181,48 @@ const PublicationManagement = ({ showFlashMessage }) => {
         setLoading(true);
         setLocalError(null);
 
-        // Basic validation
-        if (!formData.city) {
-            setLocalError('Please select a City.');
-            showFlashMessage('Please select a City.', 'error');
+        // Basic validation for required fields
+        if (!formData.name || !formData.personName || !formData.mobileNumber || !formData.address || !formData.city.trim()) {
+            setLocalError('Please fill all required fields.');
+            showFlashMessage('Please fill all required fields.', 'error');
             setLoading(false);
             return;
         }
 
+        let cityIdToUse = '';
+        const enteredCityName = formData.city.trim();
+
         try {
+            // 1. Check if city exists in the fetched list
+            // Safeguard: Ensure c and c.name are not null/undefined
+            let existingCity = cities.find(c => c && c.name && c.name.toLowerCase() === enteredCityName.toLowerCase());
+
+            if (existingCity) {
+                cityIdToUse = existingCity._id;
+            } else {
+                // 2. If city doesn't exist, create it
+                const newCityResponse = await api.post('/cities', {
+                    name: enteredCityName,
+                    status: 'active' // Default status for newly created cities
+                });
+                if (newCityResponse.data.status === 'success') {
+                    cityIdToUse = newCityResponse.data.data.city._id;
+                    showFlashMessage(`New city "${enteredCityName}" created successfully!`, 'success');
+                    // Re-fetch cities list to include the newly added city for future lookups
+                    await fetchCitiesForLookup(); 
+                } else {
+                    throw new Error(newCityResponse.data.message || 'Failed to create new city.');
+                }
+            }
+
+            // Prepare data for publication submission
+            // Ensure formData.city (name) is replaced with cityIdToUse (_id)
+            const publicationData = { ...formData, city: cityIdToUse };
+
             let response;
             if (editingPublicationId) {
                 // Update existing publication
-                response = await api.patch(`/publications/${editingPublicationId}`, formData);
+                response = await api.patch(`/publications/${editingPublicationId}`, publicationData);
                 if (response.data.status === 'success') {
                     showFlashMessage('Publication updated successfully!', 'success');
                 } else {
@@ -206,7 +230,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 }
             } else {
                 // Create new publication
-                response = await api.post('/publications', formData);
+                response = await api.post('/publications', publicationData);
                 if (response.data.status === 'success') {
                     showFlashMessage('Publication created successfully!', 'success');
                 } else {
@@ -215,7 +239,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
             }
             // Reset form and re-fetch publications
             setFormData({
-                name: '', personName: '', city: cities.length > 0 ? cities[0]._id : '',
+                name: '', personName: '', city: '', // Reset city to empty string (name)
                 mobileNumber: '', bank: '', accountNumber: '', ifsc: '', gstin: '',
                 discount: 0, address: '', status: 'active',
             });
@@ -223,7 +247,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
             fetchPublications(true); // Re-fetch and indicate to scroll
         } catch (err) {
             console.error('Error saving publication:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to save publication. Please check your input and ensure publication name is unique.';
+            const errorMessage = err.response?.data?.message || 'Failed to save publication. Please check your input and ensure data is valid.';
             setLocalError(errorMessage);
             showFlashMessage(errorMessage, 'error');
         } finally {
@@ -236,7 +260,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
         setFormData({
             name: publicationItem.name,
             personName: publicationItem.personName,
-            city: publicationItem.city._id, // Set city ID for dropdown
+            city: publicationItem.city ? publicationItem.city.name : '', // Set city NAME for input field
             mobileNumber: publicationItem.mobileNumber,
             bank: publicationItem.bank,
             accountNumber: publicationItem.accountNumber,
@@ -336,9 +360,13 @@ const PublicationManagement = ({ showFlashMessage }) => {
     };
 
     const handleRemoveSubtitle = async (subtitleId, publicationId, subtitleName) => {
-        if (!window.confirm(`Are you sure you want to remove subtitle "${subtitleName}"?`)) {
+        // Changed from window.confirm to ConfirmationModal for consistency
+        const isConfirmed = window.confirm(`Are you sure you want to remove subtitle "${subtitleName}"?`);
+
+        if (!isConfirmed) {
             return;
         }
+        
         setLoading(true); // Use main loading for this action
         setLocalError(null);
 
@@ -360,71 +388,31 @@ const PublicationManagement = ({ showFlashMessage }) => {
         }
     };
 
-    // --- NEW: Add City Modal Handlers ---
-    const openAddCityModal = () => {
-        setNewCityName(''); // Clear previous input
-        setNewCityStatus('active'); // Reset to default
-        setAddCityModalError(null);
-        setShowAddCityModal(true);
+    const handleCancelEdit = () => {
+        setFormData({
+            name: '', personName: '', city: '', 
+            mobileNumber: '', bank: '', accountNumber: '', ifsc: '', gstin: '',
+            discount: 0, address: '', status: 'active',
+        });
+        setEditingPublicationId(null);
+        setLocalError(null);
     };
-
-    const closeAddCityModal = () => {
-        setShowAddCityModal(false);
-        setNewCityName('');
-        setNewCityStatus('active');
-        setAddCityModalError(null);
-        setAddCityModalLoading(false);
-    };
-
-    const handleAddNewCity = async (e) => {
-        e.preventDefault();
-        setAddCityModalLoading(true);
-        setAddCityModalError(null);
-
-        if (!newCityName.trim()) {
-            setAddCityModalError('City name cannot be empty.');
-            setAddCityModalLoading(false);
-            return;
-        }
-
-        try {
-            const response = await api.post('/cities', {
-                name: newCityName.trim(),
-                status: newCityStatus
-            });
-            if (response.data.status === 'success') {
-                showFlashMessage(`City "${response.data.data.city.name}" added successfully!`, 'success');
-                closeAddCityModal();
-                // Re-fetch cities for dropdown and set the newly created city as selected
-                await fetchCitiesForDropdown();
-                setFormData(prev => ({ ...prev, city: response.data.data.city._id })); // Set newly created city as selected
-            } else {
-                throw new Error(response.data.message || 'Failed to add new city.');
-            }
-        } catch (err) {
-            console.error('Error adding new city:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to add new city. Ensure city name is unique.';
-            setAddCityModalError(errorMessage);
-            showFlashMessage(errorMessage, 'error');
-        } finally {
-            setAddCityModalLoading(false);
-        }
-    };
-
 
     // --- Search Filtering ---
     const filteredPublications = publications.filter(publicationItem =>
+        publicationItem && (
         publicationItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         publicationItem.personName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (publicationItem.city && publicationItem.city.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        publicationItem.mobileNumber.includes(searchTerm) ||
-        publicationItem.gstin.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (publicationItem.subtitles && publicationItem.subtitles.some(sub => sub.name.toLowerCase().includes(searchTerm.toLowerCase()))) // Search by subtitle name
+        (publicationItem.city && publicationItem.city.name && publicationItem.city.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (publicationItem.mobileNumber && publicationItem.mobileNumber.includes(searchTerm)) ||
+        (publicationItem.gstin && publicationItem.gstin.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (Array.isArray(publicationItem.subtitles) && publicationItem.subtitles.some(sub => sub && sub.name && sub.name.toLowerCase().includes(searchTerm.toLowerCase()))) 
+        )
     );
 
     // --- Pagination Logic ---
     const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage; 
     const currentPublications = filteredPublications.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(filteredPublications.length / itemsPerPage);
 
@@ -450,7 +438,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        const doc = new window.jspdf.jsPDF();
+        const doc = new window.jspdf.jsPDF('landscape'); // Use landscape for more columns
         
         if (typeof doc.autoTable !== 'function') {
             showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
@@ -458,17 +446,39 @@ const PublicationManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        doc.text("Publication List", 14, 15);
+        // Define company details for PDF header
+        const companyName = "GOOD LUCK BOOK STORE";
+        const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
+        const companyMobile = "Mobile Number: 7024136476";
+        const companyGST = "GST NO: 23EAVPP3772F1Z8";
+        const companyLogoUrl = companyLogo; // Use the imported logo directly
+        
+        // Function to generate the main report content (title, line, table, save)
+        // This function now accepts the dynamic startYPositionForTable as an argument
+        const generateReportBody = (startYPositionForTable) => {
+            // Add a professional report title (centered, below company info)
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30); // Dark gray for title
+            // Adjust Y position for the report title to be below company info
+            doc.text("Publication List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
 
-        const tableColumn = [
-            "S.No.", "Name", "Person", "Address", "City", "Mobile",
-            "Bank", "Acc No.", "IFSC", "GSTIN", "Discount", "Add Date", "Status"
-        ];
-        const tableRows = [];
+            // Add a line separator below the main title
+            doc.setLineWidth(0.5);
+            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15); // Line spanning almost full width
 
-        filteredPublications.forEach((pubItem, index) => {
-            const pubData = [
-                index + 1,
+            // Update startYPositionForTable for autoTable
+            const tableStartY = startYPositionForTable + 20;
+
+
+            // Generate table data
+            const tableColumn = [
+                "S.No.", "Name", "Person", "Address", "City", "Mobile",
+                "Bank", "Acc No.", "IFSC", "GSTIN", "Discount", "Add Date", "Status"
+            ];
+            const tableRows = filteredPublications.map((pubItem, index) => [
+                // S.No. is always index + 1 for the filtered data for PDF
+                index + 1, 
                 pubItem.name,
                 pubItem.personName,
                 pubItem.address,
@@ -481,13 +491,112 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 `${pubItem.discount}%`,
                 formatDateWithTime(pubItem.createdAt),
                 pubItem.status.charAt(0).toUpperCase() + pubItem.status.slice(1)
-            ];
-            tableRows.push(pubData);
-        });
+            ]);
 
-        doc.autoTable(tableColumn, tableRows, { startY: 20 });
-        doc.save(`Publication_List_${new Date().toLocaleDateString()}.pdf`);
-        showFlashMessage('Publication list downloaded as PDF!', 'success');
+            // Add the table to the document with professional styling
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: tableStartY, // Use our dynamic start position
+                theme: 'plain', // Changed to 'plain' for a cleaner look like the reference PDF
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 10,
+                    cellPadding: 3,
+                    textColor: [51, 51, 51], // Default text color for body
+                    valign: 'middle',
+                    halign: 'left'
+                },
+                headStyles: {
+                    fillColor: [240, 240, 240], // Light gray header
+                    textColor: [51, 51, 51], // Dark text for header
+                    fontStyle: 'bold',
+                    halign: 'center', // Center align header text
+                    valign: 'middle', // Vertically align header text
+                    lineWidth: 0.1, // Add a thin border to header cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                bodyStyles: {
+                    lineWidth: 0.1, // Add a thin border to body cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                columnStyles: {
+                    0: { cellWidth: 15, halign: 'center' }, 1: { cellWidth: 'auto', halign: 'left' },
+                    2: { cellWidth: 'auto', halign: 'left' }, 3: { cellWidth: 'auto', halign: 'left' },
+                    4: { cellWidth: 'auto', halign: 'left' }, 5: { cellWidth: 'auto', halign: 'center' },
+                    6: { cellWidth: 'auto', halign: 'left' }, 7: { cellWidth: 'auto', halign: 'center' },
+                    8: { cellWidth: 'auto', halign: 'center' }, 9: { cellWidth: 'auto', halign: 'left' },
+                    10: { cellWidth: 'auto', halign: 'center' }, 11: { halign: 'center' }, 12: { halign: 'center' }
+                },
+                margin: { top: 10, right: 14, bottom: 10, left: 14 },
+                didDrawPage: function (data) {
+                    // Add footer on each page
+                    doc.setFontSize(10);
+                    doc.setTextColor(100); // Gray color for footer text
+                    const pageCount = doc.internal.getNumberOfPages();
+                    doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                }
+            });
+            doc.save(`Publication_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
+            showFlashMessage('Publication list downloaded as PDF!', 'success');
+        };
+
+        // 5. **Handle Logo Loading Asynchronously:**
+        const img = new Image();
+        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
+        img.onload = () => {
+            const logoX = 14; // Left margin for logo
+            const logoY = 10; // Top margin for logo
+            const imgWidth = 40; // Adjust as needed for your logo size
+            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+            
+            // Add the logo at the top-left
+            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
+            
+            // Add company name and details next to logo
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
+            
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12); // Address
+            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17); // Mobile
+            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22); // GST No.
+
+            // Calculate startYPositionForTable based on logo and company info block
+            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10); // Ensure enough space
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
+        };
+
+        img.onerror = () => {
+            console.warn("Logo image could not be loaded. Generating PDF without logo.");
+            // If logo fails, add only company info block
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, 14, 20); // Company Name
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, 14, 27); // Address
+            doc.text(companyMobile, 14, 32); // Mobile
+            doc.text(companyGST, 14, 37); // GST No.
+            
+            const calculatedStartY = 45; // Adjust startY since no logo
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
+        };
+
+        img.src = companyLogoUrl; // This will now use the imported image data
+
+        // Add generation date/time to the top right (this part can run immediately)
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100); // Gray color for date text
+        doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
     };
 
     // --- UI Rendering ---
@@ -499,339 +608,326 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 <p className="error-message text-center">{localError}</p>
             )}
 
-            {/* Publication Creation/Update Form */}
-            <div className="form-container-card">
-                <form onSubmit={handleSubmit} className="app-form">
-                    <h3 className="form-title">{editingPublicationId ? 'Edit Publication' : 'Add Publication'}</h3>
-                    
-                    <div className="form-row"> {/* Use form-row for multi-column layout */}
-                        <div className="form-group">
-                            <label htmlFor="name">Publication Name:</label>
+            {/* Main content layout for two columns */}
+            <div className="main-content-layout">
+                {/* Publication List Table - FIRST CHILD */}
+                <div className="table-section">
+                    <h3 className="table-title">Existing Publications</h3>
+
+                    {/* Search and PDF Download Section */}
+                    <div className="table-controls">
+                        <div className="search-input-group">
                             <input
                                 type="text"
-                                id="name"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                placeholder="e.g., NCERT, Arihant"
-                                required
-                                disabled={loading}
+                                placeholder="Search by Name, Person, City, Mobile, GSTIN..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="search-input"
                             />
+                            <FaSearch className="search-icon" />
                         </div>
-                        <div className="form-group">
-                            <label htmlFor="personName">Person Name:</label>
-                            <input
-                                type="text"
-                                id="personName"
-                                name="personName"
-                                value={formData.personName}
-                                onChange={handleChange}
-                                placeholder="e.g., John Doe"
-                                required
-                                disabled={loading}
-                            />
-                        </div>
+                        <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredPublications.length === 0}>
+                            <FaFilePdf className="mr-2" /> Download PDF
+                        </button>
                     </div>
 
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="city">City:</label>
-                            <div className="input-with-button"> {/* Wrapper for input and button */}
-                                <select
+                    {loading && publications.length === 0 ? (
+                        <p className="loading-state">Loading publications...</p>
+                    ) : filteredPublications.length === 0 ? (
+                        <p className="no-data-message">No publications found matching your criteria. Start by adding one!</p>
+                    ) : (
+                        <div className="table-container"> {/* This div is for table overflow, not layout */}
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>S.No.</th><th>Name</th><th>Sub Title</th><th>Person</th><th>Address</th><th>City</th><th>Phone</th><th>Bank</th><th>Acc No.</th><th>IFSC</th><th>OTHER (GSTIN/Disc)</th><th>Add Date</th><th>Status</th><th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody ref={tableBodyRef}>
+                                    {currentPublications.map((pubItem, index) => (
+                                        <tr key={pubItem._id}>
+                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td>{pubItem.name}</td>
+                                            <td>
+                                                {/* Display Subtitles and Add Button */}
+                                                <div className="subtitle-list">
+                                                    {pubItem.subtitles && pubItem.subtitles.length > 0 ? (
+                                                        pubItem.subtitles.map(sub => (
+                                                            <span key={sub._id} className="subtitle-tag">
+                                                                {sub.name}
+                                                                <button
+                                                                    className="remove-subtitle-btn"
+                                                                    onClick={() => handleRemoveSubtitle(sub._id, pubItem._id, sub.name)}
+                                                                    title="Remove Subtitle"
+                                                                    disabled={loading}
+                                                                >
+                                                                    <FaTimes />
+                                                                </button>
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span>No subtitles</span>
+                                                    )}
+                                                    <button
+                                                        className="btn-add-subtitle"
+                                                        onClick={() => openSubtitleModal(pubItem)}
+                                                        title="Add New Subtitle"
+                                                        disabled={loading}
+                                                    >
+                                                        + Add
+                                                    </button>
+                                                </div>
+                                            </td>
+                                            <td>{pubItem.personName}</td>
+                                            <td>{pubItem.address}</td>
+                                            <td>{pubItem.city ? pubItem.city.name : 'N/A'}</td>
+                                            <td>{pubItem.mobileNumber}</td>
+                                            <td>{pubItem.bank}</td>
+                                            <td>{pubItem.accountNumber}</td>
+                                            <td>{pubItem.ifsc}</td>
+                                            <td>
+                                                {pubItem.gstin && `GSTIN: ${pubItem.gstin}`}
+                                                {pubItem.gstin && pubItem.discount > 0 && <br />}
+                                                {pubItem.discount > 0 && `DISCOUNT: ${pubItem.discount}%`}
+                                            </td>
+                                            <td>{formatDateWithTime(pubItem.createdAt)}</td>
+                                            <td>
+                                                <span className={`status-badge ${pubItem.status}`}>
+                                                    {pubItem.status.charAt(0).toUpperCase() + pubItem.status.slice(1)}
+                                                </span>
+                                            </td>
+                                            <td className="actions-column">
+                                                <button
+                                                    onClick={() => handleEdit(pubItem)}
+                                                    className="action-icon-button edit-button"
+                                                    title="Edit Publication"
+                                                    disabled={loading}
+                                                >
+                                                    <FaEdit />
+                                                </button>
+                                                <button
+                                                    onClick={() => openConfirmModal(pubItem)}
+                                                    className="action-icon-button delete-button"
+                                                    title="Delete Publication"
+                                                    disabled={loading}
+                                                >
+                                                    {loading && publicationToDeleteId === pubItem._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="pagination-controls">
+                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
+                                        <FaChevronLeft /> Previous
+                                    </button>
+                                    <span>Page {currentPage} of {totalPages}</span>
+                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
+                                        Next <FaChevronRight />
+                                    </button>
+                                </div>
+                            )}
+                            <div className="total-records text-center mt-2">
+                                Total Records: {filteredPublications.length}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Publication Creation/Update Form - SECOND CHILD */}
+                <div className="form-container-card">
+                    <form onSubmit={handleSubmit} className="app-form">
+                        <h3 className="form-title">{editingPublicationId ? 'Edit Publication' : 'Add Publication'}</h3>
+                        
+                        <div className="form-row"> {/* Use form-row for multi-column layout */}
+                            <div className="form-group">
+                                <label htmlFor="name">Publication Name:</label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    placeholder="e.g., NCERT, Arihant"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="personName">Person Name:</label>
+                                <input
+                                    type="text"
+                                    id="personName"
+                                    name="personName"
+                                    value={formData.personName}
+                                    onChange={handleChange}
+                                    placeholder="e.g., John Doe"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="city">City:</label>
+                                {/* City input is now a direct text input */}
+                                <input
+                                    type="text"
                                     id="city"
                                     name="city"
                                     value={formData.city}
                                     onChange={handleChange}
+                                    placeholder="e.g., Indore, Bhopal"
                                     required
-                                    disabled={loading || cities.length === 0}
-                                >
-                                    {cities.length === 0 ? (
-                                        <option value="">Loading Cities...</option>
-                                    ) : (
-                                        <>
-                                            <option value="">Select a City</option>
-                                            {cities.map(city => (
-                                                <option key={city._id} value={city._id}>
-                                                    {city.name}
-                                                </option>
-                                            ))}
-                                        </>
-                                    )}
-                                </select>
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="mobileNumber">Mobile Number:</label>
+                                <input
+                                    type="text"
+                                    id="mobileNumber"
+                                    name="mobileNumber"
+                                    value={formData.mobileNumber}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 9876543210"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="bank">Bank:</label>
+                                <input
+                                    type="text"
+                                    id="bank"
+                                    name="bank"
+                                    value={formData.bank}
+                                    onChange={handleChange}
+                                    placeholder="e.g., SBI, HDFC"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="accountNumber">Acc Number:</label>
+                                <input
+                                    type="text"
+                                    id="accountNumber"
+                                    name="accountNumber"
+                                    value={formData.accountNumber}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 1234567890"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="ifsc">IFSC:</label>
+                                <input
+                                    type="text"
+                                    id="ifsc"
+                                    name="ifsc"
+                                    value={formData.ifsc}
+                                    onChange={handleChange}
+                                    placeholder="e.g., HDFC0001234"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="gstin">GSTIN:</label>
+                                <input
+                                    type="text"
+                                    id="gstin"
+                                    name="gstin"
+                                    value={formData.gstin}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 22AAAAA0000A1Z5"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="discount">Discount (%):</label>
+                                <input
+                                    type="number"
+                                    id="discount"
+                                    name="discount"
+                                    value={formData.discount}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 10"
+                                    min="0"
+                                    max="100"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="address">Address:</label>
+                                <textarea
+                                    id="address"
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleChange}
+                                    placeholder="Full Address"
+                                    required
+                                    disabled={loading}
+                                    className="form-textarea"
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="status">Status:</label>
+                            <select
+                                id="status"
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                disabled={loading}
+                                className="form-select"
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div className="form-actions">
+                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingPublicationId ? 'Update Publication' : 'Add Publication')}
+                            </button>
+                            {editingPublicationId && (
                                 <button
                                     type="button"
-                                    className="btn btn-icon-only btn-add-new"
-                                    onClick={openAddCityModal}
-                                    title="Add New City"
+                                    className="btn btn-secondary ml-2"
+                                    onClick={handleCancelEdit}
                                     disabled={loading}
                                 >
-                                    <FaPlusCircle /> <FaCityIcon />
+                                    Cancel Edit
                                 </button>
-                            </div>
+                            )}
                         </div>
-                        <div className="form-group">
-                            <label htmlFor="mobileNumber">Mobile Number:</label>
-                            <input
-                                type="text"
-                                id="mobileNumber"
-                                name="mobileNumber"
-                                value={formData.mobileNumber}
-                                onChange={handleChange}
-                                placeholder="e.g., 9876543210"
-                                required
-                                disabled={loading}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="bank">Bank:</label>
-                            <input
-                                type="text"
-                                id="bank"
-                                name="bank"
-                                value={formData.bank}
-                                onChange={handleChange}
-                                placeholder="e.g., SBI, HDFC"
-                                disabled={loading}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="accountNumber">Acc Number:</label>
-                            <input
-                                type="text"
-                                id="accountNumber"
-                                name="accountNumber"
-                                value={formData.accountNumber}
-                                onChange={handleChange}
-                                placeholder="e.g., 1234567890"
-                                disabled={loading}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="ifsc">IFSC:</label>
-                            <input
-                                type="text"
-                                id="ifsc"
-                                name="ifsc"
-                                value={formData.ifsc}
-                                onChange={handleChange}
-                                placeholder="e.g., HDFC0001234"
-                                disabled={loading}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="gstin">GSTIN:</label>
-                            <input
-                                type="text"
-                                id="gstin"
-                                name="gstin"
-                                value={formData.gstin}
-                                onChange={handleChange}
-                                placeholder="e.g., 22AAAAA0000A1Z5"
-                                disabled={loading}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="discount">Discount (%):</label>
-                            <input
-                                type="number"
-                                id="discount"
-                                name="discount"
-                                value={formData.discount}
-                                onChange={handleChange}
-                                placeholder="e.g., 10"
-                                min="0"
-                                max="100"
-                                disabled={loading}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="address">Address:</label>
-                            <textarea
-                                id="address"
-                                name="address"
-                                value={formData.address}
-                                onChange={handleChange}
-                                placeholder="Full Address"
-                                required
-                                disabled={loading}
-                            ></textarea>
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="status">Status:</label>
-                        <select
-                            id="status"
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            disabled={loading}
-                        >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
-
-                    <div className="form-actions">
-                        <button type="submit" className="btn btn-primary" disabled={loading}>
-                            {loading ? (editingPublicationId ? 'Updating...' : 'Adding...') : (editingPublicationId ? 'Update Publication' : 'Add Publication')}
-                            <FaPlusCircle className="ml-2" />
-                        </button>
-                        {editingPublicationId && (
-                            <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={() => {
-                                    setEditingPublicationId(null);
-                                    setFormData({
-                                        name: '', personName: '', city: cities.length > 0 ? cities[0]._id : '',
-                                        mobileNumber: '', bank: '', accountNumber: '', ifsc: '', gstin: '',
-                                        discount: 0, address: '', status: 'active',
-                                    });
-                                    setLocalError(null);
-                                }}
-                                disabled={loading}
-                            >
-                                Cancel Edit
-                            </button>
-                        )}
-                    </div>
-                </form>
-            </div>
-
-            {/* Publication List Table */}
-            <div className="table-container">
-                <h3 className="table-title">Existing Publications</h3>
-
-                {/* Search and PDF Download Section */}
-                <div className="table-controls">
-                    <div className="search-input-group">
-                        <input
-                            type="text"
-                            placeholder="Search by Name, Person, City, Mobile, GSTIN..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="search-input"
-                        />
-                        <FaSearch className="search-icon" />
-                    </div>
-                    <button onClick={downloadPdf} className="btn btn-info download-pdf-btn">
-                        <FaFilePdf className="mr-2" /> Download PDF
-                    </button>
+                    </form>
                 </div>
-
-                {loading && publications.length === 0 ? (
-                    <p className="loading-state">Loading publications...</p>
-                ) : filteredPublications.length === 0 ? (
-                    <p className="no-data-message">No publications found matching your criteria. Start by adding one!</p>
-                ) : (
-                    <>
-                        <table className="data-table">
-                            <thead>
-                                <tr>{/* Fixed whitespace here */}
-                                    <th>S.No.</th><th>Name</th><th>Sub Title</th><th>Person</th><th>Address</th><th>City</th><th>Phone</th><th>Bank</th><th>Acc No.</th><th>IFSC</th><th>OTHER (GSTIN/Disc)</th><th>Add Date</th><th>Status</th><th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody ref={tableBodyRef}>
-                                {currentPublications.map((pubItem, index) => (
-                                    <tr key={pubItem._id}>
-                                        <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td>{pubItem.name}</td>
-                                        <td>
-                                            {/* Display Subtitles and Add Button */}
-                                            <div className="subtitle-list">
-                                                {pubItem.subtitles && pubItem.subtitles.length > 0 ? (
-                                                    pubItem.subtitles.map(sub => (
-                                                        <span key={sub._id} className="subtitle-tag">
-                                                            {sub.name}
-                                                            <button
-                                                                className="remove-subtitle-btn"
-                                                                onClick={() => handleRemoveSubtitle(sub._id, pubItem._id, sub.name)}
-                                                                title="Remove Subtitle"
-                                                                disabled={loading}
-                                                            >
-                                                                <FaTimes />
-                                                            </button>
-                                                        </span>
-                                                    ))
-                                                ) : (
-                                                    <span>No subtitles</span>
-                                                )}
-                                                <button
-                                                    className="btn-add-subtitle"
-                                                    onClick={() => openSubtitleModal(pubItem)}
-                                                    title="Add New Subtitle"
-                                                    disabled={loading}
-                                                >
-                                                    + Add
-                                                </button>
-                                            </div>
-                                        </td>
-                                        <td>{pubItem.personName}</td>
-                                        <td>{pubItem.address}</td>
-                                        <td>{pubItem.city ? pubItem.city.name : 'N/A'}</td>
-                                        <td>{pubItem.mobileNumber}</td>
-                                        <td>{pubItem.bank}</td>
-                                        <td>{pubItem.accountNumber}</td>
-                                        <td>{pubItem.ifsc}</td>
-                                        <td>
-                                            {pubItem.gstin && `GSTIN: ${pubItem.gstin}`}
-                                            {pubItem.gstin && pubItem.discount > 0 && <br />}
-                                            {pubItem.discount > 0 && `DISCOUNT: ${pubItem.discount}%`}
-                                        </td>
-                                        <td>{formatDateWithTime(pubItem.createdAt)}</td>
-                                        <td>
-                                            <span className={`status-badge ${pubItem.status}`}>
-                                                {pubItem.status.charAt(0).toUpperCase() + pubItem.status.slice(1)}
-                                            </span>
-                                        </td>
-                                        <td className="actions-column">
-                                            <button
-                                                onClick={() => handleEdit(pubItem)}
-                                                className="action-icon-button edit-button"
-                                                title="Edit Publication"
-                                                disabled={loading}
-                                            >
-                                                <FaEdit />
-                                            </button>
-                                            <button
-                                                onClick={() => openConfirmModal(pubItem)}
-                                                className="action-icon-button delete-button"
-                                                title="Delete Publication"
-                                                disabled={loading}
-                                            >
-                                                <FaTrashAlt />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {/* Pagination Controls */}
-                        {totalPages > 1 && (
-                            <div className="pagination-controls">
-                                <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
-                                    <FaChevronLeft /> Previous
-                                </button>
-                                <span>Page {currentPage} of {totalPages}</span>
-                                <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
-                                    Next <FaChevronRight />
-                                </button>
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
+            </div> {/* End of main-content-layout */}
 
             {/* Confirmation Modal for Publication Deletion */}
             {showConfirmModal && (
@@ -840,7 +936,9 @@ const PublicationManagement = ({ showFlashMessage }) => {
                         <h3>Confirm Deletion</h3>
                         <p>Are you sure you want to delete publication: <strong>{publicationToDeleteName}</strong>?</p>
                         <div className="modal-actions">
-                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>Delete</button>
+                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Delete'}
+                            </button>
                             <button onClick={closeConfirmModal} className="btn btn-secondary" disabled={loading}>Cancel</button>
                         </div>
                     </div>
@@ -869,6 +967,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     placeholder="e.g., Class 10 Edition, Volume 2"
                                     required
                                     disabled={subtitleModalLoading}
+                                    className="form-input"
                                 />
                             </div>
                             {subtitleModalError && (
@@ -880,60 +979,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     <FaPlusCircle className="ml-2" />
                                 </button>
                                 <button type="button" className="btn btn-secondary" onClick={closeSubtitleModal} disabled={subtitleModalLoading}>
-                                    Cancel
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* NEW: Add New City Modal */}
-            {showAddCityModal && (
-                <div className="modal-backdrop">
-                    <div className="modal-content">
-                        <div className="form-header">
-                            <h3>Add New City</h3>
-                            <button onClick={closeAddCityModal} className="close-button" disabled={addCityModalLoading}>
-                                <FaTimes />
-                            </button>
-                        </div>
-                        <form onSubmit={handleAddNewCity} className="app-form">
-                            <div className="form-group">
-                                <label htmlFor="newCityName">City Name:</label>
-                                <input
-                                    type="text"
-                                    id="newCityName"
-                                    name="newCityName"
-                                    value={newCityName}
-                                    onChange={(e) => setNewCityName(e.target.value)}
-                                    placeholder="e.g., Mumbai, Delhi"
-                                    required
-                                    disabled={addCityModalLoading}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="newCityStatus">Status:</label>
-                                <select
-                                    id="newCityStatus"
-                                    name="newCityStatus"
-                                    value={newCityStatus}
-                                    onChange={(e) => setNewCityStatus(e.target.value)}
-                                    disabled={addCityModalLoading}
-                                >
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                            </div>
-                            {addCityModalError && (
-                                <p className="error-message text-center">{addCityModalError}</p>
-                            )}
-                            <div className="form-actions">
-                                <button type="submit" className="btn btn-primary" disabled={addCityModalLoading}>
-                                    {addCityModalLoading ? 'Adding City...' : 'Add City'}
-                                    <FaPlusCircle className="ml-2" />
-                                </button>
-                                <button type="button" className="btn btn-secondary" onClick={closeAddCityModal} disabled={addCityModalLoading}>
                                     Cancel
                                 </button>
                             </div>

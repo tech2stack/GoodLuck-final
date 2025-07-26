@@ -7,12 +7,17 @@ import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, F
 import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
+// Import the new StationeryItemManagement specific styles
+import '../../styles/StationeryItemManagement.css'; // New import for specific styles
 
 // NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
 // If you are using npm, you'd do: npm install jspdf jspdf-autotable
 // Then import them here:
 // import { jsPDF } from 'jspdf';
 // import 'jspdf-autotable';
+
+// Import the logo image directly (assuming it exists at this path for PDF)
+import companyLogo from '../../assets/glbs-logo.jpg';
 
 
 const StationeryItemManagement = ({ showFlashMessage }) => {
@@ -143,8 +148,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         setLocalError(null);
 
         // Basic validation
-        // Changed formData.name to formData.itemName
-        if (!formData.itemName || formData.price === '' || formData.price === null || isNaN(formData.price)) {
+        if (!formData.itemName.trim() || formData.price === '' || formData.price === null || isNaN(formData.price)) {
             setLocalError('Please fill in all required fields (Item Name, Price). Price must be a valid number.');
             showFlashMessage('Please fill in all required fields.', 'error');
             setLoading(false);
@@ -239,12 +243,17 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         }
     };
 
+    const handleCancelEdit = () => {
+        setFormData({ itemName: '', price: '', status: 'active' });
+        setEditingItemId(null);
+        setLocalError(null);
+    };
+
     // --- Search Filtering ---
     const filteredItems = useMemo(() => {
         const lowercasedSearchTerm = searchTerm.toLowerCase();
         return stationeryItems.filter(item => {
             // Safely access properties and convert to string before toLowerCase()
-            // Changed item.name to item.itemName
             const itemName = item.itemName ? String(item.itemName).toLowerCase() : ''; 
             const price = item.price !== undefined && item.price !== null ? String(item.price).toLowerCase() : '';
             const status = item.status ? String(item.status).toLowerCase() : '';
@@ -262,8 +271,6 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-
-    // const paginate = (pageNumber) => setCurrentPage(pageNumber); // This function is not used directly in buttons, but good to keep
 
     const goToNextPage = () => {
         if (currentPage < totalPages) {
@@ -293,56 +300,153 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        doc.text("Stationery Item List", 14, 15);
-
-        // Define table columns explicitly. This is what should appear in the header.
-        const tableColumn = ["S.No.", "Item Name", "Price (Rs.)", "Add Date", "Status"];
-        const tableRows = [];
-
-        filteredItems.forEach((item, index) => {
-            // Ensure item.price is a valid number before formatting
-            const formattedPrice = typeof item.price === 'number' && !isNaN(item.price)
-                                   ? `Rs. ${item.price.toFixed(2)}` 
-                                   : 'N/A'; 
-
-            // Explicitly convert all data points to string and trim any leading/trailing whitespace
-            const itemData = [
-                String(index + 1), // S.No. (relative to filtered list, not current page)
-                String(item.itemName || '').trim(), // Changed item.name to item.itemName
-                formattedPrice, // Formatted Price
-                formatDateWithTime(item.createdAt), // Add Date
-                String(item.status || '').trim().charAt(0).toUpperCase() + String(item.status || '').trim().slice(1) // Status
-            ];
-            tableRows.push(itemData);
-        });
-
-        doc.autoTable({
-            head: [tableColumn],
-            body: tableRows,
-            startY: 20,
-            theme: 'grid',
-            styles: {
-                font: 'helvetica',
-                fontSize: 9,
-                cellPadding: 2,
-                overflow: 'linebreak',
-                halign: 'left',
-                valign: 'middle'
-            },
-            headStyles: {
-                fillColor: [230, 230, 230],
-                textColor: [0, 0, 0],
-                fontStyle: 'bold'
-            },
-            didDrawPage: function (data) {
-                let str = "Page " + doc.internal.getNumberOfPages();
-                doc.setFontSize(8);
-                doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
-            }
-        });
+        // Define company details for PDF header
+        const companyName = "GOOD LUCK BOOK STORE";
+        const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
+        const companyMobile = "Mobile Number: 7024136476";
+        const companyGST = "GST NO: 23EAVPP3772F1Z8";
+        const companyLogoUrl = companyLogo; // Use the imported logo directly
         
-        doc.save(`Stationery_Item_List_${new Date().toLocaleDateString()}.pdf`);
-        showFlashMessage('Stationery Item list downloaded as PDF!', 'success');
+        // Function to generate the main report content (title, line, table, save)
+        // This function now accepts the dynamic startYPositionForTable as an argument
+        const generateReportBody = (startYPositionForTable) => {
+            // Add a professional report title (centered, below company info)
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30); // Dark gray for title
+            // Adjust Y position for the report title to be below company info
+            doc.text("Stationery Item List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
+
+            // Add a line separator below the main title
+            doc.setLineWidth(0.5);
+            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15); // Line spanning almost full width
+
+            // Update startYPositionForTable for autoTable
+            const tableStartY = startYPositionForTable + 20;
+
+
+            // Define table columns explicitly. This is what should appear in the header.
+            const tableColumn = ["S.No.", "Item Name", "Price (Rs.)", "Add Date", "Status"];
+            const tableRows = [];
+
+            filteredItems.forEach((item, index) => {
+                // Ensure item.price is a valid number before formatting
+                const formattedPrice = typeof item.price === 'number' && !isNaN(item.price)
+                                        ? `Rs ${item.price.toFixed(2)}` 
+                                        : 'N/A'; 
+
+                // Explicitly convert all data points to string and trim any leading/trailing whitespace
+                const itemData = [
+                    String(index + 1), // S.No. (relative to filtered list, not current page)
+                    String(item.itemName || '').trim(), // Changed item.name to item.itemName
+                    formattedPrice, // Formatted Price
+                    formatDateWithTime(item.createdAt), // Add Date
+                    String(item.status || '').trim().charAt(0).toUpperCase() + String(item.status || '').trim().slice(1) // Status
+                ];
+                tableRows.push(itemData);
+            });
+
+            // Add the table to the document with professional styling
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: tableStartY, // Use our dynamic start position
+                theme: 'plain', // Changed to 'plain' for a cleaner look like the reference PDF
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 10,
+                    cellPadding: 3,
+                    textColor: [51, 51, 51], // Default text color for body
+                    valign: 'middle',
+                    halign: 'left'
+                },
+                headStyles: {
+                    fillColor: [240, 240, 240], // Light gray header
+                    textColor: [51, 51, 51], // Dark text for header
+                    fontStyle: 'bold',
+                    halign: 'center', // Center align header text
+                    valign: 'middle', // Vertically align header text
+                    lineWidth: 0.1, // Add a thin border to header cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                bodyStyles: {
+                    lineWidth: 0.1, // Add a thin border to body cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                columnStyles: {
+                    0: { cellWidth: 15, halign: 'center' }, 1: { cellWidth: 'auto', halign: 'left' },
+                    2: { cellWidth: 'auto', halign: 'right' }, // Right align price column
+                    3: { halign: 'center' }, 4: { halign: 'center' }
+                },
+                margin: { top: 10, right: 14, bottom: 10, left: 14 },
+                didDrawPage: function (data) {
+                    // Add footer on each page
+                    doc.setFontSize(10);
+                    doc.setTextColor(100); // Gray color for footer text
+                    const pageCount = doc.internal.getNumberOfPages();
+                    doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                }
+            });
+            doc.save(`Stationery_Item_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
+            showFlashMessage('Stationery Item list downloaded as PDF!', 'success');
+        };
+
+        // 5. **Handle Logo Loading Asynchronously:**
+        const img = new Image();
+        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
+        img.onload = () => {
+            const logoX = 14; // Left margin for logo
+            const logoY = 10; // Top margin for logo
+            const imgWidth = 40; // Adjust as needed for your logo size
+            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+            
+            // Add the logo at the top-left
+            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
+            
+            // Add company name and details next to logo
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
+            
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12); // Address
+            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17); // Mobile
+            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22); // GST No.
+
+            // Calculate startYPositionForTable based on logo and company info block
+            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10); // Ensure enough space
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
+        };
+
+        img.onerror = () => {
+            console.warn("Logo image could not be loaded. Generating PDF without logo.");
+            // If logo fails, add only company info block
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, 14, 20); // Company Name
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, 14, 27); // Address
+            doc.text(companyMobile, 14, 32); // Mobile
+            doc.text(companyGST, 14, 37); // GST No.
+            
+            const calculatedStartY = 45; // Adjust startY since no logo
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
+        };
+
+        img.src = companyLogoUrl; // This will now use the imported image data
+
+        // Add generation date/time to the top right (this part can run immediately)
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100); // Gray color for date text
+        doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
     };
 
     // --- UI Rendering ---
@@ -356,183 +460,183 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                 </p>
             )}
 
-            {/* Stationery Item Creation/Update Form */}
-            <div className="form-container-card">
-                <form onSubmit={handleSubmit} className="app-form">
-                    <h3 className="form-title">{editingItemId ? 'Edit Stationery Item' : 'Add New Stationery Item'}</h3>
-                    
-                    <div className="form-group">
-                        <label htmlFor="itemName">Item's Name:</label> {/* Changed htmlFor to itemName */}
-                        <input
-                            type="text"
-                            id="itemName" // Changed id to itemName
-                            name="itemName" // Changed name to itemName
-                            value={formData.itemName} // Changed formData.name to formData.itemName
-                            onChange={handleChange}
-                            placeholder="e.g., Pencil, Notebook, School Bag"
-                            required
-                            disabled={loading}
-                            className="form-input"
-                        />
-                    </div>
+            {/* Main content layout for two columns */}
+            <div className="main-content-layout">
+                {/* Stationery Item List Table */}
+                {/* This is the first child, so it will appear on the left with flex-direction: row */}
+                <div className="table-section">
+                    <h3 className="table-title">Existing Stationery Items</h3>
 
-                    <div className="form-group">
-                        <label htmlFor="price">Price (₹):</label>
-                        <input
-                            type="number"
-                            id="price"
-                            name="price"
-                            value={formData.price}
-                            onChange={handleChange}
-                            placeholder="e.g., 10.00, 500.00"
-                            min="0"
-                            step="0.01" // Allow decimal values for price
-                            required
-                            disabled={loading}
-                            className="form-input"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="status">Status:</label>
-                        <select
-                            id="status"
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            disabled={loading}
-                            className="form-select"
-                        >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
-
-                    <div className="form-actions">
-                        <button type="submit" className="btn btn-primary" disabled={loading}>
-                            {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingItemId ? 'Update Item' : 'Add Item')}
-                        </button>
-                        {editingItemId && (
-                            <button
-                                type="button"
-                                className="btn btn-secondary ml-2"
-                                onClick={() => {
-                                    setEditingItemId(null);
-                                    setFormData({ itemName: '', price: '', status: 'active' }); // Changed name to itemName
-                                    setLocalError(null);
+                    {/* Search and PDF Download Section */}
+                    <div className="table-controls">
+                        <div className="search-input-group">
+                            <input
+                                type="text"
+                                placeholder="Search by Item Name..."
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1); // Reset to first page on search
                                 }}
+                                className="search-input"
                                 disabled={loading}
-                            >
-                                Cancel Edit
-                            </button>
-                        )}
+                            />
+                            <FaSearch className="search-icon" />
+                        </div>
+                        <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredItems.length === 0}>
+                            <FaFilePdf className="btn-icon-mr" /> Download PDF
+                        </button>
                     </div>
-                </form>
-            </div>
 
-            {/* Stationery Item List Table */}
-            <div className="table-container">
-                <h3 className="table-title">Existing Stationery Items</h3>
+                    {loading && stationeryItems.length === 0 ? (
+                        <p className="loading-state text-center">
+                            <FaSpinner className="animate-spin mr-2" /> Loading stationery items...
+                        </p>
+                    ) : filteredItems.length === 0 ? (
+                        <p className="no-data-message text-center">No stationery items found matching your criteria. Start by adding one!</p>
+                    ) : (
+                        <div className="table-container"> {/* This div is specifically for the table overflow */}
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>S.No.</th>
+                                        <th>Item Name</th>
+                                        <th>Price</th>
+                                        <th>Add Date</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody ref={tableBodyRef}>
+                                    {currentItems.map((item, index) => (
+                                        <tr key={item._id}>
+                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td>{item.itemName}</td>
+                                            <td>
+                                                {typeof item.price === 'number' && !isNaN(item.price)
+                                                    ? `Rs ${item.price.toFixed(2)}`
+                                                    : 'N/A'
+                                                }
+                                            </td>
+                                            <td>{formatDateWithTime(item.createdAt)}</td>
+                                            <td>
+                                                <span className={`status-badge ${item.status}`}>
+                                                    {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                                </span>
+                                            </td>
+                                            <td className="actions-column">
+                                                <button
+                                                    onClick={() => handleEdit(item)}
+                                                    className="action-icon-button edit-button"
+                                                    title="Edit Stationery Item"
+                                                    disabled={loading}
+                                                >
+                                                    <FaEdit />
+                                                </button>
+                                                <button
+                                                    onClick={() => openConfirmModal(item)}
+                                                    className="action-icon-button delete-button"
+                                                    title="Delete Stationery Item"
+                                                    disabled={loading}
+                                                >
+                                                    {loading && itemToDeleteId === item._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
 
-                {/* Search and PDF Download Section */}
-                <div className="table-controls">
-                    <div className="search-input-group">
-                        <input
-                            type="text"
-                            placeholder="Search by Item Name..."
-                            value={searchTerm}
-                            onChange={(e) => {
-                                setSearchTerm(e.target.value);
-                                setCurrentPage(1); // Reset to first page on search
-                            }}
-                            className="search-input"
-                            disabled={loading}
-                        />
-                        <FaSearch className="search-icon" />
-                    </div>
-                    <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredItems.length === 0}>
-                        <FaFilePdf className="btn-icon-mr" /> Download PDF
-                    </button>
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="pagination-controls">
+                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
+                                        <FaChevronLeft className="btn-icon-mr" /> Previous
+                                    </button>
+                                    <span>Page {currentPage} of {totalPages}</span>
+                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
+                                        Next <FaChevronRight className="btn-icon-ml" />
+                                    </button>
+                                </div>
+                            )}
+                            <div className="total-records text-center mt-2">
+                                Total Records: {filteredItems.length}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {loading && stationeryItems.length === 0 ? (
-                    <p className="loading-state text-center">
-                        <FaSpinner className="animate-spin mr-2" /> Loading stationery items...
-                    </p>
-                ) : filteredItems.length === 0 ? (
-                    <p className="no-data-message text-center">No stationery items found matching your criteria. Start by adding one!</p>
-                ) : (
-                    <>
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>S.No.</th>
-                                    <th>Item Name</th> {/* Changed from Name to Item Name */}
-                                    <th>Price</th>
-                                    <th>Add Date</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody ref={tableBodyRef}>
-                                {currentItems.map((item, index) => (
-                                    // Removed potential whitespace causing hydration error
-                                    <tr key={item._id}>
-                                        <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td>{item.itemName}</td> {/* Changed item.name to item.itemName */}
-                                        <td>
-                                            {typeof item.price === 'number' && !isNaN(item.price)
-                                                ? `₹ ${item.price.toFixed(2)}`
-                                                : 'N/A'
-                                            }
-                                        </td>
-                                        <td>{formatDateWithTime(item.createdAt)}</td>
-                                        <td>
-                                            <span className={`status-badge ${item.status}`}>
-                                                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                                            </span>
-                                        </td>
-                                        <td className="actions-column">
-                                            <button
-                                                onClick={() => handleEdit(item)}
-                                                className="action-icon-button edit-button"
-                                                title="Edit Stationery Item"
-                                                disabled={loading}
-                                            >
-                                                <FaEdit />
-                                            </button>
-                                            <button
-                                                onClick={() => openConfirmModal(item)}
-                                                className="action-icon-button delete-button"
-                                                title="Delete Stationery Item"
-                                                disabled={loading}
-                                            >
-                                                {loading && itemToDeleteId === item._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {/* Pagination Controls */}
-                        {totalPages > 1 && (
-                            <div className="pagination-controls">
-                                <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
-                                    <FaChevronLeft className="btn-icon-mr" /> Previous
-                                </button>
-                                <span>Page {currentPage} of {totalPages}</span>
-                                <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
-                                    Next <FaChevronRight className="btn-icon-ml" />
-                                </button>
-                            </div>
-                        )}
-                        <div className="total-records text-center mt-2">
-                            Total Records: {filteredItems.length}
+                {/* Stationery Item Creation/Update Form */}
+                {/* This is the second child, so it will appear on the right with flex-direction: row */}
+                <div className="form-container-card">
+                    <form onSubmit={handleSubmit} className="app-form">
+                        <h3 className="form-title">{editingItemId ? 'Edit Stationery Item' : 'Add New Stationery Item'}</h3>
+                        
+                        <div className="form-group">
+                            <label htmlFor="itemName">Item's Name:</label>
+                            <input
+                                type="text"
+                                id="itemName"
+                                name="itemName"
+                                value={formData.itemName}
+                                onChange={handleChange}
+                                placeholder="e.g., Pencil, Notebook, School Bag"
+                                required
+                                disabled={loading}
+                                className="form-input"
+                            />
                         </div>
-                    </>
-                )}
-            </div>
+
+                        <div className="form-group">
+                            <label htmlFor="price">Price (Rs):</label>
+                            <input
+                                type="number"
+                                id="price"
+                                name="price"
+                                value={formData.price}
+                                onChange={handleChange}
+                                placeholder="e.g., 10.00, 500.00"
+                                min="0"
+                                step="0.01" // Allow decimal values for price
+                                required
+                                disabled={loading}
+                                className="form-input"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="status">Status:</label>
+                            <select
+                                id="status"
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                disabled={loading}
+                                className="form-select"
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div className="form-actions">
+                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingItemId ? 'Update Item' : 'Add Item')}
+                            </button>
+                            {editingItemId && (
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary ml-2"
+                                    onClick={handleCancelEdit}
+                                    disabled={loading}
+                                >
+                                    Cancel Edit
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                </div>
+            </div> {/* End of main-content-layout */}
 
             {/* Confirmation Modal */}
             {showConfirmModal && (

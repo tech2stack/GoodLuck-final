@@ -10,6 +10,7 @@ import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css'; 
 import '../../styles/CreateSetManagement.css'; 
+import companyLogo from '../../assets/glbs-logo.jpg'; 
 
 
 // Define special IDs for dropdown entries that are not actual database IDs
@@ -72,6 +73,21 @@ export default function CreateSetManagement({ showFlashMessage }) {
 
     // --- Helper function to safely get string value or 'N/A' for display ---
     const getStringValue = (field) => field ? String(field).trim() : 'N/A';
+
+    // --- Helper function for date formatting ---
+    const formatDateWithTime = (dateString) => {
+        if (!dateString) return 'N/A';
+        const options = {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true // For AM/PM format
+        };
+        const date = new Date(dateString);
+        return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
+    };
 
     // --- Fetch All Dropdown Data ---
     const fetchDropdownData = useCallback(async () => {
@@ -656,35 +672,113 @@ export default function CreateSetManagement({ showFlashMessage }) {
         const className = classes.find(c => c._id === selectedClass)?.name || 'Unknown Class';
         let finalFilename = "";
         let finalTitle = "";
-        let currentY = 15; // Starting Y position for content
+        
+        // Define company details for PDF header
+        const companyName = "GOOD LUCK BOOK STORE";
+        const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
+        const companyMobile = "Mobile Number: 7024136476";
+        const companyGST = "GST NO: 23EAVPP3772F1Z8";
 
-        const addTableToDoc = (title, columns, rows, startY) => {
-            doc.text(title, 14, startY);
-            doc.autoTable({
+        const addHeaderAndSetStartY = (docInstance, reportTitle, img, imgWidth, imgHeight) => {
+            const marginX = 14;
+            const marginY = 10;
+            const textOffsetFromLogo = 5;
+
+            // Add the logo at the top-left
+            if (img) { // Only add if image object is provided (i.e., loaded successfully)
+                docInstance.addImage(img, 'JPEG', marginX, marginY, imgWidth, imgHeight); 
+            }
+            
+            // Add generation date/time to the top right
+            docInstance.setFontSize(10);
+            docInstance.setFont('helvetica', 'normal');
+            docInstance.setTextColor(100, 100, 100); // Gray color for date text
+            docInstance.text(`Date: ${formatDateWithTime(new Date())}`, docInstance.internal.pageSize.width - marginX, marginY + 10, { align: 'right' });
+
+            // Add company name and details next to logo
+            docInstance.setFontSize(12);
+            docInstance.setFont('helvetica', 'bold');
+            docInstance.setTextColor(30, 30, 30);
+            const companyTextStartX = img ? (marginX + imgWidth + textOffsetFromLogo) : marginX; // Adjust start X if no logo
+            let currentCompanyTextY = marginY + textOffsetFromLogo; // Start slightly below logo's top or at marginY
+
+            docInstance.text(companyName, companyTextStartX, currentCompanyTextY); // Company Name
+            
+            docInstance.setFontSize(9);
+            docInstance.setFont('helvetica', 'normal');
+            docInstance.setTextColor(50, 50, 50);
+            currentCompanyTextY += 7; // Line height for next line
+            docInstance.text(companyAddress, companyTextStartX, currentCompanyTextY); // Address
+            currentCompanyTextY += 5; // Line height for next line
+            docInstance.text(companyMobile, companyTextStartX, currentCompanyTextY); // Mobile
+            currentCompanyTextY += 5; // Line height for next line
+            docInstance.text(companyGST, companyTextStartX, currentCompanyTextY); // GST No.
+
+            // Calculate max Y used by the header content (either logo bottom or last company text line bottom)
+            const maxHeaderY = Math.max(img ? (marginY + imgHeight) : marginY, currentCompanyTextY); 
+
+            // Add a professional report title (centered, below company info)
+            docInstance.setFontSize(18);
+            docInstance.setFont('helvetica', 'bold');
+            docInstance.setTextColor(30, 30, 30); // Dark gray for title
+            const reportTitleY = maxHeaderY + 10; // 10 units padding after header content
+            docInstance.text(reportTitle, docInstance.internal.pageSize.width / 2, reportTitleY, { align: 'center' }); 
+
+            // Add a line separator below the main title
+            docInstance.setLineWidth(0.5);
+            docInstance.line(marginX, reportTitleY + 5, docInstance.internal.pageSize.width - marginX, reportTitleY + 5); // Line spanning almost full width
+
+            return reportTitleY + 10; // Return Y position for table start (10 units padding after line)
+        };
+
+        const addTableToDoc = (docInstance, title, columns, rows, startY) => {
+            // Add a sub-title for the table if needed (e.g., "Books Detail" or "Stationery Item Detail")
+            docInstance.setFontSize(14);
+            docInstance.setFont('helvetica', 'bold');
+            docInstance.setTextColor(30, 30, 30);
+            docInstance.text(title, 14, startY);
+
+            docInstance.autoTable({
                 head: [columns],
                 body: rows,
-                startY: startY + 5, // Start table slightly below title
-                theme: 'grid', 
+                startY: startY + 5, // Start table slightly below sub-title
+                theme: 'plain', // Changed to 'plain' for a cleaner look
                 styles: {
                     font: 'helvetica',
                     fontSize: 9,
-                    cellPadding: 2,
-                    overflow: 'linebreak',
-                    halign: 'left',
-                    valign: 'middle'
+                    cellPadding: 3,
+                    textColor: [51, 51, 51], // Default text color for body
+                    valign: 'middle',
+                    halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [230, 230, 230],
-                    textColor: [0, 0, 0],
-                    fontStyle: 'bold'
+                    fillColor: [240, 240, 240], // Light gray header
+                    textColor: [51, 51, 51], // Dark text for header
+                    fontStyle: 'bold',
+                    halign: 'center', // Center align header text
+                    valign: 'middle', // Vertically align header text
+                    lineWidth: 0.1, // Add a thin border to header cells
+                    lineColor: [200, 200, 200] // Light gray border
                 },
+                bodyStyles: {
+                    lineWidth: 0.1, // Add a thin border to body cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                columnStyles: {
+                    // Specific column styling for books
+                    0: { cellWidth: 15, halign: 'center' }, // S.No.
+                    3: { halign: 'center' }, // QTY
+                    4: { halign: 'right' }, // Price
+                    5: { halign: 'right' } // Total
+                },
+                margin: { top: 10, right: 14, bottom: 10, left: 14 },
                 didDrawPage: function (data) {
-                    let str = "Page " + doc.internal.getNumberOfPages();
-                    doc.setFontSize(8);
-                    doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                    let str = "Page " + docInstance.internal.getNumberOfPages();
+                    docInstance.setFontSize(8);
+                    docInstance.text(str, data.settings.margin.left, docInstance.internal.pageSize.height - 10);
                 }
             });
-            return doc.autoTable.previous.finalY + 10; // Return Y position after table + some margin
+            return docInstance.autoTable.previous.finalY + 10; // Return Y position after table + some margin
         };
 
         const generateBooksData = () => {
@@ -741,57 +835,81 @@ export default function CreateSetManagement({ showFlashMessage }) {
         };
 
 
-        if (type === 'books' || type === 'both') {
-            if (booksDetail.length === 0 && type !== 'both') {
-                showFlashMessage('No books to download.', 'warning');
-                return;
-            }
-            if (booksDetail.length > 0) {
-                const { columns, rows } = generateBooksData();
-                finalTitle = `Books Detail for ${customerName} - ${className}`;
-                finalFilename = `Books_Detail_${customerName.replace(/\s/g, '_')}_${className.replace(/\s/g, '_')}.pdf`;
-                currentY = addTableToDoc(finalTitle, columns, rows, currentY);
-            } else if (type === 'books') { 
-                showFlashMessage('No books to download.', 'warning');
-                return;
-            }
-        } 
-        
-        if (type === 'stationery' || type === 'both') {
-            if (stationeryDetail.length === 0 && type !== 'both') {
-                showFlashMessage('No stationery items to download.', 'warning');
-                return;
-            }
-            if (stationeryDetail.length > 0) {
-                const { columns, rows } = generateStationeryData();
-                if (type === 'stationery') {
-                    finalTitle = `Stationery Item Detail for ${customerName} - ${className}`;
-                    finalFilename = `Stationery_Detail_${customerName.replace(/\s/g, '_')}_${className.replace(/\s/g, '_')}.pdf`;
-                    currentY = addTableToDoc(finalTitle, columns, rows, currentY);
-                } else { 
-                    if (currentY > (doc.internal.pageSize.height - 50)) { 
-                        doc.addPage();
-                        currentY = 15; 
-                    }
-                    currentY = addTableToDoc(`Stationery Item Detail for ${customerName} - ${className}`, columns, rows, currentY);
-                    if (type === 'both') {
-                        finalFilename = `Complete_Set_Detail_${customerName.replace(/\s/g, '_')}_${className.replace(/\s/g, '_')}.pdf`;
-                        finalTitle = `Complete Set Detail for ${customerName} - ${className}`;
-                    }
+        // Main logic to decide what to download and generate PDF
+        const generatePdfContent = (docInstance, img, imgWidth, imgHeight) => {
+            let currentY;
+
+            if (type === 'books' || type === 'both') {
+                if (booksDetail.length > 0) {
+                    finalTitle = `Books Detail for ${customerName} - ${className}`;
+                    currentY = addHeaderAndSetStartY(docInstance, finalTitle, img, imgWidth, imgHeight);
+                    const { columns, rows } = generateBooksData();
+                    currentY = addTableToDoc(docInstance, "Books Detail", columns, rows, currentY);
+                } else if (type === 'books') { 
+                    showFlashMessage('No books to download.', 'warning');
+                    return; // Exit if only books requested and none exist
                 }
-            } else if (type === 'stationery') { 
-                showFlashMessage('No stationery items to download.', 'warning');
-                return;
+            } 
+            
+            if (type === 'stationery' || type === 'both') {
+                if (stationeryDetail.length > 0) {
+                    if (type === 'stationery') {
+                        finalTitle = `Stationery Item Detail for ${customerName} - ${className}`;
+                        currentY = addHeaderAndSetStartY(docInstance, finalTitle, img, imgWidth, imgHeight);
+                    } else { // type === 'both'
+                        // If books were added, check if new page is needed for stationery
+                        if (booksDetail.length > 0 && currentY > (docInstance.internal.pageSize.height - 50)) { 
+                            docInstance.addPage();
+                            currentY = addHeaderAndSetStartY(docInstance, `Stationery Item Detail for ${customerName} - ${className}`, img, imgWidth, imgHeight);
+                        } else if (booksDetail.length === 0) { // If no books, then this is the first section
+                            currentY = addHeaderAndSetStartY(docInstance, `Stationery Item Detail for ${customerName} - ${className}`, img, imgWidth, imgHeight);
+                        }
+                    }
+                    const { columns, rows } = generateStationeryData();
+                    addTableToDoc(docInstance, "Stationery Item Detail", columns, rows, currentY);
+                } else if (type === 'stationery') { 
+                    showFlashMessage('No stationery items to download.', 'warning');
+                    return; // Exit if only stationery requested and none exist
+                }
             }
-        }
 
-        if (type === 'both' && booksDetail.length === 0 && stationeryDetail.length === 0) {
-             showFlashMessage('No books or stationery items to download.', 'warning');
-             return;
-        }
+            if (type === 'both') {
+                if (booksDetail.length === 0 && stationeryDetail.length === 0) {
+                     showFlashMessage('No books or stationery items to download.', 'warning');
+                     return;
+                }
+                finalFilename = `Complete_Set_Detail_${customerName.replace(/\s/g, '_')}_${className.replace(/\s/g, '_')}.pdf`;
+            } else if (type === 'books') {
+                finalFilename = `Books_Detail_${customerName.replace(/\s/g, '_')}_${className.replace(/\s/g, '_')}.pdf`;
+            } else if (type === 'stationery') {
+                finalFilename = `Stationery_Detail_${customerName.replace(/\s/g, '_')}_${className.replace(/\s/g, '_')}.pdf`;
+            }
 
-        doc.save(finalFilename);
-        showFlashMessage(`${finalTitle} downloaded as PDF!`, 'success');
+            docInstance.save(finalFilename);
+            showFlashMessage(`${finalTitle} downloaded as PDF!`, 'success');
+        };
+
+
+        // Handle Logo Loading Asynchronously and then generate content
+        const img = new Image();
+        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
+        img.onload = () => {
+            const imgWidth = 40; 
+            const imgHeight = (img.height * imgWidth) / img.width; 
+            
+            // Now generate the rest of the content after the image is loaded
+            generatePdfContent(doc, img, imgWidth, imgHeight);
+        };
+
+        img.onerror = () => {
+            console.warn("Logo image could not be loaded. Generating PDF without logo.");
+            // If logo fails, proceed to generate content without adding the image
+            // Pass dummy values for img, imgWidth, imgHeight to addHeaderAndSetStartY
+            generatePdfContent(doc, null, 0, 0); // Pass null for img to indicate no logo
+        };
+
+        // Directly use companyLogo here
+        img.src = companyLogo; 
     };
 
     // --- Memoized options for the Item dropdown based on selectedSubtitle and checkbox ---

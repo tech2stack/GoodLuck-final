@@ -1,196 +1,463 @@
 /* src/styles/PendingBookManagement.css */
 
+/* General Page Layout Adjustments */
 .pending-book-management-container {
-    padding: 20px;
-    background-color: #f9f9f9;
-    min-height: calc(100vh - 60px); /* Adjust based on your header height */
+    padding: 15px; /* Reduced overall padding for the container */
+    max-width: 1300px; /* Slightly reduced max-width for a more compact look */
+    margin: 0 auto; /* Center the container */
 }
 
-.filters-section, .books-display-section {
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-    padding: 20px;
+/* Main Page Title */
+.pending-book-management-container .section-title {
+    font-size: 1.8rem;
+    color: #333333;
+    margin-bottom: 25px;
+    text-align: center;
+    font-weight: 700;
 }
 
-.section-header {
-    font-size: 1.5rem;
-    color: #333;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
+/* Main content layout for two columns on desktop */
+.pending-book-management-container .main-content-layout {
+    display: flex;
+    flex-direction: column; /* Default to column on small screens */
+    gap: 20px; /* Reduced space between sections */
+    width: 100%;
 }
 
-.form-grid-2-cols {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* Two equal columns */
-    gap: 20px;
-    margin-bottom: 15px;
-}
+@media (min-width: 992px) { /* Desktop breakpoint */
+    .pending-book-management-container .main-content-layout {
+        flex-direction: row; /* Filters on left, Table on right */
+        align-items: flex-start; /* Align items to the top */
+    }
 
-@media (max-width: 768px) {
-    .form-grid-2-cols {
-        grid-template-columns: 1fr; /* Stack columns on small screens */
+    .pending-book-management-container .filters-section {
+        flex: 0 0 400px; /* Slightly reduced fixed width for the filters on desktop */
+        max-width: 400px; /* Ensure it doesn't grow beyond this */
+        margin-right: 25px; /* Space between filters and table */
+        margin-left: 0; 
+    }
+
+    .pending-book-management-container .books-display-section {
+        flex: 1; /* Table takes remaining space */
+        min-width: 0; /* Crucial: Allows the flex item to shrink below its content's intrinsic width, enabling overflow-x on its child */
+        margin-top: 0; 
+        margin-left: 0; 
+        margin-right: 0; 
     }
 }
 
 
-/* Reusing .form-group, .form-label, .form-select, .btn-primary from Form.css */
-
-.table-container {
-    overflow-x: auto;
-    margin-top: 20px;
+/* Filters Section Styling - Make the outer wrapper transparent/borderless */
+.pending-book-management-container .filters-section {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important; /* Remove all padding from this outer div */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
 }
 
-/* Reusing .data-table, thead, tbody, tr, th, td from Table.css */
+/* Apply actual card styling to the inner form (or filter content) */
+.pending-book-management-container .filters-section .form-container-card { /* This targets the inner card */
+    background-color: #ffffff; /* White background for the form itself */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    padding: 20px; /* Padding inside the form */
+    width: 100%; /* Form takes full width of its parent card */
+    max-width: 100%; /* Allow form to take full width of its container (400px on desktop) */
+    margin: 0 auto; /* Center the form itself */
+}
 
-.status-cell {
-    font-weight: bold;
+
+/* Section Header (for both filter and book list sections) */
+.pending-book-management-container .section-header {
+    font-size: 1.4rem;
+    color: #444444;
+    margin-bottom: 20px;
+    font-weight: 600;
     text-align: center;
-    padding: 8px;
-    border: 1px solid #eee;
 }
 
-/* New style for 'active' status */
-.status-active {
-    color: #007bff; /* Blue for "ACTIVE" */
+/* Form Group (for dropdowns) */
+.pending-book-management-container .form-group {
+    width: 100%;
+    margin-bottom: 15px;
 }
 
-.status-clear {
-    color: #28a745; /* Green for "CLEAR" (Available) */
+.pending-book-management-container .form-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #555555;
+    font-size: 0.85rem;
 }
 
-.status-pending {
-    color: #dc3545; /* Red for "PENDING" (Not Available / Action Needed) */
+.pending-book-management-container .form-select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #dddddd;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    color: #333333;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.btn-status-action {
-    background: none;
-    border: 1px solid; 
-    border-radius: 50%; 
-    width: 36px; 
-    height: 36px; 
-    display: inline-flex;
+.pending-book-management-container .form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+    outline: none;
+}
+
+/* Form actions (buttons) - Reusing existing .btn styles */
+.pending-book-management-container .form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.pending-book-management-container .btn {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    font-size: 1.2rem; 
-    transition: all 0.2s ease-in-out;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
 }
 
-.btn-status-action:hover:not(:disabled) {
-    transform: scale(1.1);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+.pending-book-management-container .btn-primary {
+    background-color: #007bff;
+    color: #ffffff;
 }
 
-.btn-status-action:disabled {
+.pending-book-management-container .btn-primary:hover:not(:disabled) {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+.pending-book-management-container .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
 
-/* Styles for the button based on current status */
-.btn-status-action.btn-status-active {
-    border-color: #007bff; /* Blue border */
-    color: #007bff; /* Blue icon */
-    background-color: #e6f2ff; /* Very light blue background */
+.pending-book-management-container .btn svg {
+    margin-left: 6px;
 }
-
-.btn-status-action.btn-status-pending {
-    border-color: #dc3545; /* Red border */
-    color: #dc3545; /* Red icon */
-    background-color: #ffe6e6; /* Very light red background */
-}
-
-.btn-status-action.btn-status-clear {
-    border-color: #28a745; /* Green border */
-    color: #28a745; /* Green icon */
-    background-color: #e6ffe6; /* Very light green background */
+.pending-book-management-container .btn .btn-icon-mr {
+    margin-right: 6px;
+    margin-left: 0;
 }
 
 
-/* Optional: Add a spin animation when loading for the button */
-.btn-status-action .status-action-icon.animate-spin {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-
-/* Pagination Styles (reusing from previous) */
-.pagination-controls {
+/* Error and Loading Messages */
+.pending-book-management-container .error-message {
+    color: #dc3545;
+    font-size: 0.8rem;
+    margin-top: 8px;
+    text-align: center;
+    width: 100%;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-top: 20px;
-    padding: 10px 0;
-    border-top: 1px solid #eee;
-    font-size: 0.9rem;
-    color: #555;
+    justify-content: center;
+    gap: 5px;
+}
+.pending-book-management-container .error-message .error-icon {
+    font-size: 1rem;
 }
 
-.items-per-page label {
-    margin-right: 8px;
-}
-
-.items-per-page select {
-    padding: 6px 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: #fff;
-    cursor: pointer;
-}
-
-.page-buttons button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.page-buttons button:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-}
-
-.page-buttons button:hover:not(:disabled) {
-    background-color: #0056b3;
-}
-
-.page-buttons span {
-    margin: 0 15px;
-}
-
-.total-records {
-    font-weight: bold;
-}
-
-.loading-message, .no-data-message {
+.pending-book-management-container .loading-message, .pending-book-management-container .no-data-message {
     text-align: center;
     padding: 20px;
     color: #666;
     font-style: italic;
-}
-
-.error-message {
-    background-color: #f8d7da;
-    color: #721c24;
-    padding: 15px;
-    border: 1px solid #f5c6cb;
-    border-radius: 5px;
-    margin-bottom: 20px;
     display: flex;
     align-items: center;
+    justify-content: center;
 }
 
-.error-icon {
-    margin-right: 10px;
-    font-size: 1.2em;
+/* Books Display Section Styling - Make the outer wrapper transparent/borderless */
+.pending-book-management-container .books-display-section {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important; /* Remove all padding from this outer div */
+    width: 100%;
+    margin-top: 0;
+}
+
+/* Apply actual card styling to the inner table container and controls */
+.pending-book-management-container .books-display-section .section-header { /* Target the header inside the section */
+    background-color: #ffffff; /* White background for controls */
+    border-top-left-radius: 8px; /* Rounded top corners */
+    border-top-right-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    padding: 15px 20px; /* Padding inside controls */
+    margin-bottom: 0; /* No margin below if table-container has margin-top */
+    /* Ensure flex properties if it's a direct child of books-display-section */
+    display: block; /* Ensure it behaves like a block for padding/margin */
+}
+
+.pending-book-management-container .table-container { /* This wraps the actual table */
+    background-color: #ffffff; /* White background for the table content area */
+    border-bottom-left-radius: 8px; /* Rounded bottom corners */
+    border-bottom-right-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    padding: 15px 20px; /* Padding around the table content */
+    overflow-x: auto; 
+    width: 100%;
+    display: block;
+    margin-top: 10px; /* Space between controls and table content */
+}
+
+/* Data Table Styling */
+.pending-book-management-container .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0; /* Removed margin-top, as padding is on table-container */
+}
+
+.pending-book-management-container .data-table th,
+.pending-book-management-container .data-table td {
+    padding: 8px 10px;
+    border: 1px solid #eeeeee;
+    text-align: left;
+    font-size: 0.8rem;
+    color: #333333;
+    vertical-align: middle;
+}
+
+.pending-book-management-container .data-table th {
+    background-color: #f8f9fa;
+    font-weight: 700;
+    color: #495057;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.pending-book-management-container .data-table tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.pending-book-management-container .data-table tbody tr:hover {
+    background-color: #e9ecef;
+}
+
+/* Status Cell Styling */
+.pending-book-management-container .status-cell {
+    font-weight: 600;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.pending-book-management-container .status-cell.status-active {
+    color: #28a745;
+}
+
+.pending-book-management-container .status-cell.status-pending {
+    color: #ffc107;
+}
+
+.pending-book-management-container .status-cell.status-clear {
+    color: #17a2b8;
+}
+
+/* Action Button in Table */
+.pending-book-management-container .btn-status-action {
+    background-color: #6c757d;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pending-book-management-container .btn-status-action:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.pending-book-management-container .btn-status-action.btn-status-active {
+    background-color: #28a745;
+}
+.pending-book-management-container .btn-status-action.btn-status-active:hover:not(:disabled) {
+    background-color: #218838;
+}
+
+.pending-book-management-container .btn-status-action.btn-status-pending {
+    background-color: #ffc107;
+    color: #333;
+}
+.pending-book-management-container .btn-status-action.btn-status-pending:hover:not(:disabled) {
+    background-color: #e0a800;
+}
+
+.pending-book-management-container .btn-status-action.btn-status-clear {
+    background-color: #17a2b8;
+}
+.pending-book-management-container .btn-status-action.btn-status-clear:hover:not(:disabled) {
+    background-color: #138496;
+}
+
+.pending-book-management-container .status-action-icon {
+    font-size: 0.9rem;
+}
+
+/* Pagination Controls */
+.pending-book-management-container .pagination-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    gap: 10px;
+}
+
+.pending-book-management-container .pagination-controls .btn-page {
+    background-color: #007bff;
+    color: white;
+    padding: 7px 10px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.pending-book-management-container .pagination-controls .btn-page:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.pending-book-management-container .pagination-controls span {
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.pending-book-management-container .total-records {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 10px;
+}
+
+.pending-book-management-container .items-per-page {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.pending-book-management-container .items-per-page label {
+    font-weight: normal;
+    margin-bottom: 0;
+}
+
+.pending-book-management-container .items-per-page select {
+    padding: 5px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #333;
+}
+
+/* Responsive adjustments for smaller screens (mobile) */
+@media (max-width: 991px) { /* Tablet and smaller, stack vertically */
+    .pending-book-management-container {
+        padding: 15px;
+    }
+    .pending-book-management-container .section-title {
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+    }
+    .pending-book-management-container .filters-section {
+        padding: 0; /* No padding on outer div */
+    }
+    .pending-book-management-container .filters-section .form-container-card {
+        padding: 15px; /* Reduced card padding for inner form */
+    }
+    .pending-book-management-container .section-header {
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+    }
+    .pending-book-management-container .form-group {
+        margin-bottom: 10px;
+    }
+    .pending-book-management-container .form-label {
+        font-size: 0.8rem;
+        margin-bottom: 3px;
+    }
+    .pending-book-management-container .form-select {
+        padding: 7px 9px;
+        font-size: 0.85rem;
+    }
+    .pending-book-management-container .form-actions {
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 15px;
+    }
+    .pending-book-management-container .form-actions .btn {
+        width: 100%;
+        padding: 10px 15px;
+        font-size: 0.85rem;
+    }
+
+    .pending-book-management-container .books-display-section {
+        padding: 0; /* No padding on outer div */
+    }
+    .pending-book-management-container .books-display-section .section-header {
+        padding: 15px; /* Reduced padding for controls */
+    }
+    .pending-book-management-container .table-container {
+        padding: 15px; /* Reduced padding for table content */
+    }
+    .pending-book-management-container .data-table th,
+    .pending-book-management-container .data-table td {
+        padding: 6px 8px;
+        font-size: 0.7rem;
+    }
+    .pending-book-management-container .data-table th {
+        font-size: 0.7rem;
+    }
+    .pending-book-management-container .status-cell {
+        font-size: 0.7rem;
+    }
+    .pending-book-management-container .btn-status-action {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+    }
+    .pending-book-management-container .status-action-icon {
+        font-size: 0.8rem;
+    }
+    .pending-book-management-container .pagination-controls {
+        margin-top: 15px;
+        gap: 8px;
+    }
+    .pending-book-management-container .pagination-controls .btn-page {
+        padding: 6px 9px;
+        font-size: 0.8rem;
+    }
+    .pending-book-management-container .pagination-controls span {
+        font-size: 0.8rem;
+    }
+    .pending-book-management-container .items-per-page {
+        font-size: 0.8rem;
+    }
+    .pending-book-management-container .items-per-page select {
+        padding: 4px 6px;
+        font-size: 0.8rem;
+    }
 }

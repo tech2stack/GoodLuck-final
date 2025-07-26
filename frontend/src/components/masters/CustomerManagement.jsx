@@ -1,25 +1,29 @@
 // src/components/masters/CustomerManagement.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../utils/api'; // API utility for backend calls
-import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight } from 'react-icons/fa'; // Icons for UI
+import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaSpinner, FaTimesCircle } from 'react-icons/fa'; // Icons for UI
 
 // Stylesheets (assuming these are already present and styled for consistency)
 import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
+// Import the new CustomerManagement specific styles
+import '../../styles/CustomerManagement.css'; // New import for specific styles
 
 // NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
 // If you are using npm, you'd do: npm install jspdf jspdf-autotable
 // Then import them here:
-// import { jsPDF } = require('jspdf');
+// import { jsPDF } = require('jspdf'); // This syntax is incorrect for modern JS modules
 // import 'jspdf-autotable';
+
+// Import the logo image directly (assuming it exists at this path for PDF)
+import companyLogo from '../../assets/glbs-logo.jpg';
 
 
 const CustomerManagement = ({ showFlashMessage }) => {
     // Backend base URL ko environment variable se fetch karein.
     // Ismein sirf domain aur port hoga, /api/v1 nahi.
     const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'; 
-    // Agar REACT_APP_BACKEND_URL define nahi hai, toh default ke roop mein localhost:5000 ka upyog karein.
 
     // State for managing list of customers
     const [customers, setCustomers] = useState([]);
@@ -27,7 +31,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
     const [branches, setBranches] = useState([]);
     const [cities, setCities] = useState([]);
     // State for form inputs
-    const [formData, setFormData] = useState({ // Corrected: useState for formData
+    const [formData, setFormData] = useState({ 
         customerName: '',
         schoolCode: '',
         branch: '', // Will store Branch ID
@@ -74,6 +78,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
     // --- Helper function for date formatting ---
     const formatDateWithTime = (dateString) => {
+        if (!dateString) return 'N/A';
         const options = {
             year: 'numeric',
             month: 'long',
@@ -473,6 +478,20 @@ const CustomerManagement = ({ showFlashMessage }) => {
         }
     };
 
+    const handleCancelEdit = () => {
+        setFormData({
+            customerName: '', schoolCode: '', branch: branches.length > 0 ? branches[0]._id : '',
+            city: cities.length > 0 ? cities[0]._id : '', contactPerson: '', mobileNumber: '',
+            email: '', gstNumber: '', aadharNumber: '', panNumber: '', shopAddress: '',
+            homeAddress: '',
+            status: 'active'
+        });
+        setSelectedImageFile(null);
+        setImagePreviewUrl('');
+        setEditingCustomerId(null);
+        setLocalError(null);
+    };
+
     // --- Search Filtering (now handled by API call in fetchCustomers) ---
     // The filtering is now done on the backend via the 'search' query parameter
     // and 'branch' query parameter. The 'customers' state already holds the filtered data.
@@ -513,46 +532,171 @@ const CustomerManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        doc.text("Customer List", 14, 15);
+        // Define company details for PDF header
+        const companyName = "GOOD LUCK BOOK STORE";
+        const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
+        const companyMobile = "Mobile Number: 7024136476";
+        const companyGST = "GST NO: 23EAVPP3772F1Z8";
+        const companyLogoUrl = companyLogo; // Use the imported logo directly
+        
+        // Function to generate the main report content (title, line, table, save)
+        // This function now accepts the dynamic startYPositionForTable as an argument
+        const generateReportBody = (startYPositionForTable) => {
+            // Add a professional report title (centered, below company info)
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30); // Dark gray for title
+            // Adjust Y position for the report title to be below company info
+            doc.text("Customer List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
 
-        const tableColumn = [
-            "S.No.", "Name", "Branch", "City", "Contact Person", "Mobile", "Email",
-            "Documents", "Address", "Logo", "Add Date", "Status"
-        ];
-        const tableRows = [];
+            // Add a line separator below the main title
+            doc.setLineWidth(0.5);
+            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15); // Line spanning almost full width
 
-        customers.forEach((customer, index) => { // Use 'customers' directly for PDF generation
-            const documents = [];
-            if (customer.aadharNumber) documents.push(`Aadhar: ${getStringValue(customer.aadharNumber)}`);
-            if (customer.panNumber) documents.push(`PAN: ${getStringValue(customer.panNumber)}`);
-            if (customer.gstNumber) documents.push(`GST: ${getStringValue(customer.gstNumber)}`);
+            // Update startYPositionForTable for autoTable
+            const tableStartY = startYPositionForTable + 20;
 
-            // Construct the full image URL for PDF
-            // Now, customer.image will be like '/customer-logos/image.jpg'
-            const imageUrlForPdf = customer.image && customer.image.startsWith('/customer-logos/') 
-                ? `${BACKEND_BASE_URL}/uploads${customer.image}` 
-                : customer.image;
 
-            const customerData = [
-                String(index + 1), // S.No.
-                `${getStringValue(customer.customerName)} ${customer.schoolCode ? `(${getStringValue(customer.schoolCode)})` : ''}`.trim(), // Name and School Code
-                customer.branch ? getStringValue(customer.branch.name) : 'N/A',
-                customer.city ? getStringValue(customer.city.name) : 'N/A',
-                getStringValue(customer.contactPerson),
-                getStringValue(customer.mobileNumber),
-                getStringValue(customer.email),
-                documents.join('\n') || 'N/A', // Combine documents
-                `${getStringValue(customer.shopAddress)}\n${getStringValue(customer.homeAddress)}`.trim() || 'N/A', // Combine addresses
-                imageUrlForPdf && (imageUrlForPdf.startsWith('data:image/') || imageUrlForPdf.startsWith('http')) ? 'Image Available' : 'No Image', // Check if it's a Base64 image or URL
-                formatDateWithTime(customer.createdAt),
-                getStringValue(customer.status).charAt(0).toUpperCase() + getStringValue(customer.status).slice(1)
+            // Generate table data
+            const tableColumn = [
+                "S.No.", "Name (Code)", "Branch", "City", "Contact Person", "Mobile", "Email",
+                "Documents", "Address", "Logo", "Add Date", "Status"
             ];
-            tableRows.push(customerData);
-        });
+            const tableRows = [];
 
-        doc.autoTable(tableColumn, tableRows, { startY: 20 });
-        doc.save(`Customer_List_${new Date().toLocaleDateString()}.pdf`);
-        showFlashMessage('Customer list downloaded as PDF!', 'success');
+            customers.forEach((customer, index) => { // Use 'customers' directly for PDF generation
+                const documents = [];
+                if (customer.aadharNumber) documents.push(`Aadhar: ${getStringValue(customer.aadharNumber)}`);
+                if (customer.panNumber) documents.push(`PAN: ${getStringValue(customer.panNumber)}`);
+                if (customer.gstNumber) documents.push(`GST: ${getStringValue(customer.gstNumber)}`);
+
+                // Construct the full image URL for PDF
+                // Now, customer.image will be like '/customer-logos/image.jpg'
+                const imageUrlForPdf = customer.image && customer.image.startsWith('/customer-logos/') 
+                    ? `${BACKEND_BASE_URL}/uploads${customer.image}` 
+                    : customer.image;
+
+                const customerData = [
+                    String(index + 1), // S.No.
+                    `${getStringValue(customer.customerName)} ${customer.schoolCode ? `(${getStringValue(customer.schoolCode)})` : ''}`.trim(), // Name and School Code
+                    customer.branch ? getStringValue(customer.branch.name) : 'N/A',
+                    customer.city ? getStringValue(customer.city.name) : 'N/A',
+                    getStringValue(customer.contactPerson),
+                    getStringValue(customer.mobileNumber),
+                    getStringValue(customer.email),
+                    documents.join('\n') || 'N/A', // Combine documents
+                    `${getStringValue(customer.shopAddress)}\n${getStringValue(customer.homeAddress)}`.trim() || 'N/A', // Combine addresses
+                    imageUrlForPdf && (imageUrlForPdf.startsWith('data:image/') || imageUrlForPdf.startsWith('http')) ? 'Image Available' : 'No Image', // Check if it's a Base64 image or URL
+                    formatDateWithTime(customer.createdAt),
+                    getStringValue(customer.status).charAt(0).toUpperCase() + getStringValue(customer.status).slice(1)
+                ];
+                tableRows.push(customerData);
+            });
+
+            // Add the table to the document with professional styling
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: tableStartY, // Use our dynamic start position
+                theme: 'plain', // Changed to 'plain' for a cleaner look like the reference PDF
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 10,
+                    cellPadding: 3,
+                    textColor: [51, 51, 51], // Default text color for body
+                    valign: 'middle',
+                    halign: 'left'
+                },
+                headStyles: {
+                    fillColor: [240, 240, 240], // Light gray header
+                    textColor: [51, 51, 51], // Dark text for header
+                    fontStyle: 'bold',
+                    halign: 'center', // Center align header text
+                    valign: 'middle', // Vertically align header text
+                    lineWidth: 0.1, // Add a thin border to header cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                bodyStyles: {
+                    lineWidth: 0.1, // Add a thin border to body cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                columnStyles: {
+                    0: { cellWidth: 15, halign: 'center' }, 1: { cellWidth: 'auto', halign: 'left' },
+                    2: { cellWidth: 'auto', halign: 'left' }, 3: { cellWidth: 'auto', halign: 'left' },
+                    4: { cellWidth: 'auto', halign: 'left' }, 5: { cellWidth: 'auto', halign: 'center' },
+                    6: { cellWidth: 'auto', halign: 'left' }, 7: { cellWidth: 'auto', halign: 'left' },
+                    8: { cellWidth: 'auto', halign: 'left' }, 9: { cellWidth: 'auto', halign: 'center' }, // Logo column
+                    10: { halign: 'center' }, 11: { halign: 'center' }
+                },
+                margin: { top: 10, right: 14, bottom: 10, left: 14 },
+                didDrawPage: function (data) {
+                    // Add footer on each page
+                    doc.setFontSize(10);
+                    doc.setTextColor(100); // Gray color for footer text
+                    const pageCount = doc.internal.getNumberOfPages();
+                    doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                }
+            });
+            doc.save(`Customer_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
+            showFlashMessage('Customer list downloaded as PDF!', 'success');
+        };
+
+        // 5. **Handle Logo Loading Asynchronously:**
+        const img = new Image();
+        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
+        img.onload = () => {
+            const logoX = 14; // Left margin for logo
+            const logoY = 10; // Top margin for logo
+            const imgWidth = 40; // Adjust as needed for your logo size
+            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+            
+            // Add the logo at the top-left
+            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
+            
+            // Add company name and details next to logo
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
+            
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12); // Address
+            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17); // Mobile
+            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22); // GST No.
+
+            // Calculate startYPositionForTable based on logo and company info block
+            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10); // Ensure enough space
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
+        };
+
+        img.onerror = () => {
+            console.warn("Logo image could not be loaded. Generating PDF without logo.");
+            // If logo fails, add only company info block
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, 14, 20); // Company Name
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, 14, 27); // Address
+            doc.text(companyMobile, 14, 32); // Mobile
+            doc.text(companyGST, 14, 37); // GST No.
+            
+            const calculatedStartY = 45; // Adjust startY since no logo
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
+        };
+
+        img.src = companyLogoUrl; // This will now use the imported image data
+
+        // Add generation date/time to the top right (this part can run immediately)
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100); // Gray color for date text
+        doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
     };
 
     // --- UI Rendering ---
@@ -561,436 +705,425 @@ const CustomerManagement = ({ showFlashMessage }) => {
             <h2 className="section-title">Customer Management</h2>
 
             {localError && (
-                <p className="error-message text-center">{localError}</p>
+                <p className="error-message text-center">
+                    <FaTimesCircle className="error-icon" /> {localError}
+                </p>
             )}
 
-            {/* Customer Creation/Update Form */}
-            <div className="form-container-card">
-                <form onSubmit={handleSubmit} className="app-form">
-                    <h3 className="form-title">{editingCustomerId ? 'Edit Customer' : 'Add New Customer'}</h3>
-                    
-                    <div className="form-group">
-                        <label htmlFor="customerName">Customer Name:</label>
-                        <input
-                            type="text"
-                            id="customerName"
-                            name="customerName"
-                            value={formData.customerName}
-                            onChange={handleChange}
-                            placeholder="e.g., Good Luck Book Store"
-                            required
-                            disabled={loading}
-                        />
-                    </div>
+            {/* Main content layout for two columns */}
+            <div className="main-content-layout">
+                {/* Customer List Table - FIRST CHILD */}
+                <div className="table-section">
+                    <h3 className="table-title">Existing Customers</h3>
 
-                    <div className="form-group">
-                        <label htmlFor="schoolCode">School Code:</label>
-                        <input
-                            type="text"
-                            id="schoolCode"
-                            name="schoolCode"
-                            value={formData.schoolCode}
-                            onChange={handleChange}
-                            placeholder="e.g., BLS, JK"
-                            disabled={loading}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="branch">Branch:</label>
-                        <select
-                            id="branch"
-                            name="branch"
-                            value={formData.branch}
-                            onChange={handleChange}
-                            required
-                            disabled={loading || branches.length === 0}
-                        >
-                            {branches.length === 0 ? (
-                                <option value="">Loading Branches...</option>
-                            ) : (
-                                <>
-                                    <option value="">-- SELECT Branch --</option>
-                                    {branches.map(branch => (
-                                        <option key={branch._id} value={branch._id}>
-                                            {branch.name}
-                                        </option>
-                                    ))}
-                                </>
-                            )}
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="city">City:</label>
-                        <select
-                            id="city"
-                            name="city"
-                            value={formData.city}
-                            onChange={handleChange}
-                            required
-                            disabled={loading || cities.length === 0}
-                        >
-                            {cities.length === 0 ? (
-                                <option value="">Loading Cities...</option>
-                            ) : (
-                                <>
-                                    <option value="">-- SELECT City --</option>
-                                    {cities.map(city => (
-                                        <option key={city._id} value={city._id}>
-                                            {city.name}
-                                        </option>
-                                    ))}
-                                </>
-                            )}
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="contactPerson">Contact Person:</label>
-                        <input
-                            type="text"
-                            id="contactPerson"
-                            name="contactPerson"
-                            value={formData.contactPerson}
-                            onChange={handleChange}
-                            placeholder="e.g., John Doe"
-                            disabled={loading}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="mobileNumber">Mobile Number:</label>
-                        <input
-                            type="text"
-                            id="mobileNumber"
-                            name="mobileNumber"
-                            value={formData.mobileNumber}
-                            onChange={handleChange}
-                            placeholder="e.g., 9876543210"
-                            required
-                            disabled={loading}
-                            maxLength="10" // Assuming 10-digit mobile number
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="email">Email:</label>
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            placeholder="e.g., customer@example.com"
-                            disabled={loading}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="gstNumber">GST Number:</label>
-                        <input
-                            type="text"
-                            id="gstNumber"
-                            name="gstNumber"
-                            value={formData.gstNumber}
-                            onChange={handleChange}
-                            placeholder="e.g., 22AAAAA0000A1Z5"
-                            disabled={loading}
-                            maxLength="15"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="aadharNumber">Aadhar Number:</label>
-                        <input
-                            type="text"
-                            id="aadharNumber"
-                            name="aadharNumber"
-                            value={formData.aadharNumber}
-                            onChange={handleChange}
-                            placeholder="e.g., 123456789012"
-                            disabled={loading}
-                            maxLength="12"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="panNumber">PAN Number:</label>
-                        <input
-                            type="text"
-                            id="panNumber"
-                            name="panNumber"
-                            value={formData.panNumber}
-                            onChange={handleChange}
-                            placeholder="e.g., ABCDE1234F"
-                            disabled={loading}
-                            maxLength="10"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="shopAddress">Shop Address:</label>
-                        <textarea
-                            id="shopAddress"
-                            name="shopAddress"
-                            value={formData.shopAddress}
-                            onChange={handleChange}
-                            placeholder="Full shop address"
-                            rows="3"
-                            disabled={loading}
-                        ></textarea>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="homeAddress">Home Address:</label>
-                        <textarea
-                            id="homeAddress"
-                            name="homeAddress"
-                            value={formData.homeAddress}
-                            onChange={handleChange}
-                            placeholder="Full home address"
-                            rows="3"
-                            disabled={loading}
-                        ></textarea>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="image">Logo/Image:</label>
-                        <input
-                            type="file" // Changed to file input
-                            id="image"
-                            name="image"
-                            accept="image/*" // Accept only image files
-                            onChange={handleImageFileChange} // New handler for file input
-                            disabled={loading}
-                        />
-                        {/* Display preview of selected image or placeholder */}
-                        {imagePreviewUrl ? (
-                            <img 
-                                src={imagePreviewUrl.startsWith('/customer-logos/') ? `${BACKEND_BASE_URL}/uploads${imagePreviewUrl}` : imagePreviewUrl} 
-                                alt="Customer Logo Preview" 
-                                className="mt-2 rounded-lg" 
-                                style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }} 
-                                onError={(e) => { 
-                                    console.error("Image preview failed to load:", e.target.src);
-                                    e.target.onerror = null; // Prevent infinite loop if fallback also fails
-                                    e.target.src = 'https://placehold.co/200x200/cccccc/ffffff?text=No+Image'; // Fallback to placeholder
-                                }} 
-                            />
-                        ) : (
-                            <img src="https://placehold.co/200x200/cccccc/ffffff?text=No+Image" alt="Placeholder" className="mt-2 rounded-lg" style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }} />
-                        )}
-                        <p className="text-sm text-gray-500 mt-1">
-                            (Max file size: 5MB. Images are uploaded to the server.)
-                        </p>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="status">Status:</label>
-                        <select
-                            id="status"
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            disabled={loading}
-                        >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
-
-                    <div className="form-actions">
-                        <button type="submit" className="btn btn-primary" disabled={loading}>
-                            {loading ? (editingCustomerId ? 'Updating...' : 'Adding...') : (editingCustomerId ? 'Update Customer' : 'Add Customer')}
-                            <FaPlusCircle className="ml-2" />
-                        </button>
-                        {editingCustomerId && (
-                            <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={() => {
-                                    setEditingCustomerId(null);
-                                    setFormData({
-                                        customerName: '', schoolCode: '', branch: branches.length > 0 ? branches[0]._id : '',
-                                        city: cities.length > 0 ? cities[0]._id : '', contactPerson: '', mobileNumber: '',
-                                        email: '', gstNumber: '', aadharNumber: '', panNumber: '', shopAddress: '',
-                                        homeAddress: '',
-                                        status: 'active'
-                                    });
-                                    setSelectedImageFile(null);
-                                    setImagePreviewUrl('');
-                                    setLocalError(null);
+                    {/* Search and Filter Section */}
+                    <div className="table-controls">
+                        <div className="search-input-group">
+                            <input
+                                type="text"
+                                placeholder="Search by Name, Mobile, Email, GST, Aadhar, PAN..."
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1); // Reset to first page on search
                                 }}
+                                className="search-input"
                                 disabled={loading}
+                            />
+                            <FaSearch className="search-icon" />
+                        </div>
+
+                        <div className="filter-group">
+                            <label htmlFor="branchFilter" className="sr-only">Filter by Branch:</label>
+                            <select
+                                id="branchFilter"
+                                value={selectedBranchFilter}
+                                onChange={(e) => {
+                                    setSelectedBranchFilter(e.target.value);
+                                    setCurrentPage(1); // Reset to first page on filter change
+                                }}
+                                className="filter-select"
+                                disabled={loading || branches.length === 0}
                             >
-                                Cancel Edit
-                            </button>
-                        )}
-                    </div>
-                </form>
-            </div>
-
-            {/* Customer List Table */}
-            <div className="table-container">
-                <h3 className="table-title">Existing Customers</h3>
-
-                {/* Search and PDF Download Section */}
-                <div className="table-controls">
-                    <div className="search-input-group">
-                        <input
-                            type="text"
-                            placeholder="Search by Name, Mobile, Email..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="search-input"
-                        />
-                        <FaSearch className="search-icon" />
-                    </div>
-
-                    {/* NEW: Branch Filter Dropdown */}
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label htmlFor="branchFilter" style={{ marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 'normal', color: '#555' }}>Show by Branch:</label>
-                        <select
-                            id="branchFilter"
-                            name="branchFilter"
-                            value={selectedBranchFilter}
-                            onChange={(e) => {
-                                setSelectedBranchFilter(e.target.value);
-                                setCurrentPage(1); // Reset to first page on filter change
-                            }}
-                            disabled={loading || branches.length === 0}
-                            className="search-input" // Reusing search-input style for consistency
-                            style={{ maxWidth: '200px' }}
-                        >
-                            <option value="">All Branches</option>
-                            {branches.length === 0 ? (
-                                <option value="">Loading Branches...</option>
-                            ) : (
-                                branches.map(branch => (
+                                <option value="">All Branches</option>
+                                {branches.map(branch => (
                                     <option key={branch._id} value={branch._id}>
                                         {branch.name}
                                     </option>
-                                ))
-                            )}
-                        </select>
+                                ))}
+                            </select>
+                        </div>
+
+                        <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || customers.length === 0}>
+                            <FaFilePdf className="btn-icon-mr" /> Download PDF
+                        </button>
                     </div>
 
-                    <button onClick={downloadPdf} className="btn btn-info download-pdf-btn">
-                        <FaFilePdf className="mr-2" /> Download PDF
-                    </button>
+                    {loading && customers.length === 0 ? (
+                        <p className="loading-state text-center">
+                            <FaSpinner className="animate-spin mr-2" /> Loading customers...
+                        </p>
+                    ) : customers.length === 0 ? (
+                        <p className="no-data-message text-center">No customers found matching your criteria. Start by adding one!</p>
+                    ) : (
+                        <div className="table-container"> {/* This div is for table overflow, not layout */}
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>S.No.</th>
+                                        <th>Customer Name (Code)</th>
+                                        <th>Branch</th>
+                                        <th>City</th>
+                                        <th>Contact Person</th>
+                                        <th>Mobile</th>
+                                        <th>Email</th>
+                                        <th>Documents</th>
+                                        <th>Address</th>
+                                        <th>Logo</th>
+                                        <th>Add Date</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody ref={tableBodyRef}>
+                                    {currentItems.map((customer, index) => (
+                                        <tr key={customer._id}>
+                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td>{`${customer.customerName} ${customer.schoolCode ? `(${customer.schoolCode})` : ''}`}</td>
+                                            <td>{customer.branch?.name || 'N/A'}</td>
+                                            <td>{customer.city?.name || 'N/A'}</td>
+                                            <td>{customer.contactPerson}</td>
+                                            <td>{customer.mobileNumber}</td>
+                                            <td>{customer.email || 'N/A'}</td>
+                                            <td>{getDocumentsString(customer)}</td>
+                                            <td>{getAddressString(customer)}</td>
+                                            <td>
+                                                {customer.image ? (
+                                                    <img
+                                                        src={customer.image.startsWith('/customer-logos/') ? `${BACKEND_BASE_URL}/uploads${customer.image}` : customer.image}
+                                                        alt="Customer Logo"
+                                                        className="customer-logo-thumbnail"
+                                                        onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/50x50/e0e0e0/ffffff?text=No+Logo'; }}
+                                                    />
+                                                ) : (
+                                                    'No Logo'
+                                                )}
+                                            </td>
+                                            <td>{formatDateWithTime(customer.createdAt)}</td>
+                                            <td>
+                                                <span className={`status-badge ${customer.status}`}>
+                                                    {customer.status.charAt(0).toUpperCase() + customer.status.slice(1)}
+                                                </span>
+                                            </td>
+                                            <td className="actions-column">
+                                                <button
+                                                    onClick={() => handleEdit(customer)}
+                                                    className="action-icon-button edit-button"
+                                                    title="Edit Customer"
+                                                    disabled={loading}
+                                                >
+                                                    <FaEdit />
+                                                </button>
+                                                <button
+                                                    onClick={() => openConfirmModal(customer)}
+                                                    className="action-icon-button delete-button"
+                                                    title="Delete Customer"
+                                                    disabled={loading}
+                                                >
+                                                    {loading && customerToDeleteId === customer._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="pagination-controls">
+                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
+                                        <FaChevronLeft className="btn-icon-mr" /> Previous
+                                    </button>
+                                    <span>Page {currentPage} of {totalPages}</span>
+                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
+                                        Next <FaChevronRight className="btn-icon-ml" />
+                                    </button>
+                                </div>
+                            )}
+                            <div className="total-records text-center mt-2">
+                                Total Records: {customers.length}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {loading && customers.length === 0 ? (
-                    <p className="loading-state">Loading customers...</p>
-                ) : customers.length === 0 ? (
-                    <p className="no-data-message">No customers found matching your criteria. Start by adding one!</p>
-                ) : (
-                    <>
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>S.No.</th>
-                                    <th>Name</th>
-                                    <th>Branch</th>
-                                    <th>City</th>
-                                    <th>Contact Person</th>
-                                    <th>Mobile</th>
-                                    <th>Email</th>
-                                    <th>Documents</th>
-                                    <th>Address</th>
-                                    <th>Logo</th>
-                                    <th>Add Date</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody ref={tableBodyRef}>
-                                {currentItems.map((customer, index) => {
-                                    // Log the entire customer object for debugging
-                                    console.log(`Customer data for row ${index + 1}:`, customer);
-
-                                    // Construct the full image URL
-                                    // customer.image will be like '/customer-logos/image.jpg'
-                                    const imageUrl = customer.image && customer.image.startsWith('/customer-logos/') 
-                                        ? `${BACKEND_BASE_URL}/uploads${customer.image}` 
-                                        : customer.image;
-                                    
-                                    console.log(`Row ${index + 1}: customer.image (from DB) =`, customer.image);
-                                    console.log(`Row ${index + 1}: Constructed imageUrl =`, imageUrl);
-
-
-                                    return (
-                                    <tr key={customer._id}>
-                                        <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td>{getStringValue(customer.customerName)}{customer.schoolCode && `\n(${getStringValue(customer.schoolCode)})`}</td>
-                                        <td>{customer.branch ? getStringValue(customer.branch.name) : 'N/A'}</td>
-                                        <td>{customer.city ? getStringValue(customer.city.name) : 'N/A'}</td>
-                                        <td>{getStringValue(customer.contactPerson)}</td>
-                                        <td>{getStringValue(customer.mobileNumber)}</td>
-                                        <td>{getStringValue(customer.email)}</td>
-                                        <td>{getDocumentsString(customer)}</td> 
-                                        <td>{getAddressString(customer)}</td>   
-                                        <td>
-                                            {/* Display image if it's a valid URL or Base64 string, otherwise a placeholder */}
-                                            {imageUrl && (imageUrl.startsWith('data:image/') || imageUrl.startsWith('http')) ? (
-                                                <img 
-                                                    src={imageUrl} 
-                                                    alt="Customer Logo" 
-                                                    className="table-img" 
-                                                    onError={(e) => { 
-                                                        console.error("Image failed to load in table:", e.target.src);
-                                                        e.target.onerror = null; // Prevent infinite loop
-                                                        e.target.src = 'https://placehold.co/50x50/cccccc/ffffff?text=No+Img'; // Fallback to placeholder
-                                                    }}
-                                                />
-                                            ) : (
-                                                <img src="https://placehold.co/50x50/cccccc/ffffff?text=No+Img" alt="Placeholder" className="table-img" />
-                                            )}
-                                        </td>
-                                        <td>{formatDateWithTime(customer.createdAt)}</td>
-                                        <td>
-                                            <span className={`status-badge ${getStringValue(customer.status).toLowerCase()}`}>
-                                                {getStringValue(customer.status).charAt(0).toUpperCase() + getStringValue(customer.status).slice(1)}
-                                            </span>
-                                        </td>
-                                        <td className="actions-column">
-                                            <button
-                                                onClick={() => handleEdit(customer)}
-                                                className="action-icon-button edit-button"
-                                                title="Edit Customer"
-                                            >
-                                                <FaEdit />
-                                            </button>
-                                            <button
-                                                onClick={() => openConfirmModal(customer)}
-                                                className="action-icon-button delete-button"
-                                                title="Delete Customer"
-                                            >
-                                                <FaTrashAlt />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-
-                        {/* Pagination Controls */}
-                        {totalPages > 1 && (
-                            <div className="pagination-controls">
-                                <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
-                                    <FaChevronLeft /> Previous
-                                </button>
-                                <span>Page {currentPage} of {totalPages}</span>
-                                <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
-                                    Next <FaChevronRight />
-                                </button>
+                {/* Customer Creation/Update Form - SECOND CHILD */}
+                <div className="form-container-card">
+                    <form onSubmit={handleSubmit} className="app-form">
+                        <h3 className="form-title">{editingCustomerId ? 'Edit Customer' : 'Add New Customer'}</h3>
+                        
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="customerName">Customer Name:</label>
+                                <input
+                                    type="text"
+                                    id="customerName"
+                                    name="customerName"
+                                    value={formData.customerName}
+                                    onChange={handleChange}
+                                    placeholder="e.g., ABC School"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
                             </div>
-                        )}
-                    </>
-                )}
-            </div>
+                            <div className="form-group">
+                                <label htmlFor="schoolCode">School Code:</label>
+                                <input
+                                    type="text"
+                                    id="schoolCode"
+                                    name="schoolCode"
+                                    value={formData.schoolCode}
+                                    onChange={handleChange}
+                                    placeholder="e.g., SCH001"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="branch">Branch:</label>
+                                <select
+                                    id="branch"
+                                    name="branch"
+                                    value={formData.branch}
+                                    onChange={handleChange}
+                                    required
+                                    disabled={loading || branches.length === 0}
+                                    className="form-select"
+                                >
+                                    {branches.length === 0 ? (
+                                        <option value="">Loading Branches...</option>
+                                    ) : (
+                                        <>
+                                            <option value="">-- SELECT BRANCH --</option>
+                                            {branches.map(branch => (
+                                                <option key={branch._id} value={branch._id}>
+                                                    {branch.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    )}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="city">City:</label>
+                                <select
+                                    id="city"
+                                    name="city"
+                                    value={formData.city}
+                                    onChange={handleChange}
+                                    required
+                                    disabled={loading || cities.length === 0}
+                                    className="form-select"
+                                >
+                                    {cities.length === 0 ? (
+                                        <option value="">Loading Cities...</option>
+                                    ) : (
+                                        <>
+                                            <option value="">-- SELECT CITY --</option>
+                                            {cities.map(city => (
+                                                <option key={city._id} value={city._id}>
+                                                    {city.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    )}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="contactPerson">Contact Person:</label>
+                                <input
+                                    type="text"
+                                    id="contactPerson"
+                                    name="contactPerson"
+                                    value={formData.contactPerson}
+                                    onChange={handleChange}
+                                    placeholder="e.g., Jane Doe"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="mobileNumber">Mobile Number:</label>
+                                <input
+                                    type="text"
+                                    id="mobileNumber"
+                                    name="mobileNumber"
+                                    value={formData.mobileNumber}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 9876543210"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="email">Email:</label>
+                                <input
+                                    type="email"
+                                    id="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    placeholder="e.g., info@example.com"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="gstNumber">GST Number:</label>
+                                <input
+                                    type="text"
+                                    id="gstNumber"
+                                    name="gstNumber"
+                                    value={formData.gstNumber}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 22AAAAA0000A1Z5"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="aadharNumber">Aadhar Number:</label>
+                                <input
+                                    type="text"
+                                    id="aadharNumber"
+                                    name="aadharNumber"
+                                    value={formData.aadharNumber}
+                                    onChange={handleChange}
+                                    placeholder="e.g., XXXX XXXX XXXX"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="panNumber">PAN Number:</label>
+                                <input
+                                    type="text"
+                                    id="panNumber"
+                                    name="panNumber"
+                                    value={formData.panNumber}
+                                    onChange={handleChange}
+                                    placeholder="e.g., ABCDE1234F"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="shopAddress">Shop Address:</label>
+                            <textarea
+                                id="shopAddress"
+                                name="shopAddress"
+                                value={formData.shopAddress}
+                                onChange={handleChange}
+                                placeholder="Full Shop Address"
+                                disabled={loading}
+                                className="form-textarea"
+                            ></textarea>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="homeAddress">Home Address:</label>
+                            <textarea
+                                id="homeAddress"
+                                name="homeAddress"
+                                value={formData.homeAddress}
+                                onChange={handleChange}
+                                placeholder="Full Home Address"
+                                disabled={loading}
+                                className="form-textarea"
+                            ></textarea>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="customerImage">Customer Logo:</label>
+                            <input
+                                type="file"
+                                id="customerImage"
+                                name="image" // Ensure this matches the backend field name for file upload
+                                accept="image/*"
+                                onChange={handleImageFileChange}
+                                disabled={loading}
+                                className="form-input-file"
+                            />
+                            {imagePreviewUrl && (
+                                <div className="image-preview-container">
+                                    <img src={imagePreviewUrl} alt="Customer Preview" className="image-preview" />
+                                    <button
+                                        type="button"
+                                        className="clear-image-btn"
+                                        onClick={() => {
+                                            setSelectedImageFile(null);
+                                            setImagePreviewUrl('');
+                                            // Clear the file input visually as well
+                                            const fileInput = document.getElementById('customerImage');
+                                            if (fileInput) fileInput.value = '';
+                                        }}
+                                        disabled={loading}
+                                    >
+                                        <FaTimesCircle /> Clear Image
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="status">Status:</label>
+                            <select
+                                id="status"
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                disabled={loading}
+                                className="form-select"
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div className="form-actions">
+                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingCustomerId ? 'Update Customer' : 'Add Customer')}
+                            </button>
+                            {editingCustomerId && (
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary ml-2"
+                                    onClick={handleCancelEdit}
+                                    disabled={loading}
+                                >
+                                    Cancel Edit
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                </div>
+            </div> {/* End of main-content-layout */}
 
             {/* Confirmation Modal */}
             {showConfirmModal && (
@@ -999,7 +1132,9 @@ const CustomerManagement = ({ showFlashMessage }) => {
                         <h3>Confirm Deletion</h3>
                         <p>Are you sure you want to delete customer: <strong>{customerToDeleteName}</strong>?</p>
                         <div className="modal-actions">
-                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>Delete</button>
+                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Delete'}
+                            </button>
                             <button onClick={closeConfirmModal} className="btn btn-secondary" disabled={loading}>Cancel</button>
                         </div>
                     </div>

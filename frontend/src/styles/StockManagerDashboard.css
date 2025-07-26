@@ -9,17 +9,199 @@
     --border-color: #dee2e6; /* Light border */
     --shadow-light: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     --header-bg: #e9ecef;
+    --sidebar-width: 250px; /* Added for sidebar */
+    --sidebar-collapsed-width: 60px; /* Added for sidebar */
 }
 
-.stock-manager-dashboard-container {
-    display: flex;
-    flex-direction: column;
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* User's original font */
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+.dashboard-container { /* Renamed from stock-manager-dashboard-container to match JSX */
+    display: flex; /* Changed to flex row for sidebar layout */
     min-height: 100vh;
     background-color: var(--background-light);
     color: var(--text-dark);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* Sidebar styles */
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--text-dark); /* Dark background for sidebar */
+    color: white;
+    padding: 1rem;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    transition: width 0.3s ease-in-out, transform 0.3s ease-in-out; /* Added transform for mobile */
+    flex-shrink: 0; /* Prevent sidebar from shrinking */
+    display: flex;
+    flex-direction: column;
+    position: relative; /* For toggle button positioning */
+    z-index: 100; /* Ensure sidebar is above other content on mobile */
+}
+
+.sidebar.collapsed {
+    width: var(--sidebar-collapsed-width);
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.sidebar.collapsed .sidebar-header h3 {
+    opacity: 0;
+    width: 0;
+}
+.sidebar.collapsed .sidebar-header p { /* Hide user info when collapsed */
+    opacity: 0;
+    width: 0;
+}
+
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 5px;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-nav li {
+    margin-bottom: 0.75rem;
+}
+
+.sidebar-nav button { /* Changed a to button for better semantics and click handling */
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: white;
+    text-decoration: none;
+    padding: 0.75rem 1rem;
+    border-radius: 5px;
+    transition: background-color 0.2s ease, padding 0.3s ease-in-out;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%; /* Make buttons fill width */
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.sidebar-nav button:hover,
+.sidebar-nav button.active {
+    background-color: var(--primary-color);
+}
+
+.sidebar-nav button .nav-icon,
+.sidebar-nav button .dropdown-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.sidebar-nav button .dropdown-arrow {
+    margin-left: auto; /* Push arrow to the right */
+    transition: transform 0.2s ease;
+}
+
+.sidebar-nav button .text {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.sidebar.collapsed .sidebar-nav button .text {
+    opacity: 0;
+    width: 0;
+}
+
+.sidebar.collapsed .sidebar-nav button .dropdown-arrow {
+    opacity: 0; /* Hide arrow when collapsed */
+}
+
+/* Dropdown menu styles */
+.relative-dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    background-color: #495057; /* Slightly lighter dark for dropdown */
+    border-radius: 5px;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0;
+    box-shadow: var(--shadow-light);
+    position: absolute; /* Position relative to parent li */
+    left: var(--sidebar-width); /* Position to the right of the sidebar */
+    top: 0;
+    min-width: 200px;
+    z-index: 10;
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.sidebar.collapsed .dropdown-menu {
+    left: var(--sidebar-collapsed-width); /* Adjust position when collapsed */
+}
+
+.dropdown-menu button {
+    padding: 0.75rem 1rem;
+    width: 100%;
+    text-align: left;
+    color: white;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.dropdown-menu button:hover {
+    background-color: var(--primary-color);
+}
+
+
+/* Main content area */
+.main-content-wrapper {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Original user's dashboard-header */
 .dashboard-header {
     background-color: var(--header-bg);
     padding: 1rem 2rem;
@@ -28,6 +210,9 @@
     justify-content: space-between;
     align-items: center;
     box-shadow: var(--shadow-light);
+    position: sticky; /* Make header sticky */
+    top: 0; /* Stick to the top */
+    z-index: 50; /* Ensure it stays above other content when scrolling */
 }
 
 .dashboard-title {
@@ -57,6 +242,7 @@
     background-color: #5a6268;
 }
 
+/* Original user's dashboard-main-content */
 .dashboard-main-content {
     flex-grow: 1;
     padding: 2rem;
@@ -114,12 +300,68 @@
     border-bottom: none;
 }
 
+/* Content placeholder for un-implemented sections */
+.content-placeholder {
+    background-color: var(--card-bg);
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: var(--shadow-light);
+    text-align: center;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    color: var(--secondary-color);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+        width: var(--sidebar-width); /* Full width when open on mobile */
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .sidebar.collapsed {
+        width: 0; /* Hide completely on mobile when collapsed */
+        transform: translateX(-100%);
+    }
+
+    .sidebar-toggle {
+        display: block; /* Show toggle button on mobile */
+        position: fixed; /* Fixed position relative to viewport */
+        top: 1rem;
+        left: 1rem;
+        z-index: 1001; /* Above sidebar */
+        color: var(--primary-color);
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        box-shadow: var(--shadow-light);
+    }
+
+    .main-content-wrapper {
+        margin-left: 0; /* No margin on mobile */
+        width: 100%; /* Ensure it takes full width */
+    }
+
     .dashboard-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
+        padding-left: 5rem; /* Make space for toggle button */
     }
 
     .user-info {
@@ -133,5 +375,12 @@
 
     .dashboard-widgets {
         grid-template-columns: 1fr; /* Stack cards on smaller screens */
+    }
+
+    .dropdown-menu {
+        left: var(--sidebar-width); /* Keep dropdown to the right of open sidebar */
+    }
+    .sidebar.collapsed .dropdown-menu {
+        left: 0; /* Hide dropdown when sidebar is collapsed on mobile */
     }
 }

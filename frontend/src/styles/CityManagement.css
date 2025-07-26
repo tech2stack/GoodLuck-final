@@ -1,9 +1,10 @@
-/* src/styles/ClassManagement.css */
+/* src/styles/CityManagement.css */
 
-/* Desktop Layout for Class Management Page */
+/* Desktop Layout for City Management Page */
 @media (min-width: 992px) { /* Desktop breakpoint */
     .main-content-layout {
-        /* Corrected order: Table on left (2.5fr), Form on right (1.5fr) */
+        /* You can adjust the ratio here if CityManagement needs a different layout than ClassManagement */
+        /* Keeping same as ClassManagement and ZoneManagement for consistency */
         grid-template-columns: 2.5fr 1.5fr; 
     }
 }
@@ -18,7 +19,7 @@
 
 .form-section-card .app-form {
     width: 100%; /* Take full width of its parent (.form-section-card) */
-    max-width: 300px; /* Limit the overall width of the form content as per screenshot */
+    max-width: 300px; /* Limit the overall width of the form content (adjust as needed) */
 }
 
 .form-section-card .form-group {
@@ -43,7 +44,7 @@
 }
 
 .table-section-card .table-controls .search-input-group {
-    max-width: 250px; /* Limit search input width as per screenshot */
+    max-width: 250px; /* Limit search input width (adjust as needed) */
     flex-grow: 0; /* Prevent it from growing too much */
 }
 

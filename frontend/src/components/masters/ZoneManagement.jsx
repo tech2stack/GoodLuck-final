@@ -1,12 +1,23 @@
 // src/components/masters/ZoneManagement.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../utils/api'; // API utility for backend calls
-import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight } from 'react-icons/fa'; // Icons for UI
+import { FaEdit, FaTrashAlt, FaPlusCircle } from 'react-icons/fa'; // Icons for UI (FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight are now handled by TableSection)
 
-// Stylesheets (assuming these are already present and styled for consistency)
+// Import new common components
+import PageLayout from '../common/PageLayout';
+import TableSection from '../common/TableSection';
+import FormSection from '../common/FormSection';
+import ConfirmationModal from '../common/ConfirmationModal';
+
+// Stylesheets (generic ones for elements, specific for layout overrides)
 import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
+import '../../styles/CommonLayout.css'; // Import the common layout styles
+import '../../styles/ZoneManagement.css'; // Component-specific layout overrides
+
+// Import the logo image directly (assuming it's in src/assets)
+import companyLogo from '../../assets/glbs-logo.jpg'; 
 
 // NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
 // If you are using npm, you'd do: npm install jspdf jspdf-autotable
@@ -247,190 +258,279 @@ const ZoneManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        doc.text("Zone List", 14, 15);
+        // Define company details for PDF header
+        const companyName = "GOOD LUCK BOOK STORE";
+        const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
+        const companyMobile = "Mobile Number: 7024136476";
+        const companyGST = "GST NO: 23EAVPP3772F1Z8";
+        const companyLogoUrl = companyLogo; // Use the imported logo directly
+        
+        // Function to generate the main report content (title, line, table, save)
+        // This function now accepts the dynamic startYPositionForTable as an argument
+        const generateReportBody = (startYPositionForTable) => {
+            // Add a professional report title (centered, below company info)
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30); // Dark gray for title
+            // Adjust Y position for the report title to be below company info
+            doc.text("Zone List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
 
-        const tableColumn = ["S.No.", "Zone Name", "Status", "Add Date"];
-        const tableRows = [];
+            // Add a line separator below the main title
+            doc.setLineWidth(0.5);
+            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15); // Line spanning almost full width
 
-        filteredZones.forEach((zoneItem, index) => {
-            const zoneData = [
-                index + 1,
+            // Update startYPositionForTable for autoTable
+            const tableStartY = startYPositionForTable + 20;
+
+
+            // Generate table data
+            const tableColumn = ["S.No.", "Zone Name", "Status", "Add Date"];
+            const tableRows = filteredZones.map((zoneItem, index) => [
+                // S.No. is always index + 1 for the filtered data for PDF
+                index + 1, 
                 zoneItem.name,
                 zoneItem.status.charAt(0).toUpperCase() + zoneItem.status.slice(1),
                 formatDateWithTime(zoneItem.createdAt)
-            ];
-            tableRows.push(zoneData);
-        });
+            ]);
 
-        doc.autoTable(tableColumn, tableRows, { startY: 20 });
-        doc.save(`Zone_List_${new Date().toLocaleDateString()}.pdf`);
-        showFlashMessage('Zone list downloaded as PDF!', 'success');
+            // Add the table to the document with professional styling
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: tableStartY, // Use our dynamic start position
+                theme: 'plain', // Changed to 'plain' for a cleaner look like the reference PDF
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 10,
+                    cellPadding: 3,
+                    textColor: [51, 51, 51], // Default text color for body
+                    valign: 'middle',
+                    halign: 'left'
+                },
+                headStyles: {
+                    fillColor: [240, 240, 240], // Light gray header
+                    textColor: [51, 51, 51], // Dark text for header
+                    fontStyle: 'bold',
+                    halign: 'center', // Center align header text
+                    valign: 'middle', // Vertically align header text
+                    lineWidth: 0.1, // Add a thin border to header cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                bodyStyles: {
+                    lineWidth: 0.1, // Add a thin border to body cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                columnStyles: {
+                    0: { cellWidth: 15, halign: 'center' }, // S.No. column: narrow and centered
+                    1: { cellWidth: 'auto', halign: 'left' }, // Zone Name column: auto width, left-aligned
+                    2: { halign: 'center' }, // Status column: centered
+                    3: { halign: 'center' } // Add Date column: centered
+                },
+                margin: { top: 10, right: 14, bottom: 10, left: 14 }, // Consistent margins
+                didDrawPage: function (data) {
+                    // Add footer on each page
+                    doc.setFontSize(10);
+                    doc.setTextColor(100); // Gray color for footer text
+                    const pageCount = doc.internal.getNumberOfPages();
+                    doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                }
+            });
+
+            // Save the PDF
+            // The toLocaleDateString('en-CA') gives YYYY-MM-DD, then replace hyphens with underscores for filename
+            doc.save(`Zone_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`); 
+            showFlashMessage('Zone list downloaded as PDF!', 'success');
+        };
+
+        // 5. **Handle Logo Loading Asynchronously:**
+        const img = new Image();
+        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
+        img.onload = () => {
+            const logoX = 14; // Left margin for logo
+            const logoY = 10; // Top margin for logo
+            const imgWidth = 40; // Adjust as needed for your logo size
+            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+            
+            // Add the logo at the top-left
+            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
+            
+            // Add company name and details next to logo
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
+            
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12); // Address
+            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17); // Mobile
+            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22); // GST No.
+
+            // Calculate startYPositionForTable based on logo and company info block
+            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10); // Ensure enough space
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
+        };
+
+        img.onerror = () => {
+            console.warn("Logo image could not be loaded. Generating PDF without logo.");
+            // If logo fails, add only company info block
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, 14, 20); // Company Name
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, 14, 27); // Address
+            doc.text(companyMobile, 14, 32); // Mobile
+            doc.text(companyGST, 14, 37); // GST No.
+            
+            const calculatedStartY = 45; // Adjust startY since no logo
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
+        };
+
+        img.src = companyLogoUrl; // This will now use the imported image data
+
+        // Add generation date/time to the top right (this part can run immediately)
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100); // Gray color for date text
+        doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
     };
 
     // --- UI Rendering ---
     return (
-        <div className="zone-management-container">
-            <h2 className="section-title">Zone Management</h2>
-
-            {localError && (
-                <p className="error-message text-center">{localError}</p>
-            )}
-
-            {/* Zone Creation/Update Form */}
-            <div className="form-container-card">
-                <form onSubmit={handleSubmit} className="app-form">
-                    <h3 className="form-title">{editingZoneId ? 'Edit Zone' : 'Create New Zone'}</h3>
-                    
-                    <div className="form-group">
-                        <label htmlFor="name">Zone Name:</label>
-                        <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            placeholder="e.g., North Zone, South Zone"
-                            required
-                            disabled={loading}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="status">Status:</label>
-                        <select
-                            id="status"
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            disabled={loading}
-                        >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
-
-                    <div className="form-actions">
-                        <button type="submit" className="btn btn-primary" disabled={loading}>
-                            {loading ? (editingZoneId ? 'Updating...' : 'Creating...') : (editingZoneId ? 'Update Zone' : 'Create Zone')}
-                            <FaPlusCircle className="ml-2" />
-                        </button>
-                        {editingZoneId && (
-                            <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={() => {
-                                    setEditingZoneId(null);
-                                    setFormData({ name: '', status: 'active' });
-                                    setLocalError(null);
-                                }}
-                                disabled={loading}
-                            >
-                                Cancel Edit
-                            </button>
-                        )}
-                    </div>
-                </form>
-            </div>
-
-            {/* Zone List Table */}
-            <div className="table-container">
-                <h3 className="table-title">Existing Zones</h3>
-
-                {/* Search and PDF Download Section */}
-                <div className="table-controls">
-                    <div className="search-input-group">
-                        <input
-                            type="text"
-                            placeholder="Search by Zone Name..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="search-input"
-                        />
-                        <FaSearch className="search-icon" />
-                    </div>
-                    <button onClick={downloadPdf} className="btn btn-info download-pdf-btn">
-                        <FaFilePdf className="mr-2" /> Download PDF
-                    </button>
-                </div>
-
-                {loading && zones.length === 0 ? (
-                    <p className="loading-state">Loading zones...</p>
-                ) : filteredZones.length === 0 ? (
-                    <p className="no-data-message">No zones found matching your criteria. Start by creating one!</p>
-                ) : (
+        <PageLayout title="Zone Management" errorMessage={localError}>
+            {/* Table Section - Left Side */}
+            <TableSection
+                sectionTitle="Existing Zones"
+                searchTerm={searchTerm}
+                onSearchChange={(e) => setSearchTerm(e.target.value)}
+                onDownloadPdf={downloadPdf}
+                loading={loading}
+                data={filteredZones}
+                renderTableContent={() => (
                     <>
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>S.No.</th>
-                                    <th>Zone Name</th>
-                                    <th>Status</th>
-                                    <th>Add Date</th>
-                                    <th>Actions</th>
+                        <thead>
+                            <tr>
+                                <th>S.No.</th>
+                                <th>Zone Name</th>
+                                <th>Status</th>
+                                <th>Add Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody ref={tableBodyRef}>
+                            {currentZones.map((zoneItem, index) => (
+                                <tr key={zoneItem._id}>
+                                    <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                    <td>{zoneItem.name}</td>
+                                    <td>
+                                        <span className={`status-badge ${zoneItem.status}`}>
+                                            {zoneItem.status.charAt(0).toUpperCase() + zoneItem.status.slice(1)}
+                                        </span>
+                                    </td>
+                                    <td>{formatDateWithTime(zoneItem.createdAt)}</td>
+                                    <td className="actions-column">
+                                        <button
+                                            onClick={() => handleEdit(zoneItem)}
+                                            className="action-icon-button edit-button"
+                                            title="Edit Zone"
+                                        >
+                                            <FaEdit />
+                                        </button>
+                                        <button
+                                            onClick={() => openConfirmModal(zoneItem)}
+                                            className="action-icon-button delete-button"
+                                            title="Delete Zone"
+                                        >
+                                            <FaTrashAlt />
+                                        </button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody ref={tableBodyRef}>
-                                {currentZones.map((zoneItem, index) => (
-                                    <tr key={zoneItem._id}>
-                                        <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td>{zoneItem.name}</td>
-                                        <td>
-                                            <span className={`status-badge ${zoneItem.status}`}>
-                                                {zoneItem.status.charAt(0).toUpperCase() + zoneItem.status.slice(1)}
-                                            </span>
-                                        </td>
-                                        <td>{formatDateWithTime(zoneItem.createdAt)}</td>
-                                        <td className="actions-column">
-                                            <button
-                                                onClick={() => handleEdit(zoneItem)}
-                                                className="action-icon-button edit-button"
-                                                title="Edit Zone"
-                                            >
-                                                <FaEdit />
-                                            </button>
-                                            <button
-                                                onClick={() => openConfirmModal(zoneItem)}
-                                                className="action-icon-button delete-button"
-                                                title="Delete Zone"
-                                            >
-                                                <FaTrashAlt />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {/* Pagination Controls */}
-                        {totalPages > 1 && (
-                            <div className="pagination-controls">
-                                <button onClick={goToPrevPage} disabled={currentPage === 1} className="btn btn-page">
-                                    <FaChevronLeft /> Previous
-                                </button>
-                                <span>Page {currentPage} of {totalPages}</span>
-                                <button onClick={goToNextPage} disabled={currentPage === totalPages} className="btn btn-page">
-                                    Next <FaChevronRight />
-                                </button>
-                            </div>
-                        )}
+                            ))}
+                        </tbody>
                     </>
                 )}
-            </div>
+                currentPage={currentPage}
+                totalPages={totalPages}
+                goToPrevPage={goToPrevPage}
+                goToNextPage={goToNextPage}
+                itemsPerPage={itemsPerPage}
+                tableBodyRef={tableBodyRef}
+            />
+
+            {/* Form Section - Right Side */}
+            <FormSection
+                sectionTitle={editingZoneId ? 'Edit Zone' : 'Create New Zone'}
+                onSubmit={handleSubmit}
+            >
+                <div className="form-group">
+                    <label htmlFor="name" className="form-label">Zone Name:</label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="e.g., North Zone, South Zone"
+                        required
+                        disabled={loading}
+                        className="form-input"
+                    />
+                </div>
+
+                <div className="form-group">
+                    <label htmlFor="status" className="form-label">Status:</label>
+                    <select
+                        id="status"
+                        name="status"
+                        value={formData.status}
+                        onChange={handleChange}
+                        disabled={loading}
+                        className="form-select"
+                    >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+
+                <div className="form-actions">
+                    <button type="submit" className="btn btn-primary" disabled={loading}>
+                        {loading ? (editingZoneId ? 'Updating...' : 'Creating...') : (editingZoneId ? 'Update Zone' : 'Create Zone')}
+                        <FaPlusCircle className="ml-2" />
+                    </button>
+                    {editingZoneId && (
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => {
+                                setEditingZoneId(null);
+                                setFormData({ name: '', status: 'active' });
+                                setLocalError(null);
+                            }}
+                            disabled={loading}
+                        >
+                            Cancel Edit
+                        </button>
+                    )}
+                </div>
+            </FormSection>
 
             {/* Confirmation Modal */}
-            {showConfirmModal && (
-                <div className="modal-backdrop">
-                    <div className="modal-content">
-                        <h3>Confirm Deletion</h3>
-                        <p>Are you sure you want to delete zone: <strong>{zoneToDeleteName}</strong>?</p>
-                        <div className="modal-actions">
-                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>Delete</button>
-                            <button onClick={closeConfirmModal} className="btn btn-secondary" disabled={loading}>Cancel</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+            <ConfirmationModal
+                show={showConfirmModal}
+                title="Confirm Deletion"
+                message={`Are you sure you want to delete zone: ${zoneToDeleteName}?`}
+                onConfirm={confirmDelete}
+                onCancel={closeConfirmModal}
+                confirmText="Delete"
+                cancelText="Cancel"
+                loading={loading}
+            />
+        </PageLayout>
     );
 };
 

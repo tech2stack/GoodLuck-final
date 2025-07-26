@@ -2,15 +2,21 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../utils/api'; // Assuming this is your configured axios instance
-import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight } from 'react-icons/fa'; // Icons
+import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaSpinner, FaTimesCircle } from 'react-icons/fa'; // Icons
 
 // Import your existing CSS files for consistency
 import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
+// Import the new TransportManagement specific styles
+import '../../styles/TransportManagement.css'; // New import for specific styles
 
 // Ensure jsPDF and jspdf-autotable are loaded globally via CDN in public/index.html
 // If using npm, remember to install them: npm install jspdf jspdf-autotable
+
+// Import the logo image directly (assuming it exists at this path for PDF)
+import companyLogo from '../../assets/glbs-logo.jpg';
+
 
 const TransportManagement = ({ showFlashMessage }) => {
     // Base URL for backend, used for PDF export if needed
@@ -51,6 +57,7 @@ const TransportManagement = ({ showFlashMessage }) => {
 
     // --- Helper function for date formatting ---
     const formatDateWithTime = (dateString) => {
+        if (!dateString) return 'N/A';
         const options = {
             year: 'numeric',
             month: 'long',
@@ -233,6 +240,14 @@ const TransportManagement = ({ showFlashMessage }) => {
         }
     };
 
+    const handleCancelEdit = () => {
+        setFormData({
+            transportName: '', person: '', mobile: '', address: '', status: 'active'
+        });
+        setEditingTransportId(null);
+        setLocalError(null);
+    };
+
     // --- Pagination Logic ---
     const totalPages = Math.ceil(totalTransportsCount / itemsPerPage);
 
@@ -258,7 +273,7 @@ const TransportManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        const doc = new window.jspdf.jsPDF('landscape');
+        const doc = new window.jspdf.jsPDF('landscape'); // Use landscape for more columns
         
         if (typeof doc.autoTable !== 'function') {
             showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
@@ -266,29 +281,151 @@ const TransportManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        doc.text("Transport List", 14, 15);
+        // Define company details for PDF header
+        const companyName = "GOOD LUCK BOOK STORE";
+        const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
+        const companyMobile = "Mobile Number: 7024136476";
+        const companyGST = "GST NO: 23EAVPP3772F1Z8";
+        const companyLogoUrl = companyLogo; // Use the imported logo directly
+        
+        // Function to generate the main report content (title, line, table, save)
+        // This function now accepts the dynamic startYPositionForTable as an argument
+        const generateReportBody = (startYPositionForTable) => {
+            // Add a professional report title (centered, below company info)
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30); // Dark gray for title
+            // Adjust Y position for the report title to be below company info
+            doc.text("Transport List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
 
-        const tableColumn = [
-            "S.No.", "Transport Name", "Person", "Mobile", "Address", "Add Date", "Status"
-        ];
-        const tableRows = [];
+            // Add a line separator below the main title
+            doc.setLineWidth(0.5);
+            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15); // Line spanning almost full width
 
-        transports.forEach((transport, index) => {
-            const transportData = [
-                String(index + 1),
-                getStringValue(transport.transportName),
-                getStringValue(transport.person),
-                getStringValue(transport.mobile),
-                getStringValue(transport.address),
-                formatDateWithTime(transport.createdAt),
-                getStringValue(transport.status).charAt(0).toUpperCase() + getStringValue(transport.status).slice(1)
+            // Update startYPositionForTable for autoTable
+            const tableStartY = startYPositionForTable + 20;
+
+
+            // Generate table data
+            const tableColumn = [
+                "S.No.", "Transport Name", "Person", "Mobile", "Address", "Add Date", "Status"
             ];
-            tableRows.push(transportData);
-        });
+            const tableRows = [];
 
-        doc.autoTable(tableColumn, tableRows, { startY: 20 });
-        doc.save(`Transport_List_${new Date().toLocaleDateString()}.pdf`);
-        showFlashMessage('Transport list downloaded as PDF!', 'success');
+            transports.forEach((transport, index) => {
+                const transportData = [
+                    String(index + 1),
+                    getStringValue(transport.transportName),
+                    getStringValue(transport.person),
+                    getStringValue(transport.mobile),
+                    getStringValue(transport.address),
+                    formatDateWithTime(transport.createdAt),
+                    getStringValue(transport.status).charAt(0).toUpperCase() + getStringValue(transport.status).slice(1)
+                ];
+                tableRows.push(transportData);
+            });
+
+            // Add the table to the document with professional styling
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: tableStartY, // Use our dynamic start position
+                theme: 'plain', // Changed to 'plain' for a cleaner look like the reference PDF
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 10,
+                    cellPadding: 3,
+                    textColor: [51, 51, 51], // Default text color for body
+                    valign: 'middle',
+                    halign: 'left'
+                },
+                headStyles: {
+                    fillColor: [240, 240, 240], // Light gray header
+                    textColor: [51, 51, 51], // Dark text for header
+                    fontStyle: 'bold',
+                    halign: 'center', // Center align header text
+                    valign: 'middle', // Vertically align header text
+                    lineWidth: 0.1, // Add a thin border to header cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                bodyStyles: {
+                    lineWidth: 0.1, // Add a thin border to body cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                columnStyles: {
+                    0: { cellWidth: 15, halign: 'center' }, 1: { cellWidth: 'auto', halign: 'left' },
+                    2: { cellWidth: 'auto', halign: 'left' }, 3: { cellWidth: 'auto', halign: 'center' },
+                    4: { cellWidth: 'auto', halign: 'left' }, 5: { halign: 'center' }, 6: { halign: 'center' }
+                },
+                margin: { top: 10, right: 14, bottom: 10, left: 14 },
+                didDrawPage: function (data) {
+                    // Add footer on each page
+                    doc.setFontSize(10);
+                    doc.setTextColor(100); // Gray color for footer text
+                    const pageCount = doc.internal.getNumberOfPages();
+                    doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                }
+            });
+            doc.save(`Transport_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
+            showFlashMessage('Transport list downloaded as PDF!', 'success');
+        };
+
+        // 5. **Handle Logo Loading Asynchronously:**
+        const img = new Image();
+        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
+        img.onload = () => {
+            const logoX = 14; // Left margin for logo
+            const logoY = 10; // Top margin for logo
+            const imgWidth = 40; // Adjust as needed for your logo size
+            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+            
+            // Add the logo at the top-left
+            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
+            
+            // Add company name and details next to logo
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
+            
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12); // Address
+            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17); // Mobile
+            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22); // GST No.
+
+            // Calculate startYPositionForTable based on logo and company info block
+            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10); // Ensure enough space
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
+        };
+
+        img.onerror = () => {
+            console.warn("Logo image could not be loaded. Generating PDF without logo.");
+            // If logo fails, add only company info block
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, 14, 20); // Company Name
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, 14, 27); // Address
+            doc.text(companyMobile, 14, 32); // Mobile
+            doc.text(companyGST, 14, 37); // GST No.
+            
+            const calculatedStartY = 45; // Adjust startY since no logo
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
+        };
+
+        img.src = companyLogoUrl; // This will now use the imported image data
+
+        // Add generation date/time to the top right (this part can run immediately)
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100); // Gray color for date text
+        doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
     };
 
     // --- UI Rendering ---
@@ -297,220 +434,231 @@ const TransportManagement = ({ showFlashMessage }) => {
             <h2 className="section-title">Transport Management</h2>
 
             {localError && (
-                <p className="error-message text-center">{localError}</p>
+                <p className="error-message text-center">
+                    <FaTimesCircle className="error-icon" /> {localError}
+                </p>
             )}
 
-            {/* Transport Creation/Update Form */}
-            <div className="form-container-card">
-                <form onSubmit={handleSubmit} className="app-form">
-                    <h3 className="form-title">{editingTransportId ? 'Edit Transport' : 'Add New Transport'}</h3>
-                    
-                    <div className="form-group">
-                        <label htmlFor="transportName">Transport Name:</label>
-                        <input
-                            type="text"
-                            id="transportName"
-                            name="transportName"
-                            value={formData.transportName}
-                            onChange={handleChange}
-                            placeholder="e.g., ABC Transports"
-                            required
-                            disabled={loading}
-                        />
-                    </div>
+            {/* Main content layout for two columns */}
+            <div className="main-content-layout">
+                {/* Transport List Table - FIRST CHILD */}
+                <div className="table-section">
+                    <h3 className="table-title">Existing Transports</h3>
 
-                    <div className="form-group">
-                        <label htmlFor="person">Person:</label>
-                        <input
-                            type="text"
-                            id="person"
-                            name="person"
-                            value={formData.person}
-                            onChange={handleChange}
-                            placeholder="e.g., John Doe"
-                            required
-                            disabled={loading}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="mobile">Mobile:</label>
-                        <input
-                            type="text"
-                            id="mobile"
-                            name="mobile"
-                            value={formData.mobile}
-                            onChange={handleChange}
-                            placeholder="e.g., 9876543210"
-                            required
-                            disabled={loading}
-                            maxLength="10"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="address">Address:</label>
-                        <textarea
-                            id="address"
-                            name="address"
-                            value={formData.address}
-                            onChange={handleChange}
-                            placeholder="Full address of the transport"
-                            rows="3"
-                            required
-                            disabled={loading}
-                        ></textarea>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="status">Status:</label>
-                        <select
-                            id="status"
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            disabled={loading}
-                        >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
-
-                    <div className="form-actions">
-                        <button type="submit" className="btn btn-primary" disabled={loading}>
-                            {loading ? (editingTransportId ? 'Updating...' : 'Adding...') : (editingTransportId ? 'Update Transport' : 'Add Transport')}
-                            <FaPlusCircle className="ml-2" />
-                        </button>
-                        {editingTransportId && (
-                            <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={() => {
-                                    setEditingTransportId(null);
-                                    setFormData({
-                                        transportName: '', person: '', mobile: '', address: '', status: 'active'
-                                    });
-                                    setLocalError(null);
+                    {/* Search and PDF Download Section */}
+                    <div className="table-controls">
+                        <div className="search-input-group">
+                            <input
+                                type="text"
+                                placeholder="Search by Name, Mobile, Address..."
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1); // Reset to first page on search
                                 }}
+                                className="search-input"
                                 disabled={loading}
-                            >
-                                Cancel Edit
-                            </button>
-                        )}
-                    </div>
-                </form>
-            </div>
+                            />
+                            <FaSearch className="search-icon" />
+                        </div>
 
-            {/* Transport List Table */}
-            <div className="table-container">
-                <h3 className="table-title">Existing Transports</h3>
-
-                {/* Search and PDF Download Section */}
-                <div className="table-controls">
-                    <div className="search-input-group">
-                        <input
-                            type="text"
-                            placeholder="Search by Name, Mobile, Address..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="search-input"
-                        />
-                        <FaSearch className="search-icon" />
+                        <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || transports.length === 0}>
+                            <FaFilePdf className="mr-2" /> Download PDF
+                        </button>
                     </div>
 
-                    <button onClick={downloadPdf} className="btn btn-info download-pdf-btn">
-                        <FaFilePdf className="mr-2" /> Download PDF
-                    </button>
+                    {loading && transports.length === 0 ? (
+                        <p className="loading-state">
+                            <FaSpinner className="animate-spin mr-2" /> Loading transports...
+                        </p>
+                    ) : transports.length === 0 ? (
+                        <p className="no-data-message">No transports found matching your criteria. Start by adding one!</p>
+                    ) : (
+                        <div className="table-container"> {/* This div is for table overflow, not layout */}
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>S.No.</th>
+                                        <th>Transport Name</th>
+                                        <th>Person</th>
+                                        <th>Mobile</th>
+                                        <th>Address</th>
+                                        <th>Add Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody ref={tableBodyRef}>
+                                    {transports.map((transport, index) => (
+                                        <tr key={transport._id}>
+                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td>{getStringValue(transport.transportName)}</td>
+                                            <td>{getStringValue(transport.person)}</td>
+                                            <td>{getStringValue(transport.mobile)}</td>
+                                            <td>{getStringValue(transport.address)}</td>
+                                            <td>{formatDateWithTime(transport.createdAt)}</td>
+                                            <td>
+                                                <span className={`status-badge ${getStringValue(transport.status).toLowerCase()}`}>
+                                                    {getStringValue(transport.status).charAt(0).toUpperCase() + getStringValue(transport.status).slice(1)}
+                                                </span>
+                                            </td>
+                                            <td className="actions-column">
+                                                <button
+                                                    onClick={() => handleEdit(transport)}
+                                                    className="action-icon-button edit-button"
+                                                    title="Edit Transport"
+                                                    disabled={loading}
+                                                >
+                                                    <FaEdit />
+                                                </button>
+                                                <button
+                                                    onClick={() => openConfirmModal(transport)}
+                                                    className="action-icon-button delete-button"
+                                                    title="Delete Transport"
+                                                    disabled={loading}
+                                                >
+                                                    {loading && transportToDeleteId === transport._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="pagination-controls">
+                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
+                                        <FaChevronLeft /> Previous
+                                    </button>
+                                    <span>Page {currentPage} of {totalPages}</span>
+                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
+                                        Next <FaChevronRight />
+                                    </button>
+                                    {/* Page Size Dropdown */}
+                                    <div className="items-per-page"> {/* Changed class to items-per-page for consistency */}
+                                        <label htmlFor="pageSize">Page Size:</label>
+                                        <select
+                                            id="pageSize"
+                                            value={itemsPerPage}
+                                            onChange={(e) => {
+                                                setItemsPerPage(Number(e.target.value));
+                                                setCurrentPage(1); // Reset to first page on size change
+                                            }}
+                                            disabled={loading}
+                                        >
+                                            <option value="10">10</option>
+                                            <option value="25">25</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                        </select>
+                                    </div>
+                                    <span className="total-records">Total Records: {totalTransportsCount}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
-                {loading && transports.length === 0 ? (
-                    <p className="loading-state">Loading transports...</p>
-                ) : transports.length === 0 ? (
-                    <p className="no-data-message">No transports found matching your criteria. Start by adding one!</p>
-                ) : (
-                    <>
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>S.No.</th>
-                                    <th>Transport Name</th>
-                                    <th>Person</th>
-                                    <th>Mobile</th>
-                                    <th>Address</th>
-                                    <th>Add Date</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody ref={tableBodyRef}>
-                                {transports.map((transport, index) => (
-                                    <tr key={transport._id}>
-                                        <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td>{getStringValue(transport.transportName)}</td>
-                                        <td>{getStringValue(transport.person)}</td>
-                                        <td>{getStringValue(transport.mobile)}</td>
-                                        <td>{getStringValue(transport.address)}</td>
-                                        <td>{formatDateWithTime(transport.createdAt)}</td>
-                                        <td>
-                                            <span className={`status-badge ${getStringValue(transport.status).toLowerCase()}`}>
-                                                {getStringValue(transport.status).charAt(0).toUpperCase() + getStringValue(transport.status).slice(1)}
-                                            </span>
-                                        </td>
-                                        <td className="actions-column">
-                                            <button
-                                                onClick={() => handleEdit(transport)}
-                                                className="action-icon-button edit-button"
-                                                title="Edit Transport"
-                                            >
-                                                <FaEdit />
-                                            </button>
-                                            <button
-                                                onClick={() => openConfirmModal(transport)}
-                                                className="action-icon-button delete-button"
-                                                title="Delete Transport"
-                                            >
-                                                <FaTrashAlt />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                {/* Transport Creation/Update Form - SECOND CHILD */}
+                <div className="form-container-card">
+                    <form onSubmit={handleSubmit} className="app-form">
+                        <h3 className="form-title">{editingTransportId ? 'Edit Transport' : 'Add New Transport'}</h3>
+                        
+                        <div className="form-group">
+                            <label htmlFor="transportName">Transport Name:</label>
+                            <input
+                                type="text"
+                                id="transportName"
+                                name="transportName"
+                                value={formData.transportName}
+                                onChange={handleChange}
+                                placeholder="e.g., ABC Transports"
+                                required
+                                disabled={loading}
+                                className="form-input"
+                            />
+                        </div>
 
-                        {/* Pagination Controls */}
-                        {totalPages > 1 && (
-                            <div className="pagination-controls">
-                                <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
-                                    <FaChevronLeft /> Previous
+                        <div className="form-group">
+                            <label htmlFor="person">Person:</label>
+                            <input
+                                type="text"
+                                id="person"
+                                name="person"
+                                value={formData.person}
+                                onChange={handleChange}
+                                placeholder="e.g., John Doe"
+                                required
+                                disabled={loading}
+                                className="form-input"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="mobile">Mobile:</label>
+                            <input
+                                type="text"
+                                id="mobile"
+                                name="mobile"
+                                value={formData.mobile}
+                                onChange={handleChange}
+                                placeholder="e.g., 9876543210"
+                                required
+                                disabled={loading}
+                                maxLength="10"
+                                className="form-input"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="address">Address:</label>
+                            <textarea
+                                id="address"
+                                name="address"
+                                value={formData.address}
+                                onChange={handleChange}
+                                placeholder="Full address of the transport"
+                                rows="3"
+                                required
+                                disabled={loading}
+                                className="form-textarea"
+                            ></textarea>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="status">Status:</label>
+                            <select
+                                id="status"
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                disabled={loading}
+                                className="form-select"
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div className="form-actions">
+                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingTransportId ? 'Update Transport' : 'Add Transport')}
+                            </button>
+                            {editingTransportId && (
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary ml-2"
+                                    onClick={handleCancelEdit}
+                                    disabled={loading}
+                                >
+                                    Cancel Edit
                                 </button>
-                                <span>Page {currentPage} of {totalPages}</span>
-                                <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
-                                    Next <FaChevronRight />
-                                </button>
-                                {/* Page Size Dropdown */}
-                                <div className="page-size-dropdown">
-                                    <label htmlFor="pageSize">Page Size:</label>
-                                    <select
-                                        id="pageSize"
-                                        value={itemsPerPage}
-                                        onChange={(e) => {
-                                            setItemsPerPage(Number(e.target.value));
-                                            setCurrentPage(1); // Reset to first page on size change
-                                        }}
-                                        disabled={loading}
-                                    >
-                                        <option value="10">10</option>
-                                        <option value="25">25</option>
-                                        <option value="50">50</option>
-                                        <option value="100">100</option>
-                                    </select>
-                                </div>
-                                <span className="total-records">Total Records: {totalTransportsCount}</span>
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
+                            )}
+                        </div>
+                    </form>
+                </div>
+            </div> {/* End of main-content-layout */}
 
             {/* Confirmation Modal */}
             {showConfirmModal && (
@@ -519,7 +667,9 @@ const TransportManagement = ({ showFlashMessage }) => {
                         <h3>Confirm Deletion</h3>
                         <p>Are you sure you want to delete transport: <strong>{transportToDeleteName}</strong>?</p>
                         <div className="modal-actions">
-                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>Delete</button>
+                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Delete'}
+                            </button>
                             <button onClick={closeConfirmModal} className="btn btn-secondary" disabled={loading}>Cancel</button>
                         </div>
                     </div>

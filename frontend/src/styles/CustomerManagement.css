@@ -1,0 +1,650 @@
+/* src/styles/CustomerManagement.css */
+
+/* General Page Layout Adjustments */
+.customer-management-container {
+    padding: 15px; /* Reduced overall padding for the container */
+    max-width: 1300px; /* Slightly reduced max-width for a more compact look */
+    margin: 0 auto; /* Center the container */
+}
+
+/* Main Page Title */
+.customer-management-container .section-title {
+    font-size: 1.8rem;
+    color: #333333;
+    margin-bottom: 25px;
+    text-align: center;
+    font-weight: 700;
+}
+
+/* Main content layout for two columns on desktop */
+.customer-management-container .main-content-layout {
+    display: flex;
+    flex-direction: column; /* Default to column on small screens */
+    gap: 20px; /* Reduced space between sections */
+    width: 100%;
+}
+
+@media (min-width: 992px) { /* Desktop breakpoint */
+    .customer-management-container .main-content-layout {
+        flex-direction: row; /* Table on left, Form on right */
+        align-items: flex-start; /* Align items to the top */
+    }
+
+    .customer-management-container .form-container-card {
+        flex: 0 0 400px; /* Slightly reduced fixed width for the form on desktop */
+        max-width: 400px; /* Ensure it doesn't grow beyond this */
+        margin-left: 0; 
+        margin-right: 0; 
+    }
+
+    .customer-management-container .table-section {
+        flex: 1; /* Table takes remaining space */
+        min-width: 0; /* Crucial: Allows the flex item to shrink below its content's intrinsic width, enabling overflow-x on its child */
+        margin-top: 0; 
+        margin-left: 0; 
+        margin-right: 0; 
+    }
+}
+
+
+/* Form Section Styling - Make the outer wrapper transparent/borderless */
+.customer-management-container .form-container-card {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important; /* Remove all padding from this outer div */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+/* Apply actual card styling to the inner form */
+.customer-management-container .form-container-card .app-form {
+    background-color: #ffffff; /* White background for the form itself */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    padding: 20px; /* Padding inside the form */
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+/* Form Title */
+.customer-management-container .form-container-card .form-title {
+    font-size: 1.4rem;
+    color: #444444;
+    margin-bottom: 20px;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Form rows for multi-column layout */
+.customer-management-container .form-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+@media (min-width: 600px) {
+    .customer-management-container .form-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+}
+
+/* Individual form group styling */
+.customer-management-container .form-group {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.customer-management-container .form-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #555555;
+    font-size: 0.85rem;
+}
+
+.customer-management-container .form-input,
+.customer-management-container .form-select,
+.customer-management-container .form-textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #dddddd;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    color: #333333;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.customer-management-container .form-input:focus,
+.customer-management-container .form-select:focus,
+.customer-management-container .form-textarea:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+    outline: none;
+}
+
+.customer-management-container .form-textarea {
+    min-height: 50px;
+    resize: vertical;
+}
+
+/* File input specific style to match others */
+.customer-management-container .form-input-file {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #dddddd;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    color: #333333;
+    box-sizing: border-box;
+}
+
+/* Form actions (buttons) */
+.customer-management-container .form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.customer-management-container .btn {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.customer-management-container .btn-primary {
+    background-color: #007bff;
+    color: #ffffff;
+}
+
+.customer-management-container .btn-primary:hover:not(:disabled) {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+.customer-management-container .btn-secondary {
+    background-color: #6c757d;
+    color: #ffffff;
+}
+
+.customer-management-container .btn-secondary:hover:not(:disabled) {
+    background-color: #5a6268;
+    transform: translateY(-1px);
+}
+
+.customer-management-container .btn-info {
+    background-color: #17a2b8;
+    color: #ffffff;
+}
+
+.customer-management-container .btn-info:hover:not(:disabled) {
+    background-color: #138496;
+}
+
+.customer-management-container .btn-danger {
+    background-color: #dc3545;
+    color: #ffffff;
+}
+
+.customer-management-container .btn-danger:hover:not(:disabled) {
+    background-color: #c82333;
+}
+
+
+.customer-management-container .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.customer-management-container .btn svg {
+    margin-left: 6px;
+}
+.customer-management-container .btn .btn-icon-mr {
+    margin-right: 6px;
+    margin-left: 0;
+}
+.customer-management-container .btn .btn-icon-ml {
+    margin-left: 6px;
+    margin-right: 0;
+}
+
+
+/* Error message styling */
+.customer-management-container .error-message {
+    color: #dc3545;
+    font-size: 0.8rem;
+    margin-top: 8px;
+    text-align: center;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+.customer-management-container .error-message .error-icon {
+    font-size: 1rem;
+}
+
+
+/* Table Section Styling - Make the outer wrapper transparent/borderless */
+.customer-management-container .table-section {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important; /* Remove all padding from this outer div */
+    width: 100%;
+    margin-top: 0;
+}
+
+/* Apply actual card styling to the inner table container and controls */
+.customer-management-container .table-controls {
+    background-color: #ffffff; /* White background for controls */
+    border-top-left-radius: 8px; /* Rounded top corners */
+    border-top-right-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    padding: 15px 20px; /* Padding inside controls */
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0; /* No margin below if table-container has margin-top */
+    gap: 10px;
+}
+
+.customer-management-container .search-input-group {
+    position: relative;
+    flex-grow: 1;
+    max-width: 350px;
+}
+
+.customer-management-container .search-input {
+    width: 100%;
+    padding: 8px 10px 8px 32px;
+    border: 1px solid #dddddd;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    color: #333333;
+}
+
+.customer-management-container .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888888;
+    font-size: 0.9rem;
+}
+
+/* Ensure the table container itself allows horizontal scrolling if content overflows */
+.customer-management-container .table-container {
+    background-color: #ffffff; /* White background for the table content area */
+    border-bottom-left-radius: 8px; /* Rounded bottom corners */
+    border-bottom-right-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    padding: 15px 20px; /* Padding around the table content */
+    overflow-x: auto; 
+    width: 100%;
+    display: block;
+    margin-top: 10px; /* Space between controls and table content */
+}
+
+/* Data Table Styling */
+.customer-management-container .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0; /* Removed margin-top, as padding is on table-container */
+}
+
+.customer-management-container .data-table th,
+.customer-management-container .data-table td {
+    padding: 8px 10px;
+    border: 1px solid #eeeeee;
+    text-align: left;
+    font-size: 0.8rem;
+    color: #333333;
+    vertical-align: middle;
+}
+
+.customer-management-container .data-table th {
+    background-color: #f8f9fa;
+    font-weight: 700;
+    color: #495057;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.customer-management-container .data-table tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.customer-management-container .data-table tbody tr:hover {
+    background-color: #e9ecef;
+}
+
+/* Status badge styling */
+.customer-management-container .status-badge {
+    padding: 3px 7px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    display: inline-block;
+}
+
+.customer-management-container .status-badge.active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.customer-management-container .status-badge.inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Actions column styling */
+.customer-management-container .actions-column {
+    white-space: nowrap;
+    text-align: center;
+}
+
+.customer-management-container .action-icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin: 0 3px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.customer-management-container .action-icon-button.edit-button {
+    color: #007bff;
+}
+
+.customer-management-container .action-icon-button.edit-button:hover {
+    background-color: #e7f3ff;
+    color: #0056b3;
+}
+
+.customer-management-container .action-icon-button.delete-button {
+    color: #dc3545;
+}
+
+.customer-management-container .action-icon-button.delete-button:hover {
+    background-color: #f8d7da;
+    color: #a71d2a;
+}
+
+/* Table image styling */
+.customer-management-container .table-img {
+    max-width: 50px;
+    max-height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Pagination controls */
+.customer-management-container .pagination-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    gap: 10px;
+}
+
+.customer-management-container .pagination-controls .btn-page {
+    background-color: #007bff;
+    color: white;
+    padding: 7px 10px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.customer-management-container .pagination-controls .btn-page:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.customer-management-container .pagination-controls span {
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.customer-management-container .total-records {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 10px;
+}
+
+/* Page Size Dropdown within Pagination */
+.customer-management-container .items-per-page {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.customer-management-container .items-per-page label {
+    font-weight: normal;
+    margin-bottom: 0;
+}
+
+.customer-management-container .items-per-page select {
+    padding: 5px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #333;
+}
+
+
+/* Modal specific adjustments */
+.customer-management-container .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.customer-management-container .modal-content {
+    background-color: #ffffff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    max-width: 450px;
+    width: 90%;
+    position: relative;
+    text-align: center;
+}
+
+.customer-management-container .modal-content h3 {
+    margin-top: 0;
+    color: #333333;
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+}
+
+.customer-management-container .modal-content p {
+    color: #555555;
+    margin-bottom: 20px;
+    line-height: 1.4;
+    font-size: 0.9rem;
+}
+
+.customer-management-container .modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Loading and No Data Messages */
+.customer-management-container .loading-state, .customer-management-container .no-data-message {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Responsive adjustments for smaller screens (mobile) */
+@media (max-width: 991px) { /* Tablet and smaller, stack vertically */
+    .customer-management-container {
+        padding: 15px; /* Reduced overall padding on mobile */
+    }
+    .customer-management-container .section-title {
+        font-size: 1.5rem; /* Smaller title on mobile */
+        margin-bottom: 20px;
+    }
+    .customer-management-container .form-container-card {
+        padding: 0; /* No padding on outer div */
+    }
+    .customer-management-container .form-container-card .app-form {
+        padding: 15px; /* Reduced card padding for inner form */
+    }
+    .customer-management-container .form-container-card .form-title {
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+    }
+    .customer-management-container .form-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    .customer-management-container .form-group {
+        margin-bottom: 10px;
+    }
+    .customer-management-container .form-label {
+        font-size: 0.8rem;
+        margin-bottom: 3px;
+    }
+    .customer-management-container .form-input,
+    .customer-management-container .form-select,
+    .customer-management-container .form-textarea {
+        padding: 7px 9px;
+        font-size: 0.85rem;
+    }
+    .customer-management-container .form-actions {
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 15px;
+    }
+    .customer-management-container .form-actions .btn {
+        width: 100%;
+        padding: 10px 15px;
+        font-size: 0.85rem;
+    }
+
+    .customer-management-container .table-section {
+        padding: 0; /* No padding on outer div */
+    }
+    .customer-management-container .table-controls {
+        padding: 15px; /* Reduced padding for controls */
+    }
+    .customer-management-container .table-title {
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+    }
+    .customer-management-container .table-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    .customer-management-container .search-input-group {
+        max-width: 100%;
+    }
+    .customer-management-container .search-input {
+        padding: 7px 9px 7px 30px;
+        font-size: 0.85rem;
+    }
+    .customer-management-container .search-icon {
+        font-size: 0.8rem;
+        left: 8px;
+    }
+
+    .customer-management-container .table-container {
+        padding: 15px; /* Reduced padding for table content */
+    }
+    .customer-management-container .data-table th,
+    .customer-management-container .data-table td {
+        padding: 6px 8px;
+        font-size: 0.7rem;
+    }
+    .customer-management-container .data-table th {
+        font-size: 0.7rem;
+    }
+    .customer-management-container .status-badge {
+        padding: 2px 5px;
+        font-size: 0.65rem;
+    }
+    .customer-management-container .action-icon-button {
+        font-size: 0.8rem;
+        margin: 0 2px;
+        padding: 3px;
+    }
+    .customer-management-container .pagination-controls {
+        margin-top: 15px;
+        gap: 8px;
+    }
+    .customer-management-container .pagination-controls .btn-page {
+        padding: 6px 9px;
+        font-size: 0.8rem;
+    }
+    .customer-management-container .pagination-controls span {
+        font-size: 0.8rem;
+    }
+    .customer-management-container .items-per-page {
+        font-size: 0.8rem;
+    }
+    .customer-management-container .items-per-page select {
+        padding: 4px 6px;
+        font-size: 0.8rem;
+    }
+
+    .customer-management-container .modal-content {
+        padding: 20px;
+    }
+    .customer-management-container .modal-content h3 {
+        font-size: 1.1rem;
+    }
+    .customer-management-container .modal-content p {
+        font-size: 0.85rem;
+    }
+    .customer-management-container .modal-actions {
+        gap: 8px;
+    }
+}

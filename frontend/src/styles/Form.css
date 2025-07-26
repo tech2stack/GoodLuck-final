@@ -1,178 +1,170 @@
 /* src/styles/Form.css */
 
-/* --- General Form Container & Header --- */
-.form-container-card {
-    background-color: var(--bg-white);
-    padding: 2.5rem;
-    border-radius: 12px;
-    box-shadow: var(--shadow-subtle);
-    max-width: 600px;
-    margin: 3rem auto;
-    border: 1px solid var(--border-light);
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    position: relative;
-}
-
-.form-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--border-light);
-    padding-bottom: 1rem;
-    margin-bottom: 1rem;
-}
-
-.form-title {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--text-dark);
-    margin: 0;
-}
-
-.close-button {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: var(--secondary-gray);
-    cursor: pointer;
-    transition: color 0.2s ease-in-out;
-    padding: 0.5rem; /* Make it easier to click */
-}
-
-.close-button:hover {
-    color: var(--primary-indigo); /* Example hover color */
-}
-
-
-/* --- Form Elements --- */
+/* General Form Container/Wrapper */
 .app-form {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 15px; /* Default spacing between form groups */
 }
 
+/* Individual Form Group (label + input/select) */
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    margin-bottom: 0; /* Handled by .app-form gap */
 }
 
-.form-group label {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-medium);
+/* Labels for Form Inputs */
+.form-label {
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: #555;
+    font-size: 0.9rem;
 }
 
-.form-group input[type="text"],
-.form-group input[type="email"],
-.form-group input[type="tel"],
-.form-group input[type="password"],
-.form-group input[type="number"],
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 0.8rem 1rem;
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    font-size: 1rem;
-    color: var(--text-dark);
-    background-color: var(--bg-light-gray);
-    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+/* Common styles for Input and Select fields */
+.form-input,
+.form-select,
+.form-textarea {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #333;
+    background-color: #ffffff;
+    width: 100%; /* Take full width of its immediate parent */
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-    border-color: var(--primary-indigo);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2); /* Focus ring */
+/* Focus state for Input and Select fields */
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+    border-color: #6a0dad; /* Primary purple focus color */
+    box-shadow: 0 0 0 2px rgba(106, 13, 173, 0.2); /* Subtle purple glow */
     outline: none;
 }
 
-.form-group textarea {
-    resize: vertical; /* Allow vertical resizing */
+/* Specific styles for Textarea */
+.form-textarea {
+    resize: vertical;
     min-height: 80px;
 }
 
-/* --- Form Actions --- */
-.form-actions {
-    display: flex;
-    justify-content: flex-end; /* Align buttons to the right */
-    gap: 0.75rem;
-    margin-top: 1.5rem;
+/* Disabled state for form elements */
+.form-input:disabled,
+.form-select:disabled,
+.form-textarea:disabled {
+    background-color: #e9e9e9;
+    cursor: not-allowed;
+    opacity: 0.8;
 }
 
-/* --- Buttons --- */
+/* Form Action Buttons Container */
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-start; /* Default alignment */
+    flex-wrap: wrap;
+}
+
+/* General button styles (to be overridden by specific btn-primary/secondary etc.) */
 .btn {
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
+    padding: 8px 15px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: 0.9rem;
     cursor: pointer;
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    font-weight: 600;
+    box-shadow: none;
 }
 
+/* Primary Button */
 .btn-primary {
-    background-color: var(--primary-indigo);
-    color: var(--bg-white);
-    border: 1px solid var(--primary-indigo);
+    background-color: #6a0dad; /* GoodLuck Store primary purple */
+    color: #ffffff;
 }
 
-.btn-primary:hover {
-    background-color: var(--primary-indigo-dark);
-    border-color: var(--primary-indigo-dark);
+.btn-primary:hover:not(:disabled) {
+    background-color: #5a0b9a;
 }
 
+/* Secondary Button */
 .btn-secondary {
-    background-color: var(--bg-medium-gray);
-    color: var(--text-medium);
-    border: 1px solid var(--secondary-gray);
+    background-color: #f0f0f0;
+    color: #333;
+    border-color: #ccc;
 }
 
-.btn-secondary:hover {
-    background-color: #e2e8f0; /* Lighter gray hover */
-    border-color: #a0aec0; /* Darker gray border hover */
+.btn-secondary:hover:not(:disabled) {
+    background-color: #e0e0e0;
 }
 
+/* Danger Button */
+.btn-danger {
+    background-color: #dc3545;
+    color: #ffffff;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background-color: #c82333;
+}
+
+/* Info Button (e.g., for PDF download) */
+.btn-info {
+    background-color: #17a2b8;
+    color: #ffffff;
+}
+
+.btn-info:hover:not(:disabled) {
+    background-color: #138496;
+}
+
+/* Disabled Button State */
 .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    box-shadow: none;
 }
 
-/* --- Error/Validation Messages --- */
-.error-message {
-    color: #ef4444; /* Red for errors */
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
+/* Icon within button */
+.btn .mr-2 {
+    margin-right: 6px;
+    font-size: 0.9rem;
 }
 
-/* --- Responsive Adjustments --- */
+.btn .ml-2 {
+    margin-left: 6px;
+    font-size: 0.9rem;
+}
+
+/* Responsive adjustments for forms */
 @media (max-width: 768px) {
-    .form-container-card {
-        padding: 1.5rem;
-        margin: 2rem auto;
+    .app-form {
+        gap: 10px;
     }
-
-    .form-title {
-        font-size: 1.6rem;
+    .form-label {
+        font-size: 0.85rem;
+        margin-bottom: 4px;
     }
-
-    .btn {
-        padding: 0.6rem 1.2rem;
-        font-size: 0.9rem;
+    .form-input,
+    .form-select,
+    .form-textarea {
+        padding: 6px 8px;
+        font-size: 0.85rem;
     }
-
     .form-actions {
         flex-direction: column;
-        gap: 0.5rem;
+        align-items: stretch;
+        margin-top: 15px;
     }
-
-    .form-actions .btn {
+    .btn {
         width: 100%;
     }
 }

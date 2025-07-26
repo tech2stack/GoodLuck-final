@@ -1,10 +1,11 @@
-/* src/styles/ClassManagement.css */
+/* src/styles/ZoneManagement.css */
 
-/* Desktop Layout for Class Management Page */
+/* Desktop Layout for Zone Management Page */
 @media (min-width: 992px) { /* Desktop breakpoint */
     .main-content-layout {
-        /* Corrected order: Table on left (2.5fr), Form on right (1.5fr) */
-        grid-template-columns: 2.5fr 1.5fr; 
+        /* You can adjust the ratio here if ZoneManagement needs a different layout than ClassManagement */
+        /* For example, if you want equal columns: */
+        grid-template-columns: 2.5fr 1.5fr; /* Keeping same as ClassManagement for consistency */
     }
 }
 
@@ -18,7 +19,7 @@
 
 .form-section-card .app-form {
     width: 100%; /* Take full width of its parent (.form-section-card) */
-    max-width: 300px; /* Limit the overall width of the form content as per screenshot */
+    max-width: 300px; /* Limit the overall width of the form content (adjust as needed) */
 }
 
 .form-section-card .form-group {
@@ -43,7 +44,7 @@
 }
 
 .table-section-card .table-controls .search-input-group {
-    max-width: 250px; /* Limit search input width as per screenshot */
+    max-width: 250px; /* Limit search input width (adjust as needed) */
     flex-grow: 0; /* Prevent it from growing too much */
 }
 

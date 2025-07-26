@@ -1,18 +1,23 @@
 // src/components/masters/LanguageManagement.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../utils/api'; // API utility for backend calls
-import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight } from 'react-icons/fa'; // Icons for UI
+import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaSpinner, FaTimesCircle } from 'react-icons/fa'; // Icons for UI
 
 // Stylesheets (assuming these are already present and styled for consistency)
 import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
+// Import the new LanguageManagement specific styles
+import '../../styles/LanguageManagement.css'; 
 
 // NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
 // If you are using npm, you'd do: npm install jspdf jspdf-autotable
 // Then import them here:
 // import { jsPDF } from 'jspdf';
 // import 'jspdf-autotable';
+
+// Import the logo image directly (assuming it exists at this path)
+import companyLogo from '../../assets/glbs-logo.jpg';
 
 
 const LanguageManagement = ({ showFlashMessage }) => {
@@ -137,6 +142,14 @@ const LanguageManagement = ({ showFlashMessage }) => {
         setLoading(true);
         setLocalError(null);
 
+        // Basic validation for required fields
+        if (!formData.name.trim()) {
+            setLocalError('Language name cannot be empty.');
+            showFlashMessage('Language name cannot be empty.', 'error');
+            setLoading(false);
+            return;
+        }
+
         try {
             let response;
             if (editingLanguageId) {
@@ -219,6 +232,12 @@ const LanguageManagement = ({ showFlashMessage }) => {
         }
     };
 
+    const handleCancelEdit = () => {
+        setFormData({ name: '', status: 'active' });
+        setEditingLanguageId(null);
+        setLocalError(null);
+    };
+
     // --- Search Filtering ---
     const filteredLanguages = languages.filter(languageItem =>
         languageItem.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -252,7 +271,7 @@ const LanguageManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        const doc = new window.jspdf.jsPDF();
+        const doc = new window.jspdf.jsPDF(); // Default is 'portrait'
         
         if (typeof doc.autoTable !== 'function') {
             showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
@@ -260,26 +279,143 @@ const LanguageManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        doc.text("Language List", 14, 15);
+        // Define company details for PDF header
+        const companyName = "GOOD LUCK BOOK STORE";
+        const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
+        const companyMobile = "Mobile Number: 7024136476";
+        const companyGST = "GST NO: 23EAVPP3772F1Z8";
+        const companyLogoUrl = companyLogo; // Use the imported logo directly
+        
+        // Function to generate the main report content (title, line, table, save)
+        // This function now accepts the dynamic startYPositionForTable as an argument
+        const generateReportBody = (startYPositionForTable) => {
+            // Add a professional report title (centered, below company info)
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30); // Dark gray for title
+            // Adjust Y position for the report title to be below company info
+            doc.text("Language List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
 
-        const tableColumn = [
-            "S.No.", "Name", "Add Date", "Status"
-        ];
-        const tableRows = [];
+            // Add a line separator below the main title
+            doc.setLineWidth(0.5);
+            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15); // Line spanning almost full width
 
-        filteredLanguages.forEach((langItem, index) => {
-            const langData = [
-                index + 1,
+            // Update startYPositionForTable for autoTable
+            const tableStartY = startYPositionForTable + 20;
+
+
+            // Generate table data
+            const tableColumn = [
+                "S.No.", "Name", "Add Date", "Status"
+            ];
+            const tableRows = filteredLanguages.map((langItem, index) => [
+                // S.No. is always index + 1 for the filtered data for PDF
+                index + 1, 
                 langItem.name,
                 formatDateWithTime(langItem.createdAt),
                 langItem.status.charAt(0).toUpperCase() + langItem.status.slice(1)
-            ];
-            tableRows.push(langData);
-        });
+            ]);
 
-        doc.autoTable(tableColumn, tableRows, { startY: 20 });
-        doc.save(`Language_List_${new Date().toLocaleDateString()}.pdf`);
-        showFlashMessage('Language list downloaded as PDF!', 'success');
+            // Add the table to the document with professional styling
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: tableStartY, // Use our dynamic start position
+                theme: 'plain', // Changed to 'plain' for a cleaner look like the reference PDF
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 10,
+                    cellPadding: 3,
+                    textColor: [51, 51, 51], // Default text color for body
+                    valign: 'middle',
+                    halign: 'left'
+                },
+                headStyles: {
+                    fillColor: [240, 240, 240], // Light gray header
+                    textColor: [51, 51, 51], // Dark text for header
+                    fontStyle: 'bold',
+                    halign: 'center', // Center align header text
+                    valign: 'middle', // Vertically align header text
+                    lineWidth: 0.1, // Add a thin border to header cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                bodyStyles: {
+                    lineWidth: 0.1, // Add a thin border to body cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                columnStyles: {
+                    0: { cellWidth: 15, halign: 'center' }, 1: { cellWidth: 'auto', halign: 'left' },
+                    2: { halign: 'center' }, 3: { halign: 'center' }
+                },
+                margin: { top: 10, right: 14, bottom: 10, left: 14 },
+                didDrawPage: function (data) {
+                    // Add footer on each page
+                    doc.setFontSize(10);
+                    doc.setTextColor(100); // Gray color for footer text
+                    const pageCount = doc.internal.getNumberOfPages();
+                    doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                }
+            });
+            doc.save(`Language_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
+            showFlashMessage('Language list downloaded as PDF!', 'success');
+        };
+
+        // 5. **Handle Logo Loading Asynchronously:**
+        const img = new Image();
+        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
+        img.onload = () => {
+            const logoX = 14; // Left margin for logo
+            const logoY = 10; // Top margin for logo
+            const imgWidth = 40; // Adjust as needed for your logo size
+            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+            
+            // Add the logo at the top-left
+            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
+            
+            // Add company name and details next to logo
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
+            
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12); // Address
+            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17); // Mobile
+            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22); // GST No.
+
+            // Calculate startYPositionForTable based on logo and company info block
+            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10); // Ensure enough space
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
+        };
+
+        img.onerror = () => {
+            console.warn("Logo image could not be loaded. Generating PDF without logo.");
+            // If logo fails, add only company info block
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, 14, 20); // Company Name
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, 14, 27); // Address
+            doc.text(companyMobile, 14, 32); // Mobile
+            doc.text(companyGST, 14, 37); // GST No.
+            
+            const calculatedStartY = 45; // Adjust startY since no logo
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
+        };
+
+        img.src = companyLogoUrl; // This will now use the imported image data
+
+        // Add generation date/time to the top right (this part can run immediately)
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100); // Gray color for date text
+        doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
     };
 
     // --- UI Rendering ---
@@ -291,149 +427,153 @@ const LanguageManagement = ({ showFlashMessage }) => {
                 <p className="error-message text-center">{localError}</p>
             )}
 
-            {/* Language Creation/Update Form */}
-            <div className="form-container-card">
-                <form onSubmit={handleSubmit} className="app-form">
-                    <h3 className="form-title">{editingLanguageId ? 'Edit Language' : 'Add Language'}</h3>
-                    
-                    <div className="form-row"> {/* Use form-row for multi-column layout */}
-                        <div className="form-group">
-                            <label htmlFor="name">Language Name:</label>
+            {/* Main content layout for two columns */}
+            <div className="main-content-layout">
+                {/* Language List Table - FIRST CHILD */}
+                <div className="table-section"> {/* Changed to table-section for consistency */}
+                    <h3 className="table-title">Existing Languages</h3>
+
+                    {/* Search and PDF Download Section */}
+                    <div className="table-controls">
+                        <div className="search-input-group">
                             <input
                                 type="text"
-                                id="name"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                placeholder="e.g., English, Hindi"
-                                required
-                                disabled={loading}
+                                placeholder="Search by Language Name..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="search-input"
                             />
+                            <FaSearch className="search-icon" />
                         </div>
-                        <div className="form-group">
-                            <label htmlFor="status">Status:</label>
-                            <select
-                                id="status"
-                                name="status"
-                                value={formData.status}
-                                onChange={handleChange}
-                                disabled={loading}
-                            >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="form-actions">
-                        <button type="submit" className="btn btn-primary" disabled={loading}>
-                            {loading ? (editingLanguageId ? 'Updating...' : 'Adding...') : (editingLanguageId ? 'Update Language' : 'Add Language')}
-                            <FaPlusCircle className="ml-2" />
+                        <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredLanguages.length === 0}>
+                            <FaFilePdf className="mr-2" /> Download PDF
                         </button>
-                        {editingLanguageId && (
-                            <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={() => {
-                                    setEditingLanguageId(null);
-                                    setFormData({ name: '', status: 'active' });
-                                    setLocalError(null);
-                                }}
-                                disabled={loading}
-                            >
-                                Cancel Edit
-                            </button>
-                        )}
                     </div>
-                </form>
-            </div>
 
-            {/* Language List Table */}
-            <div className="table-container">
-                <h3 className="table-title">Existing Languages</h3>
+                    {loading && languages.length === 0 ? (
+                        <p className="loading-state">Loading languages...</p>
+                    ) : filteredLanguages.length === 0 ? (
+                        <p className="no-data-message">No languages found matching your criteria. Start by adding one!</p>
+                    ) : (
+                        <>
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>S.No.</th>
+                                        <th>Name</th>
+                                        <th>Add Date</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody ref={tableBodyRef}>
+                                    {currentLanguages.map((langItem, index) => (
+                                        <tr key={langItem._id}>
+                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td>{langItem.name}</td>
+                                            <td>{formatDateWithTime(langItem.createdAt)}</td>
+                                            <td>
+                                                <span className={`status-badge ${langItem.status}`}>
+                                                    {langItem.status.charAt(0).toUpperCase() + langItem.status.slice(1)}
+                                                </span>
+                                            </td>
+                                            <td className="actions-column">
+                                                <button
+                                                    onClick={() => handleEdit(langItem)}
+                                                    className="action-icon-button edit-button"
+                                                    title="Edit Language"
+                                                    disabled={loading}
+                                                >
+                                                    <FaEdit />
+                                                </button>
+                                                <button
+                                                    onClick={() => openConfirmModal(langItem)}
+                                                    className="action-icon-button delete-button"
+                                                    title="Delete Language"
+                                                    disabled={loading}
+                                                >
+                                                    {loading && languageToDeleteId === langItem._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
 
-                {/* Search and PDF Download Section */}
-                <div className="table-controls">
-                    <div className="search-input-group">
-                        <input
-                            type="text"
-                            placeholder="Search by Language Name..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="search-input"
-                        />
-                        <FaSearch className="search-icon" />
-                    </div>
-                    <button onClick={downloadPdf} className="btn btn-info download-pdf-btn">
-                        <FaFilePdf className="mr-2" /> Download PDF
-                    </button>
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="pagination-controls">
+                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
+                                        <FaChevronLeft /> Previous
+                                    </button>
+                                    <span>Page {currentPage} of {totalPages}</span>
+                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
+                                        Next <FaChevronRight />
+                                    </button>
+                                </div>
+                            )}
+                            <div className="total-records text-center mt-2">
+                                Total Records: {filteredLanguages.length}
+                            </div>
+                        </>
+                    )}
                 </div>
 
-                {loading && languages.length === 0 ? (
-                    <p className="loading-state">Loading languages...</p>
-                ) : filteredLanguages.length === 0 ? (
-                    <p className="no-data-message">No languages found matching your criteria. Start by adding one!</p>
-                ) : (
-                    <>
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>S.No.</th>
-                                    <th>Name</th>
-                                    <th>Add Date</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody ref={tableBodyRef}>
-                                {currentLanguages.map((langItem, index) => (
-                                    <tr key={langItem._id}>
-                                        <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td>{langItem.name}</td>
-                                        <td>{formatDateWithTime(langItem.createdAt)}</td>
-                                        <td>
-                                            <span className={`status-badge ${langItem.status}`}>
-                                                {langItem.status.charAt(0).toUpperCase() + langItem.status.slice(1)}
-                                            </span>
-                                        </td>
-                                        <td className="actions-column">
-                                            <button
-                                                onClick={() => handleEdit(langItem)}
-                                                className="action-icon-button edit-button"
-                                                title="Edit Language"
-                                                disabled={loading}
-                                            >
-                                                <FaEdit />
-                                            </button>
-                                            <button
-                                                onClick={() => openConfirmModal(langItem)}
-                                                className="action-icon-button delete-button"
-                                                title="Delete Language"
-                                                disabled={loading}
-                                            >
-                                                <FaTrashAlt />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {/* Pagination Controls */}
-                        {totalPages > 1 && (
-                            <div className="pagination-controls">
-                                <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
-                                    <FaChevronLeft /> Previous
-                                </button>
-                                <span>Page {currentPage} of {totalPages}</span>
-                                <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
-                                    Next <FaChevronRight />
-                                </button>
+                {/* Language Creation/Update Form - SECOND CHILD */}
+                <div className="form-container-card">
+                    <form onSubmit={handleSubmit} className="app-form">
+                        <h3 className="form-title">{editingLanguageId ? 'Edit Language' : 'Add Language'}</h3>
+                        
+                        <div className="form-row"> {/* Use form-row for multi-column layout */}
+                            <div className="form-group">
+                                <label htmlFor="name">Language Name:</label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    placeholder="e.g., English, Hindi"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
                             </div>
-                        )}
-                    </>
-                )}
-            </div>
+                            <div className="form-group">
+                                <label htmlFor="status">Status:</label>
+                                <select
+                                    id="status"
+                                    name="status"
+                                    value={formData.status}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    className="form-select"
+                                >
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="form-actions">
+                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                                {loading ? (editingLanguageId ? 'Updating...' : 'Adding...') : (editingLanguageId ? 'Update Language' : 'Add Language')}
+                                <FaPlusCircle className="ml-2" />
+                            </button>
+                            {editingLanguageId && (
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={handleCancelEdit}
+                                    disabled={loading}
+                                >
+                                    Cancel Edit
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                </div>
+            </div> {/* End of main-content-layout */}
 
             {/* Confirmation Modal */}
             {showConfirmModal && (

@@ -7,12 +7,17 @@ import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, F
 import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
+// Import the new BookCatalogManagement specific styles
+import '../../styles/BookCatalogManagement.css'; 
 
 // NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
 // If you are using npm, you'd do: npm install jspdf jspdf-autotable
 // Then import them here:
 // import { jsPDF } from 'jspdf';
 // import 'jspdf-autotable';
+
+// Import the logo image directly (assuming it exists at this path)
+import companyLogo from '../../assets/glbs-logo.jpg';
 
 
 const BookCatalogManagement = ({ showFlashMessage }) => {
@@ -507,12 +512,12 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     // --- Format Price for Table Display ---
     const formatPriceDisplay = (bookCatalogItem) => {
         if (bookCatalogItem.bookType === 'common_price') {
-            return `₹${bookCatalogItem.commonPrice?.toFixed(2) || '0.00'}`; 
+            return `Rs${bookCatalogItem.commonPrice?.toFixed(2) || '0.00'}`; 
         } else if (bookCatalogItem.bookType === 'default' && bookCatalogItem.pricesByClass) {
             const prices = Object.entries(bookCatalogItem.pricesByClass)
                 .map(([classId, price]) => {
                     const className = classes.find(c => c._id === classId)?.name;
-                    return className ? `₹${price?.toFixed(2) || '0.00'} - ${className}` : `₹${price?.toFixed(2) || '0.00'} - Unknown Class`; 
+                    return className ? `Rs${price?.toFixed(2) || '0.00'} - ${className}` : `Rs${price?.toFixed(2) || '0.00'} - Unknown Class`; 
                 })
                 .join(', ');
             return prices || 'N/A';
@@ -536,21 +541,39 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        doc.text("Book Catalog List", 14, 15);
+        // Define company details for PDF header
+        const companyName = "GOOD LUCK BOOK STORE";
+        const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
+        const companyMobile = "Mobile Number: 7024136476";
+        const companyGST = "GST NO: 23EAVPP3772F1Z8";
+        const companyLogoUrl = companyLogo; // Use the imported logo directly
+        
+        // Function to generate the main report content (title, line, table, save)
+        // This function now accepts the dynamic startYPositionForTable as an argument
+        const generateReportBody = (startYPositionForTable) => {
+            // Add a professional report title (centered, below company info)
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30); // Dark gray for title
+            // Adjust Y position for the report title to be below company info
+            doc.text("Book Catalog List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
 
-        const tableColumn = [
-            "S.No.", "Name", "Publisher", "Subtitle", "Language", "Price",
-            "Discount %", "GST %", "Add Date", "Status"
-        ];
-        const tableRows = [];
+            // Add a line separator below the main title
+            doc.setLineWidth(0.5);
+            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15); // Line spanning almost full width
 
-        filteredBookCatalogs.forEach((bookItem, index) => {
-            const formattedPrice = typeof bookItem.commonPrice === 'number' && !isNaN(bookItem.commonPrice)
-                                   ? `Rs. ${bookItem.commonPrice.toFixed(2)}`
-                                   : 'N/A';
+            // Update startYPositionForTable for autoTable
+            const tableStartY = startYPositionForTable + 20;
 
-            const bookData = [
-                String(index + 1),
+
+            // Generate table data
+            const tableColumn = [
+                "S.No.", "Name", "Publisher", "Subtitle", "Language", "Price",
+                "Discount %", "GST %", "Add Date", "Status"
+            ];
+            const tableRows = filteredBookCatalogs.map((bookItem, index) => [
+                // S.No. is always index + 1 for the filtered data for PDF
+                index + 1, // Use index + 1 for S.No.
                 String(bookItem.bookName || '').trim(),
                 String(bookItem.publication?.name || bookItem.publication || '').trim(),
                 String(bookItem.subtitle?.name || bookItem.subtitle || '').trim(),
@@ -560,37 +583,114 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 `${bookItem.gstPercentage?.toFixed(2) || '0.00'}%`, // Add fallback for GST, format to 2 decimal places
                 bookItem.createdAt ? formatDateWithTime(bookItem.createdAt) : 'N/A', 
                 (bookItem.status?.charAt(0).toUpperCase() + bookItem.status?.slice(1)) || 'N/A'
-            ];
-            tableRows.push(bookData);
-        });
+            ]);
 
-        doc.autoTable({
-            head: [tableColumn],
-            body: tableRows,
-            startY: 20,
-            theme: 'grid',
-            styles: {
-                font: 'helvetica',
-                fontSize: 9,
-                cellPadding: 2,
-                overflow: 'linebreak',
-                halign: 'left',
-                valign: 'middle'
-            },
-            headStyles: {
-                fillColor: [230, 230, 230],
-                textColor: [0, 0, 0],
-                fontStyle: 'bold'
-            },
-            didDrawPage: function (data) {
-                let str = "Page " + doc.internal.getNumberOfPages();
-                doc.setFontSize(8);
-                doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
-            }
-        });
-        
-        doc.save(`Book_Catalog_List_${new Date().toLocaleDateString()}.pdf`);
-        showFlashMessage('Book Catalog list downloaded as PDF!', 'success');
+            // Add the table to the document with professional styling
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: tableStartY, // Use our dynamic start position
+                theme: 'plain', // Changed to 'plain' for a cleaner look like the reference PDF
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 10,
+                    cellPadding: 3,
+                    textColor: [51, 51, 51], // Default text color for body
+                    valign: 'middle',
+                    halign: 'left'
+                },
+                headStyles: {
+                    fillColor: [240, 240, 240], // Light gray header
+                    textColor: [51, 51, 51], // Dark text for header
+                    fontStyle: 'bold',
+                    halign: 'center', // Center align header text
+                    valign: 'middle', // Vertically align header text
+                    lineWidth: 0.1, // Add a thin border to header cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                bodyStyles: {
+                    lineWidth: 0.1, // Add a thin border to body cells
+                    lineColor: [200, 200, 200] // Light gray border
+                },
+                columnStyles: {
+                    0: { cellWidth: 15, halign: 'center' }, 1: { cellWidth: 'auto', halign: 'left' },
+                    2: { cellWidth: 'auto', halign: 'left' }, 3: { cellWidth: 'auto', halign: 'left' },
+                    4: { cellWidth: 'auto', halign: 'left' }, 5: { cellWidth: 'auto', halign: 'right' },
+                    6: { cellWidth: 'auto', halign: 'center' }, 7: { cellWidth: 'auto', halign: 'center' },
+                    8: { halign: 'center' }, 9: { halign: 'center' }
+                },
+                margin: { top: 10, right: 14, bottom: 10, left: 14 },
+                didDrawPage: function (data) {
+                    // Add footer on each page
+                    doc.setFontSize(10);
+                    doc.setTextColor(100); // Gray color for footer text
+                    const pageCount = doc.internal.getNumberOfPages();
+                    doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                }
+            });
+
+            // Save the PDF
+            // The toLocaleDateString('en-CA') gives YYYY-MM-DD, then replace hyphens with underscores for filename
+            doc.save(`Book_Catalog_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`); 
+            showFlashMessage('Book Catalog list downloaded as PDF!', 'success');
+        };
+
+        // 5. **Handle Logo Loading Asynchronously:**
+        const img = new Image();
+        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
+        img.onload = () => {
+            const logoX = 14; // Left margin for logo
+            const logoY = 10; // Top margin for logo
+            const imgWidth = 40; // Adjust as needed for your logo size
+            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+            
+            // Add the logo at the top-left
+            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
+            
+            // Add company name and details next to logo
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
+            
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12); // Address
+            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17); // Mobile
+            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22); // GST No.
+
+            // Calculate startYPositionForTable based on logo and company info block
+            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10); // Ensure enough space
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
+        };
+
+        img.onerror = () => {
+            console.warn("Logo image could not be loaded. Generating PDF without logo.");
+            // If logo fails, add only company info block
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, 14, 20); // Company Name
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, 14, 27); // Address
+            doc.text(companyMobile, 14, 32); // Mobile
+            doc.text(companyGST, 14, 37); // GST No.
+            
+            const calculatedStartY = 45; // Adjust startY since no logo
+            generateReportBody(calculatedStartY); // Pass the calculated Y position
+        };
+
+        img.src = companyLogoUrl; // This will now use the imported image data
+
+        // Add generation date/time to the top right (this part can run immediately)
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100); // Gray color for date text
+        doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
     };
 
     // --- UI Rendering ---
@@ -604,353 +704,356 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 </p>
             )}
 
-            {/* Book Catalog Creation/Update Form - This section is visually separated as a card */}
-            <div className="form-container-card">
-                <form onSubmit={handleSubmit} className="app-form">
-                    <h3 className="form-title">{editingBookCatalogId ? 'Edit Book Catalog' : 'Add Book Catalog'}</h3>
-                    
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="bookName">Book Name:</label>
+            {/* Main content layout for two columns */}
+            <div className="main-content-layout">
+                {/* Book Catalog List Table - FIRST CHILD */}
+                <div className="table-section">
+                    <h3 className="table-title">Existing Book Catalogs</h3>
+
+                    <div className="table-controls">
+                        <div className="search-input-group">
                             <input
                                 type="text"
-                                id="bookName"
-                                name="bookName"
-                                value={formData.bookName}
-                                onChange={handleChange}
-                                placeholder="e.g., Science Textbook"
-                                required
+                                placeholder="Search books..."
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="search-input"
                                 disabled={loading}
-                                className="form-input"
                             />
+                            <FaSearch className="search-icon" />
                         </div>
-                        <div className="form-group">
-                            <label htmlFor="publication">Publication:</label>
-                            <select
-                                id="publication"
-                                name="publication"
-                                value={formData.publication}
-                                onChange={handleChange}
-                                required
-                                disabled={loading || publications.length === 0}
-                                className="form-select"
-                            >
-                                {publications.length === 0 ? (
-                                    <option value="">Loading Publications...</option>
-                                ) : (
-                                    <>
-                                        <option value="">-- SELECT PUBLICATION --</option>
-                                        {publications.map(pub => (
-                                            <option key={pub._id} value={pub._id}>
-                                                {pub.name}
-                                            </option>
-                                        ))}
-                                    </>
-                                )}
-                            </select>
-                        </div>
+                        <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredBookCatalogs.length === 0}>
+                            <FaFilePdf className="btn-icon-mr" /> Download PDF
+                        </button>
                     </div>
 
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="subtitle">Sub Title:</label>
-                            <select
-                                id="subtitle"
-                                name="subtitle"
-                                value={formData.subtitle}
-                                onChange={handleChange}
-                                disabled={loading || !formData.publication || subtitles.length === 0}
-                                className="form-select"
-                            >
-                                {subtitles.length === 0 ? (
-                                    <option value="">-- SELECT -- (No Subtitles for selected Publication)</option>
-                                ) : (
-                                    <>
-                                        <option value="">-- SELECT --</option>
-                                        {subtitles.map(sub => (
-                                            <option key={sub._id} value={sub._id}>
-                                                {sub.name}
-                                            </option>
-                                        ))}
-                                    </>
-                                )}
-                            </select>
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="language">Elective Language:</label>
-                            <select
-                                id="language"
-                                name="language"
-                                value={formData.language}
-                                onChange={handleChange}
-                                disabled={loading || languages.length === 0}
-                                className="form-select"
-                            >
-                                {languages.length === 0 ? (
-                                    <option value="">Loading Languages...</option>
-                                ) : (
-                                    <>
-                                        <option value="">-- SELECT --</option>
-                                        {languages.map(lang => (
-                                            <option key={lang._id} value={lang._id}>
-                                                {lang.name}
-                                            </option>
-                                        ))}
-                                    </>
-                                )}
-                            </select>
-                        </div>
-                    </div>
+                    {loading && bookCatalogs.length === 0 ? (
+                        <p className="loading-state text-center">
+                            <FaSpinner className="animate-spin mr-2" /> Loading book catalogs...
+                        </p>
+                    ) : filteredBookCatalogs.length === 0 ? (
+                        <p className="no-data-message text-center">No book catalogs found matching your criteria. Start by adding one!</p>
+                    ) : (
+                        <div className="table-container"> {/* This div is for table overflow, not layout */}
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>S.No.</th>
+                                        <th>Book Name</th>
+                                        <th>Publication</th>
+                                        <th>Subtitle</th>
+                                        <th>Language</th>
+                                        <th>Price</th>
+                                        <th>Discount %</th>
+                                        <th>GST %</th>
+                                        <th>Add Date</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {paginatedItems.map((book, index) => ( // Changed to paginatedItems
+                                        <tr key={book._id}>
+                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td>{book.bookName}</td>
+                                            <td>{book.publication?.name || 'N/A'}</td>
+                                            <td>{book.subtitle?.name || 'N/A'}</td>
+                                            <td>{book.language?.name || 'N/A'}</td> 
+                                            <td>{formatPriceDisplay(book)}</td>
+                                            <td>{book.discountPercentage?.toFixed(2) || '0.00'}%</td>
+                                            <td>{book.gstPercentage?.toFixed(2) || '0.00'}%</td>
+                                            <td>{formatDateWithTime(book.createdAt)}</td>
+                                            <td>
+                                                <span className={`status-badge ${book.status}`}>
+                                                    {book.status.charAt(0).toUpperCase() + book.status.slice(1)}
+                                                </span>
+                                            </td>
+                                            <td className="actions-column">
+                                                <button
+                                                    onClick={() => handleEdit(book)}
+                                                    className="action-icon-button edit-button"
+                                                    title="Edit Book Catalog"
+                                                    disabled={loading}
+                                                >
+                                                    <FaEdit />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteClick(book)}
+                                                    className="action-icon-button delete-button"
+                                                    title="Delete Book Catalog"
+                                                    disabled={loading}
+                                                >
+                                                    {loading && bookToDelete?._id === book._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
 
-                    {/* Book Type and Price Fields */}
-                    <div className="form-group">
-                        <label>Book Type:</label>
-                        <div className="radio-group">
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="bookType"
-                                    value="default"
-                                    checked={formData.bookType === 'default'}
-                                    onChange={handleChange}
-                                    disabled={loading}
-                                /> Default
-                            </label>
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="bookType"
-                                    value="common_price"
-                                    checked={formData.bookType === 'common_price'}
-                                    onChange={handleChange}
-                                    disabled={loading}
-                                /> Common Price
-                            </label>
-                        </div>
-                    </div>
-
-                    {formData.bookType === 'common_price' && (
-                        <div className="form-group">
-                            <label htmlFor="commonPrice">Common Price (₹):</label>
-                            <input
-                                type="number"
-                                id="commonPrice"
-                                name="commonPrice"
-                                value={formData.commonPrice}
-                                onChange={handleChange}
-                                placeholder="e.g., 150.00"
-                                min="0"
-                                step="0.01"
-                                required
-                                disabled={loading}
-                                className="form-input"
-                            />
-                        </div>
-                    )}
-
-                    {formData.bookType === 'default' && (
-                        <div className="prices-by-class-section">
-                            <h4 className="sub-section-title">Prices by Class:</h4>
-                            <div className="form-grid-3-cols"> {/* You might need to define this grid in your CSS */}
-                                {classes.length === 0 ? (
-                                    <p className="loading-state">Loading classes for prices...</p>
-                                ) : (
-                                    classes.map(_class => (
-                                        <div className="form-group" key={_class._id}>
-                                            <label htmlFor={`price_${_class._id}`}>{_class.name} Price:</label>
-                                            <input
-                                                type="number"
-                                                id={`price_${_class._id}`}
-                                                name={`price_${_class._id}`}
-                                                value={formData.pricesByClass[_class._id] || ''}
-                                                onChange={handleChange}
-                                                placeholder="e.g., 120.00"
-                                                min="0"
-                                                step="0.01"
-                                                disabled={loading}
-                                                className="form-input"
-                                            />
-                                        </div>
-                                    ))
-                                )}
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="pagination-controls">
+                                    <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1 || loading} className="btn btn-page">
+                                        <FaChevronLeft className="btn-icon-mr" /> Previous
+                                    </button>
+                                    <span>Page {currentPage} of {totalPages}</span>
+                                    <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || loading} className="btn btn-page">
+                                        Next <FaChevronRight className="btn-icon-ml" />
+                                    </button>
+                                </div>
+                            )}
+                            <div className="total-records text-center mt-2">
+                                Total Records: {filteredBookCatalogs.length}
                             </div>
                         </div>
                     )}
-
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="discountPercentage">Discount Percentage (%):</label>
-                            <input
-                                type="number"
-                                id="discountPercentage"
-                                name="discountPercentage"
-                                value={formData.discountPercentage}
-                                onChange={handleChange}
-                                placeholder="e.g., 10"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                disabled={loading}
-                                className="form-input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="gstPercentage">GST Percentage (%):</label>
-                            <input
-                                type="number"
-                                id="gstPercentage"
-                                name="gstPercentage"
-                                value={formData.gstPercentage}
-                                onChange={handleChange}
-                                placeholder="e.g., 18"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                disabled={loading}
-                                className="form-input"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="status">Status:</label>
-                        <select
-                            id="status"
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            disabled={loading}
-                            className="form-select"
-                        >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
-
-                    <div className="form-actions">
-                        <button type="submit" className="btn btn-primary" disabled={loading}>
-                            {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingBookCatalogId ? 'Update Book' : 'Add Book')}
-                        </button>
-                        {editingBookCatalogId && (
-                            <button
-                                type="button"
-                                className="btn btn-secondary ml-2"
-                                onClick={handleCancelEdit} 
-                                disabled={loading}
-                            >
-                                Cancel Edit
-                            </button>
-                        )}
-                    </div>
-                </form>
-            </div>
-
-            {/* Book Catalog List Table */}
-            <div className="table-section">
-                <h3 className="table-title">Existing Book Catalogs</h3>
-
-                <div className="table-controls">
-                    <div className="search-input-group">
-                        <input
-                            type="text"
-                            placeholder="Search books..."
-                            value={searchTerm}
-                            onChange={(e) => {
-                                setSearchTerm(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                            className="search-input"
-                            disabled={loading}
-                        />
-                        <FaSearch className="search-icon" />
-                    </div>
-                    <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredBookCatalogs.length === 0}>
-                        <FaFilePdf className="btn-icon-mr" /> Download PDF
-                    </button>
                 </div>
 
-                {loading && bookCatalogs.length === 0 ? (
-                    <p className="loading-state text-center">
-                        <FaSpinner className="animate-spin mr-2" /> Loading book catalogs...
-                    </p>
-                ) : filteredBookCatalogs.length === 0 ? (
-                    <p className="no-data-message text-center">No book catalogs found matching your criteria. Start by adding one!</p>
-                ) : (
-                    <div className="table-container">
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>S.No.</th>
-                                    <th>Book Name</th>
-                                    <th>Publication</th>
-                                    <th>Subtitle</th>
-                                    <th>Language</th>
-                                    <th>Price</th>
-                                    <th>Discount %</th>
-                                    <th>GST %</th>
-                                    <th>Add Date</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {paginatedItems.map((book, index) => ( // Changed to paginatedItems
-                                    <tr key={book._id}>
-                                        <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td>{book.bookName}</td>
-                                        <td>{book.publication?.name || 'N/A'}</td>
-                                        <td>{book.subtitle?.name || 'N/A'}</td>
-                                        <td>{book.language?.name || 'N/A'}</td> 
-                                        <td>{formatPriceDisplay(book)}</td>
-                                        <td>{book.discountPercentage?.toFixed(2) || '0.00'}%</td>
-                                        <td>{book.gstPercentage?.toFixed(2) || '0.00'}%</td>
-                                        <td>{formatDateWithTime(book.createdAt)}</td>
-                                        <td>
-                                            <span className={`status-badge ${book.status}`}>
-                                                {book.status.charAt(0).toUpperCase() + book.status.slice(1)}
-                                            </span>
-                                        </td>
-                                        <td className="actions-column">
-                                            <button
-                                                onClick={() => handleEdit(book)}
-                                                className="action-icon-button edit-button"
-                                                title="Edit Book Catalog"
-                                                disabled={loading}
-                                            >
-                                                <FaEdit />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteClick(book)}
-                                                className="action-icon-button delete-button"
-                                                title="Delete Book Catalog"
-                                                disabled={loading}
-                                            >
-                                                {loading && bookToDelete?._id === book._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                {/* Book Catalog Creation/Update Form - SECOND CHILD */}
+                <div className="form-container-card">
+                    <form onSubmit={handleSubmit} className="app-form">
+                        <h3 className="form-title">{editingBookCatalogId ? 'Edit Book Catalog' : 'Add Book Catalog'}</h3>
+                        
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="bookName">Book Name:</label>
+                                <input
+                                    type="text"
+                                    id="bookName"
+                                    name="bookName"
+                                    value={formData.bookName}
+                                    onChange={handleChange}
+                                    placeholder="e.g., Science Textbook"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="publication">Publication:</label>
+                                <select
+                                    id="publication"
+                                    name="publication"
+                                    value={formData.publication}
+                                    onChange={handleChange}
+                                    required
+                                    disabled={loading || publications.length === 0}
+                                    className="form-select"
+                                >
+                                    {publications.length === 0 ? (
+                                        <option value="">Loading Publications...</option>
+                                    ) : (
+                                        <>
+                                            <option value="">-- SELECT PUBLICATION --</option>
+                                            {publications.map(pub => (
+                                                <option key={pub._id} value={pub._id}>
+                                                    {pub.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    )}
+                                </select>
+                            </div>
+                        </div>
 
-                        {/* Pagination Controls */}
-                        {totalPages > 1 && (
-                            <div className="pagination-controls">
-                                <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1 || loading} className="btn btn-page">
-                                    <FaChevronLeft className="btn-icon-mr" /> Previous
-                                </button>
-                                <span>Page {currentPage} of {totalPages}</span>
-                                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || loading} className="btn btn-page">
-                                    Next <FaChevronRight className="btn-icon-ml" />
-                                </button>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="subtitle">Sub Title:</label>
+                                <select
+                                    id="subtitle"
+                                    name="subtitle"
+                                    value={formData.subtitle}
+                                    onChange={handleChange}
+                                    disabled={loading || !formData.publication || subtitles.length === 0}
+                                    className="form-select"
+                                >
+                                    {subtitles.length === 0 ? (
+                                        <option value="">-- SELECT -- (No Subtitles for selected Publication)</option>
+                                    ) : (
+                                        <>
+                                            <option value="">-- SELECT --</option>
+                                            {subtitles.map(sub => (
+                                                <option key={sub._id} value={sub._id}>
+                                                    {sub.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    )}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="language">Elective Language:</label>
+                                <select
+                                    id="language"
+                                    name="language"
+                                    value={formData.language}
+                                    onChange={handleChange}
+                                    disabled={loading || languages.length === 0}
+                                    className="form-select"
+                                >
+                                    {languages.length === 0 ? (
+                                        <option value="">Loading Languages...</option>
+                                    ) : (
+                                        <>
+                                            <option value="">-- SELECT --</option>
+                                            {languages.map(lang => (
+                                                <option key={lang._id} value={lang._id}>
+                                                    {lang.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    )}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Book Type and Price Fields */}
+                        <div className="form-group">
+                            <label>Book Type:</label>
+                            <div className="radio-group">
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="bookType"
+                                        value="default"
+                                        checked={formData.bookType === 'default'}
+                                        onChange={handleChange}
+                                        disabled={loading}
+                                    /> Default
+                                </label>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="bookType"
+                                        value="common_price"
+                                        checked={formData.bookType === 'common_price'}
+                                        onChange={handleChange}
+                                        disabled={loading}
+                                    /> Common Price
+                                </label>
+                            </div>
+                        </div>
+
+                        {formData.bookType === 'common_price' && (
+                            <div className="form-group">
+                                <label htmlFor="commonPrice">Common Price (RS):</label>
+                                <input
+                                    type="number"
+                                    id="commonPrice"
+                                    name="commonPrice"
+                                    value={formData.commonPrice}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 150.00"
+                                    min="0"
+                                    step="0.01"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
                             </div>
                         )}
-                        <div className="total-records text-center mt-2">
-                            Total Records: {filteredBookCatalogs.length}
+
+                        {formData.bookType === 'default' && (
+                            <div className="prices-by-class-section">
+                                <h4 className="sub-section-title">Prices by Class:</h4>
+                                <div className="form-grid-3-cols"> {/* You might need to define this grid in your CSS */}
+                                    {classes.length === 0 ? (
+                                        <p className="loading-state">Loading classes for prices...</p>
+                                    ) : (
+                                        classes.map(_class => (
+                                            <div className="form-group" key={_class._id}>
+                                                <label htmlFor={`price_${_class._id}`}>{_class.name} Price:</label>
+                                                <input
+                                                    type="number"
+                                                    id={`price_${_class._id}`}
+                                                    name={`price_${_class._id}`}
+                                                    value={formData.pricesByClass[_class._id] || ''}
+                                                    onChange={handleChange}
+                                                    placeholder="e.g., 120.00"
+                                                    min="0"
+                                                    step="0.01"
+                                                    disabled={loading}
+                                                    className="form-input"
+                                                />
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="discountPercentage">Discount Percentage (%):</label>
+                                <input
+                                    type="number"
+                                    id="discountPercentage"
+                                    name="discountPercentage"
+                                    value={formData.discountPercentage}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 10"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="gstPercentage">GST Percentage (%):</label>
+                                <input
+                                    type="number"
+                                    id="gstPercentage"
+                                    name="gstPercentage"
+                                    value={formData.gstPercentage}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 18"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
                         </div>
-                    </div>
-                )}
-            </div>
+
+                        <div className="form-group">
+                            <label htmlFor="status">Status:</label>
+                            <select
+                                id="status"
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                disabled={loading}
+                                className="form-select"
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div className="form-actions">
+                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingBookCatalogId ? 'Update Book' : 'Add Book')}
+                            </button>
+                            {editingBookCatalogId && (
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary ml-2"
+                                    onClick={handleCancelEdit} 
+                                    disabled={loading}
+                                >
+                                    Cancel Edit
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                </div>
+            </div> {/* End of main-content-layout */}
 
             {/* Confirmation Modal */}
             {showConfirmModal && bookToDelete && (
