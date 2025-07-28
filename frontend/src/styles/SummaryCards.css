@@ -14,7 +14,7 @@
     margin-bottom: 0.3rem; /* Can be reduced further to 0 if desired */
     text-align: center;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid #eee;
+    /* border-bottom: 1px solid #eee; */
 }
 
 .summary-cards-grid {
@@ -23,10 +23,10 @@
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Increased min-width for more items per row */
     gap: 1.2rem; /* Slightly reduced gap */
     padding: 1rem; /* This padding is *internal* to the grid of cards */
-    background-color: #f9fafb;
+    /* background-color: #f9fafb; */
     border-radius: 12px;
     /* Simplified outer shadow */
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    /* box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04); */
 }
 
 .summary-card {

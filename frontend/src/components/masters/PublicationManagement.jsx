@@ -666,7 +666,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
             <div className="main-content-layout">
                 {/* Publication List Table - FIRST CHILD */}
                 <div className="table-section">
-                    <h3 className="table-title">Existing Publications</h3>
+                    {/* <h3 className="table-title">Existing Publications</h3> */}
 
                     {/* Search and PDF Download Section */}
                     <div className="table-controls">
@@ -821,6 +821,58 @@ const PublicationManagement = ({ showFlashMessage }) => {
                             </div>
                         </div>
 
+                         {/* Display temporarily added subtitles for new publication OR existing for edited one */}
+                        {(!editingPublicationId && newPublicationSubtitles.length > 0) || (editingPublicationId && selectedPublicationForSubtitle?.subtitles?.length > 0) ? (
+                            <div className="form-group">
+                                <label>Subtitles:</label>
+                                <div className="subtitle-list form-subtitle-list">
+                                    {editingPublicationId
+                                        ? selectedPublicationForSubtitle.subtitles.map(sub => (
+                                            <span key={sub._id} className="subtitle-tag">
+                                                {sub.name}
+                                                <button
+                                                    className="remove-subtitle-btn"
+                                                    onClick={() => handleRemoveSubtitle(sub._id, selectedPublicationForSubtitle._id, sub.name)}
+                                                    title="Remove Subtitle"
+                                                    disabled={loading}
+                                                >
+                                                    <FaTimes />
+                                                </button>
+                                            </span>
+                                        ))
+                                        : newPublicationSubtitles.map(sub => (
+                                            <span key={sub._id} className="subtitle-tag">
+                                                {sub.name}
+                                                <button
+                                                    className="remove-subtitle-btn"
+                                                    onClick={() => handleRemoveSubtitle(sub._id, null, sub.name)} // Pass null for publicationId as it's temporary
+                                                    title="Remove temporary Subtitle"
+                                                    disabled={loading}
+                                                >
+                                                    <FaTimes />
+                                                </button>
+                                            </span>
+                                        ))
+                                    }
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {/* Add Subtitle button - always visible and enabled as per user request */}
+                        <div className="form-group mt-3">
+                            <button
+                                type="button"
+                                onClick={handleOpenSubtitleModalFromForm}
+                                className="btn btn-info"
+                                disabled={loading}
+                            >
+                                <FaPlusCircle className="mr-2" /> Add Subtitle
+                            </button>
+                            <small className="form-text-muted ml-2">
+                                Add new subtitles {editingPublicationId ? 'to this publication.' : 'for the new publication.'}
+                            </small>
+                        </div>
+
                         <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="city">City:</label>
@@ -942,57 +994,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                             </div>
                         </div>
 
-                        {/* Display temporarily added subtitles for new publication OR existing for edited one */}
-                        {(!editingPublicationId && newPublicationSubtitles.length > 0) || (editingPublicationId && selectedPublicationForSubtitle?.subtitles?.length > 0) ? (
-                            <div className="form-group">
-                                <label>Subtitles:</label>
-                                <div className="subtitle-list form-subtitle-list">
-                                    {editingPublicationId
-                                        ? selectedPublicationForSubtitle.subtitles.map(sub => (
-                                            <span key={sub._id} className="subtitle-tag">
-                                                {sub.name}
-                                                <button
-                                                    className="remove-subtitle-btn"
-                                                    onClick={() => handleRemoveSubtitle(sub._id, selectedPublicationForSubtitle._id, sub.name)}
-                                                    title="Remove Subtitle"
-                                                    disabled={loading}
-                                                >
-                                                    <FaTimes />
-                                                </button>
-                                            </span>
-                                        ))
-                                        : newPublicationSubtitles.map(sub => (
-                                            <span key={sub._id} className="subtitle-tag">
-                                                {sub.name}
-                                                <button
-                                                    className="remove-subtitle-btn"
-                                                    onClick={() => handleRemoveSubtitle(sub._id, null, sub.name)} // Pass null for publicationId as it's temporary
-                                                    title="Remove temporary Subtitle"
-                                                    disabled={loading}
-                                                >
-                                                    <FaTimes />
-                                                </button>
-                                            </span>
-                                        ))
-                                    }
-                                </div>
-                            </div>
-                        ) : null}
-
-                        {/* Add Subtitle button - always visible and enabled as per user request */}
-                        <div className="form-group mt-3">
-                            <button
-                                type="button"
-                                onClick={handleOpenSubtitleModalFromForm}
-                                className="btn btn-info"
-                                disabled={loading}
-                            >
-                                <FaPlusCircle className="mr-2" /> Add Subtitle
-                            </button>
-                            <small className="form-text-muted ml-2">
-                                Add new subtitles {editingPublicationId ? 'to this publication.' : 'for the new publication.'}
-                            </small>
-                        </div>
+                       
 
                         <div className="form-group">
                             <label htmlFor="status">Status:</label>

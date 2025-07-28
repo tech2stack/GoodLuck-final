@@ -69,7 +69,7 @@ const StockManagerDashboardSummary = ({ showFlashMessage }) => {
                 customers: customersRes.data.data.count || 0,
                 transports: transportsRes.data.data.count || 0,
             }));
-            showFlashMessage('Dashboard summary updated!', 'success');
+            // showFlashMessage('Dashboard summary updated!', 'success');
         } catch (err) {
             console.error('Error fetching dashboard summary:', err);
             const errorMessage = err.response?.data?.message || 'Failed to load dashboard summary.';

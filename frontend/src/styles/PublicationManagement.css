@@ -71,3 +71,70 @@
 .remove-subtitle-btn:hover {
     color: #b02a37;
 }
+/* Adjust specific column widths for the table */
+.data-table th:nth-child(1),
+.data-table td:nth-child(1) {
+    width: 40px; /* S.No. */
+    min-width: 40px;
+}
+
+.data-table th:nth-child(2),
+.data-table td:nth-child(2) {
+    width: 150px; /* Name */
+    min-width: 120px;
+}
+
+.data-table th:nth-child(3),
+.data-table td:nth-child(3) {
+    width: 180px; /* Sub Title */
+    min-width: 150px;
+}
+
+.data-table th:nth-child(4),
+.data-table td:nth-child(4) {
+    width: 120px; /* Person */
+    min-width: 100px;
+}
+
+.data-table th:nth-child(5),
+.data-table td:nth-child(5) {
+    width: 200px; /* Address */
+    min-width: 150px;
+}
+
+.data-table th:nth-child(6),
+.data-table td:nth-child(6) {
+    width: 100px; /* City */
+    min-width: 80px;
+}
+
+.data-table th:nth-child(7),
+.data-table td:nth-child(7) {
+    width: 120px; /* Phone */
+    min-width: 100px;
+}
+
+/* Ensure table container allows horizontal scroll if content overflows */
+.table-container {
+    overflow-x: auto;
+}
+
+/* Add some padding to table cells for better readability */
+.data-table th,
+.data-table td {
+    padding: 8px 10px;
+    vertical-align: middle;
+}
+
+/* Responsive adjustments if needed, though overflow-x handles most cases */
+@media (max-width: 768px) {
+    .main-content-layout {
+        flex-direction: column;
+    }
+
+    .table-section,
+    .form-container-card {
+        width: 100%;
+        margin-right: 0;
+    }
+}

@@ -60,8 +60,8 @@ import {
     FaChartBar as FaChartBarLedger,
     FaBan,
     FaChartPie,
-    FaChartArea
-
+    FaChartArea,
+    FaSpinner // Added FaSpinner for the loading state in buttons
 } from 'react-icons/fa';
 
 
@@ -213,14 +213,17 @@ const StockManagerDashboard = ({ showFlashMessage: propShowFlashMessage }) => {
                 {/* Sidebar Navigation */}
                 <aside className={`sidebar ${isMobile ? (isSidebarCollapsed ? 'mobile-hidden' : 'mobile-visible') : (isSidebarCollapsed ? 'collapsed' : '')}`}>
                     <div className="sidebar-header">
-                        <h3>Stock Manager</h3>
-                        {/* Removed the duplicate user info/logout button from sidebar header */}
+                        {/* Moved user info here */}
+                        {!isSidebarCollapsed && (
+                            <div className="user-greeting">
+                                <h3>Stock Manager</h3>
+                                <p>Welcome, {userData.name || userData.email}!</p>
+                            </div>
+                        )}
                         <button className="sidebar-toggle" onClick={() => setIsSidebarCollapsed(prev => !prev)}>
                             {isSidebarCollapsed ? (
-                                // Menu Icon
                                 <FaBars />
                             ) : (
-                                // Close Icon
                                 <FaTimes />
                             )}
                         </button>
@@ -376,14 +379,6 @@ const StockManagerDashboard = ({ showFlashMessage: propShowFlashMessage }) => {
 
                 {/* Main Content Area */}
                 <div className="main-content-wrapper">
-                    <header className="dashboard-header">
-                        
-                        <div className="user-info">
-                            <span>Welcome, {userData.name || userData.email}!</span>
-                           
-                        </div>
-                    </header>
-
                     <main className="dashboard-main-content">
                         {flashMessage && (
                             <FlashMessage message={flashMessage.message} type={flashMessage.type} />

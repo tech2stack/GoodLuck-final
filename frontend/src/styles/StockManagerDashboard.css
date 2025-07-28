@@ -60,10 +60,12 @@ body {
 .sidebar-header {
     display: flex;
     align-items: center;
+    /* Adjusted to push toggle to the right when not collapsed */
     justify-content: space-between;
     margin-bottom: 1.5rem; /* Sufficient space below header */
     padding: 0 1rem 1rem 1.5rem; /* Padding for branding/toggle */
     border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Subtle separator */
+    flex-wrap: nowrap; /* Prevent wrapping of title and toggle */
 }
 
 .sidebar-header h3 {
@@ -75,23 +77,52 @@ body {
     transition: opacity 0.3s ease-in-out, width 0.3s ease-in-out;
 }
 
-.sidebar.collapsed .sidebar-header h3 {
+/* New style for user greeting in sidebar */
+.user-greeting {
+    display: flex;
+    flex-direction: column;
+    color: white; /* Or a slightly lighter shade */
+    margin-right: 10px; /* Space between greeting and toggle */
+    flex-grow: 1; /* Allow it to take available space */
+    overflow: hidden; /* Hide overflow text */
+    white-space: nowrap;
+}
+
+.user-greeting h3 {
+    font-size: 1.4rem;
+    margin-bottom: 0.2rem;
+}
+
+.user-greeting p {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+.sidebar.collapsed .sidebar-header h3,
+.sidebar.collapsed .user-greeting {
     opacity: 0;
     width: 0;
+    padding: 0;
+    margin: 0;
 }
 
 .sidebar-toggle {
     background: none;
     border: none;
     color: white;
-    font-size: 1.4rem; /* Standard icon size */
+    font-size: 1.4rem;
     cursor: pointer;
-    padding: 0.4rem; /* Good clickable area */
+    padding: 0.4rem;
     border-radius: 4px;
     transition: background-color 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0; /* Prevent toggle from shrinking */
 }
 
 .sidebar-toggle:hover {
@@ -105,16 +136,16 @@ body {
 }
 
 .sidebar-nav li {
-    margin-bottom: 0.4rem; /* Comfortable spacing between menu items */
+    margin-bottom: 0.4rem;
 }
 
 .sidebar-nav button {
     display: flex;
     align-items: center;
-    gap: 0.8rem; /* Space between icon and text */
+    gap: 0.8rem;
     color: #e0e6eb;
     text-decoration: none;
-    padding: 0.7rem 1.2rem; /* Comfortable padding for navigation items */
+    padding: 0.7rem 1.2rem;
     border-radius: 4px;
     transition: background-color 0.2s ease;
     white-space: nowrap;
@@ -164,15 +195,15 @@ body {
 }
 
 .dropdown-menu {
-    background-color: #495057; /* Slightly lighter dark for dropdown */
+    background-color: #495057;
     border-radius: 4px;
     margin-top: 0.2rem;
     padding: 0.2rem 0;
     box-shadow: var(--shadow-subtle);
     position: absolute;
-    left: var(--sidebar-width); /* Position to the right of the sidebar */
+    left: var(--sidebar-width);
     top: 0;
-    min-width: 180px; /* Readable width */
+    min-width: 180px;
     z-index: 10;
     opacity: 1;
     visibility: visible;
@@ -205,48 +236,51 @@ body {
 
 /* --- Main content wrapper FIX --- */
 .main-content-wrapper {
-    flex-grow: 1; /* Allows it to take all available space */
+    flex-grow: 1;
     display: flex;
     flex-direction: column;
-    min-width: 0; /* Allow the content to shrink below its intrinsic size if needed */
+    min-width: 0;
 }
 
 /* Dashboard Header (FIXED MARGINS) */
 .dashboard-header {
-    background-color: var(--header-bg); /* White background */
-    padding: 0.8rem 1.5rem; /* Good padding */
-    border-bottom: 1px solid var(--border-color); /* Subtle border */
+    background-color: var(--header-bg);
+    padding: 0.8rem 1.5rem;
+    border-bottom: 1px solid var(--border-color); /* This creates the 1px line */
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end; /* Removed user info, so push content to end */
     align-items: center;
-    box-shadow: var(--shadow-subtle); /* Subtle shadow */
+    box-shadow: var(--shadow-subtle);
     position: sticky;
     top: 0;
     z-index: 50;
     width: 100%;
-    box-sizing: border-box; /* Include padding in width */
+    box-sizing: border-box;
     margin: 0; /* Ensure no vertical margins */
-    flex-shrink: 0; /* Prevent header from shrinking */
+    flex-shrink: 0;
+    height: 60px; /* Give it a fixed height */
 }
 
-/* User Info and Logout Button Styles (No changes needed here) */
-.user-info { /* ... */ }
-.logout-btn { /* ... */ }
+/* User Info and Logout Button Styles (Removed from header in JSX) */
+/* .user-info { /* ... */ /* } */
+/* .logout-btn { /* ... */ /* } */
 
 /* Dashboard Main Content */
 .dashboard-main-content {
+    
     flex-grow: 1;
-    /* Set top padding to 0 to make it stick to the header */
-    padding: 0 1.5rem; /* Changed to shorthand, padding-top: 0, padding-bottom: 0 */
+    padding: 0 1.5rem; /* Only horizontal padding */
     width: 100%;
     box-sizing: border-box;
-    margin-top: 0; /* Ensure no external margin pushing it down */
+    /* margin-top is now effectively 0 because header has a fixed height and border */
+    margin-top: 0;
+    padding-top: 1px; /* This creates the 1px margin effect below the header */
 }
 
 /* IMPORTANT: This targets the first direct child of .dashboard-main-content
-   and removes its top margin, which is often the cause of extra space. */
+    and removes its top margin, which is often the cause of extra space. */
 .dashboard-main-content > *:first-child {
-    margin-top: 0 !important; /* Use !important to override any default browser/component margins */
+    margin-top: 0 !important;
 }
 
 
@@ -259,197 +293,120 @@ body {
 .content-card ul li { /* ... */ }
 
 /* --- Specific Table/Form Enhancements (Improved Overflow Handling) --- */
-.table-container {
-    width: 100%;
-    overflow-x: auto;
-    margin-top: 1rem;
-}
+/* (These styles are from PublicationManagement.css, ensure they are NOT duplicated) */
+/* (The user's request implies only StockManagerDashboard.css and PublicationManagement.jsx need changes) */
+/* .table-container { ... }
+.data-table { ... }
+.data-table th, .data-table td { ... }
+.data-table th { ... }
+.data-table tbody tr:nth-child(even) { ... }
+.data-table tbody tr:nth-child(odd) { ... }
+.data-table tbody tr:hover { ... }
+.table-controls { ... }
+.search-input-group { ... }
+.search-input { ... }
+.search-icon { ... }
+.pagination-controls { ... }
+.total-records { ... }
+.btn { ... }
+.btn-primary { ... }
+.action-icon-button { ... }
+.flash-message { ... }
+.error-message { ... }
+.loading-state, .no-data-message { ... }
+.status-badge { ... }
+.subtitle-list { ... }
+.subtitle-tag { ... }
+.remove-subtitle-btn { ... }
+.modal-backdrop { ... }
+.modal-content { ... }
+.modal-content h3 { ... }
+.modal-content p { ... }
+.modal-actions { ... } */
 
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9rem;
-    /* NEW: Force table cells to break words if content is too long */
-    table-layout: auto; /* Or 'fixed' if you prefer and set explicit widths */
-}
 
-.data-table th, .data-table td {
-    border: 1px solid var(--border-color);
-    padding: 0.6rem 0.8rem;
-    text-align: left;
-    /* NEW: Allow content to wrap within cells */
-    word-break: break-word;
-}
-
-/* Rest of the table, form, and utility styles (No changes needed here) */
-.data-table th { /* ... */ }
-.data-table tbody tr:nth-child(even) { /* ... */ }
-.data-table .action-buttons { /* ... */ }
-.data-table .action-buttons button { /* ... */ }
-.data-table .action-buttons .edit-btn { /* ... */ }
-.data-table .action-buttons .edit-btn:hover { /* ... */ }
-.data-table .action-buttons .delete-btn { /* ... */ }
-.data-table .action-buttons .delete-btn:hover { /* ... */ }
-.status-badge { /* ... */ }
-.status-badge.active { /* ... */ }
-.status-badge.inactive { /* ... */ }
-.form-group { /* ... */ }
-.form-group label { /* ... */ }
-.form-control { /* ... */ }
-.form-control:focus { /* ... */ }
-.btn-primary { /* ... */ }
-.btn-primary:hover { /* ... */ }
-.card-actions { /* ... */ }
-.card-content-area { /* ... */ }
-.content-placeholder { /* ... */ }
-
-/* --- Responsive adjustments --- */
-@media (max-width: 768px) {
+/* Responsive Adjustments */
+@media (max-width: 768px) { /* Changed from 992px for mobile breakpoint */
     .dashboard-container {
-        position: relative;
-        overflow-x: hidden;
+        flex-direction: column;
     }
+
     .sidebar {
-        position: fixed;
+        position: fixed; /* Fixed position on mobile */
         top: 0;
         left: 0;
-        height: 100%;
-        z-index: 1000;
-        transform: translateX(-100%);
-        transition: transform 0.3s ease-in-out;
-        width: var(--sidebar-width);
-        box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        width: 100%;
+        height: 100%; /* Full screen height */
+        transform: translateX(-100%); /* Hidden by default */
+        background-color: var(--text-dark); /* Ensure dark background */
+        z-index: 1000; /* Above everything else */
+        padding-top: 50px; /* Account for header */
     }
 
     .sidebar.mobile-visible {
-        transform: translateX(0);
+        transform: translateX(0); /* Show sidebar */
     }
 
     .sidebar.mobile-hidden {
-        transform: translateX(-100%);
+        transform: translateX(-100%); /* Hide sidebar */
+    }
+
+    .sidebar.collapsed .sidebar-header h3,
+    .sidebar.collapsed .user-greeting { /* Ensures user greeting is hidden when sidebar is collapsed on mobile */
+        opacity: 0;
+        width: 0;
+        padding: 0;
+        margin: 0;
     }
 
     .sidebar-toggle {
-        display: flex;
+        display: block; /* Show toggle button on mobile */
         position: absolute;
-        right: 1rem;
-        top: 1rem;
-    }
-    @media (min-width: 769px) {
-        .sidebar-toggle {
-            position: static;
-            margin-left: auto;
-        }
-    }
-
-
-    .main-content-wrapper {
-        margin-left: 0;
-        width: 100%;
+        top: 10px; /* Position within mobile header */
+        right: 15px;
+        color: white; /* Make it visible against header background */
     }
 
     .dashboard-header {
-        padding: 0.6rem 1rem;
-        margin: 0; /* Ensure no vertical margins on mobile */
+        position: sticky;
+        top: 0;
+        z-index: 60; /* Above main content but below mobile sidebar */
+        justify-content: flex-start; /* Align header content to start */
     }
 
-    /* .dashboard-title was removed */
+    .dashboard-header .sidebar-toggle { /* This is the hamburger icon in the header */
+        display: flex; /* Show the hamburger icon */
+        position: static; /* Reset position */
+        margin-right: 15px; /* Space between toggle and other header content */
+        color: var(--text-dark); /* Icon color in header */
+    }
+
+    /* Adjust main content to account for header, no sidebar space */
+    .main-content-wrapper {
+        margin-left: 0;
+    }
 
     .dashboard-main-content {
-        /* Set top padding to 0 for mobile */
-        padding: 0 1rem; 
-        margin-top: 0;
-    }
-
-    /* IMPORTANT: This targets the first direct child of .dashboard-main-content
-       and removes its top margin for mobile. */
-    .dashboard-main-content > *:first-child {
-        margin-top: 0 !important;
-    }
-
-
-    /* .page-title was removed */
-
-    .dashboard-content-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-
-    .content-card {
-        padding: 0.8rem;
-    }
-
-    .data-table th, .data-table td {
-        padding: 0.5rem 0.6rem;
-        word-break: break-word; /* Also apply on mobile */
-    }
-
-    .data-table .action-buttons button {
-        padding: 0.2rem 0.4rem;
-        font-size: 0.75rem;
-    }
-
-    .dropdown-menu {
-        left: var(--sidebar-width);
-        min-width: 160px;
-    }
-
-    .sidebar.mobile-hidden .dropdown-menu {
-        opacity: 0;
-        visibility: hidden;
-        transform: translateX(-20px);
+        padding: 0 1rem; /* Slightly less padding on small screens */
     }
 }
 
-/* Specific adjustments for very small screens */
-@media (max-width: 480px) {
-    .sidebar {
-        width: 180px;
+@media (min-width: 769px) { /* Desktop styles */
+    .sidebar.mobile-visible, .sidebar.mobile-hidden {
+        transform: translateX(0) !important; /* Override mobile transform */
     }
-    .sidebar-header h3 {
-        font-size: 1.2rem;
+    .sidebar-toggle {
+        /* The sidebar toggle within the sidebar-header, visible only on desktop */
+        display: flex;
+        position: static;
     }
-    .sidebar-nav button {
-        font-size: 0.88rem;
-        padding: 0.6rem 1rem;
+    .dashboard-header .sidebar-toggle { /* Hide the mobile hamburger in desktop header */
+        display: none;
     }
-    .sidebar-nav button .nav-icon,
-    .sidebar-nav button .dropdown-icon {
-        font-size: 1rem;
-    }
-    .dropdown-menu {
-        left: 180px;
-        min-width: 140px;
-    }
-    .dashboard-header {
-        padding: 0.5rem 0.8rem;
-    }
-    /* .dashboard-title was removed */
+}
 
-    .dashboard-main-content {
-        /* Set top padding to 0 for very small screens */
-        padding: 0 0.5rem; /* Changed to shorthand, padding-top: 0, padding-bottom: 0 */
-    }
 
-    /* IMPORTANT: This targets the first direct child of .dashboard-main-content
-       and removes its top margin for very small screens. */
-    .dashboard-main-content > *:first-child {
-        margin-top: 0 !important;
-    }
-
-    /* .page-title was removed */
-    .dashboard-content-grid {
-        gap: 0.8rem;
-    }
-    .content-card {
-        padding: 0.6rem;
-    }
-    .form-control {
-        padding: 0.5rem 0.6rem;
-        font-size: 0.85rem;
-    }
-    .btn-primary {
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
-    }
+/* Adjustments for PublicationManagement.jsx FaSpinner display */
+.btn-icon-mr {
+    margin-right: 5px; /* Consistent margin for icons in buttons */
 }
