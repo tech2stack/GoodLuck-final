@@ -7,8 +7,8 @@ import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, F
 import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
-// Import the new StationeryItemManagement specific styles
-import '../../styles/StationeryItemManagement.css'; // New import for specific styles
+// import '../../styles/StationeryItemManagement.css'; // New import for specific styles - UNCOMMENTED///////////////////////
+// import '../../styles/CommonLayout.css'; // If you have common layout styles, ensure this is imported too.
 
 // NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
 // If you are using npm, you'd do: npm install jspdf jspdf-autotable
@@ -464,7 +464,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
             <div className="main-content-layout">
                 {/* Stationery Item List Table */}
                 {/* This is the first child, so it will appear on the left with flex-direction: row */}
-                <div className="table-section">
+                <div className="table-container"> {/* RENAMED from table-section to table-container */}
                     <h3 className="table-title">Existing Stationery Items</h3>
 
                     {/* Search and PDF Download Section */}
@@ -495,8 +495,8 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                     ) : filteredItems.length === 0 ? (
                         <p className="no-data-message text-center">No stationery items found matching your criteria. Start by adding one!</p>
                     ) : (
-                        <div className="table-container"> {/* This div is specifically for the table overflow */}
-                            <table className="data-table">
+                        <div className="table-scroll-wrapper"> {/* RENAMED from table-container to table-scroll-wrapper */}
+                            <table className="app-table"> {/* RENAMED from data-table to app-table */}
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>

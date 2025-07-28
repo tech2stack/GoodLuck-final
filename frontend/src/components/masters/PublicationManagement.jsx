@@ -11,7 +11,7 @@ import '../../styles/PublicationManagement.css'; // Component-specific layout ov
 import '../../styles/CommonLayout.css'; // Ensure CommonLayout is imported
 
 // Import the logo image directly
-import companyLogo from '../../assets/glbs-logo.jpg'; 
+import companyLogo from '../../assets/glbs-logo.jpg';
 
 // NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
 // If you are using npm, you'd do: npm install jspdf jspdf-autotable
@@ -38,6 +38,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
         discount: 0, // Default discount
         address: '',
         status: 'active', // Default status
+        // Removed subtitles from here as they will be managed via a separate modal
     });
     // State for loading indicators
     const [loading, setLoading] = useState(false);
@@ -53,10 +54,13 @@ const PublicationManagement = ({ showFlashMessage }) => {
 
     // States for Subtitle Management Modal
     const [showSubtitleModal, setShowSubtitleModal] = useState(false);
-    const [selectedPublicationForSubtitle, setSelectedPublicationForSubtitle] = useState(null);
+    const [selectedPublicationForSubtitle, setSelectedPublicationForSubtitle] = useState(null); // This will hold the full publication object for subtitle ops
     const [newSubtitleName, setNewSubtitleName] = useState('');
     const [subtitleModalLoading, setSubtitleModalLoading] = useState(false);
     const [subtitleModalError, setSubtitleModalError] = useState(null);
+
+    // NEW STATE: Temporary subtitles for a new publication being created (before it's saved)
+    const [newPublicationSubtitles, setNewPublicationSubtitles] = useState([]);
 
     // Ref for scrolling to the new item in the table (if needed)
     const tableBodyRef = useRef(null);
@@ -68,6 +72,12 @@ const PublicationManagement = ({ showFlashMessage }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10; // Show 10 entries per page
 
+    // --- Initial form state for clearing/resetting ---
+    const initialFormData = {
+        name: '', personName: '', city: '',
+        mobileNumber: '', bank: '', accountNumber: '', ifsc: '', gstin: '',
+        discount: 0, address: '', status: 'active',
+    };
 
     // --- Helper function for date formatting ---
     const formatDateWithTime = (dateString) => {
@@ -89,17 +99,17 @@ const PublicationManagement = ({ showFlashMessage }) => {
         setLoading(true);
         setLocalError(null);
         try {
-            const response = await api.get(`/publications`); // Fetch all publications for client-side filtering/pagination
+            const response = await api.get(`/publications`); // Fetch all publications for client-client-side filtering/pagination
             if (response.data.status === 'success') {
                 setPublications(response.data.data.publications);
-                
+
                 const totalPagesCalculated = Math.ceil(response.data.data.publications.length / itemsPerPage);
                 if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
                     setCurrentPage(totalPagesCalculated);
                 } else if (response.data.data.publications.length === 0) {
                     setCurrentPage(1);
                 }
-                
+
                 if (scrollToNew && tableBodyRef.current) {
                     setTimeout(() => {
                         const lastPageIndex = Math.ceil(response.data.data.publications.length / itemsPerPage);
@@ -136,7 +146,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
     const fetchCitiesForLookup = useCallback(async () => {
         try {
             // Fetch all active cities to use for validation/lookup
-            const response = await api.get('/cities?status=active&limit=1000'); 
+            const response = await api.get('/cities?status=active&limit=1000');
             if (response.data.status === 'success') {
                 setCities(response.data.data.cities || []); // Safeguard: Ensure cities is always an array
             } else {
@@ -147,12 +157,12 @@ const PublicationManagement = ({ showFlashMessage }) => {
             console.error('Error fetching cities for lookup:', err);
             showFlashMessage('Network error fetching cities for lookup.', 'error');
         }
-    }, [showFlashMessage]); 
+    }, [showFlashMessage]);
 
     // Fetch publications and cities on component mount or relevant state changes
     useEffect(() => {
         fetchPublications();
-    }, [fetchPublications]); 
+    }, [fetchPublications]);
 
     useEffect(() => {
         fetchCitiesForLookup();
@@ -209,7 +219,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                     cityIdToUse = newCityResponse.data.data.city._id;
                     showFlashMessage(`New city "${enteredCityName}" created successfully!`, 'success');
                     // Re-fetch cities list to include the newly added city for future lookups
-                    await fetchCitiesForLookup(); 
+                    await fetchCitiesForLookup();
                 } else {
                     throw new Error(newCityResponse.data.message || 'Failed to create new city.');
                 }
@@ -217,7 +227,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
 
             // Prepare data for publication submission
             // Ensure formData.city (name) is replaced with cityIdToUse (_id)
-            const publicationData = { ...formData, city: cityIdToUse };
+            const publicationData = { ...formData, city: cityIdToUse }; // Subtitles are not part of main form submission initially
 
             let response;
             if (editingPublicationId) {
@@ -225,25 +235,38 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 response = await api.patch(`/publications/${editingPublicationId}`, publicationData);
                 if (response.data.status === 'success') {
                     showFlashMessage('Publication updated successfully!', 'success');
+                    // Reset form after successful update
+                    setFormData(initialFormData);
+                    setEditingPublicationId(null);
+                    setSelectedPublicationForSubtitle(null);
+                    setNewPublicationSubtitles([]); // Clear any temporary subtitles if they were somehow left over
                 } else {
                     throw new Error(response.data.message || 'Failed to update publication.');
                 }
             } else {
                 // Create new publication
-                response = await api.post('/publications', publicationData);
+                // Include temporarily added subtitles (only send their names)
+                const newPublicationData = { 
+                    ...publicationData, 
+                    subtitles: newPublicationSubtitles.map(s => ({ name: s.name })) 
+                };
+                response = await api.post('/publications', newPublicationData);
                 if (response.data.status === 'success') {
-                    showFlashMessage('Publication created successfully!', 'success');
+                    showFlashMessage('Publication created successfully! You can now continue adding subtitles to this new publication or reset the form.', 'success');
+                    // Clear temporary subtitles after successful save
+                    setNewPublicationSubtitles([]);
+                    // Set the newly created publication as the one being edited
+                    setEditingPublicationId(response.data.data.publication._id);
+                    setSelectedPublicationForSubtitle(response.data.data.publication);
+                    // Update formData to reflect the full data of the newly created publication
+                    setFormData({
+                        ...response.data.data.publication,
+                        city: response.data.data.publication.city ? response.data.data.publication.city.name : '' // Ensure city name is set for the input
+                    });
                 } else {
                     throw new Error(response.data.message || 'Failed to create publication.');
                 }
             }
-            // Reset form and re-fetch publications
-            setFormData({
-                name: '', personName: '', city: '', // Reset city to empty string (name)
-                mobileNumber: '', bank: '', accountNumber: '', ifsc: '', gstin: '',
-                discount: 0, address: '', status: 'active',
-            });
-            setEditingPublicationId(null);
             fetchPublications(true); // Re-fetch and indicate to scroll
         } catch (err) {
             console.error('Error saving publication:', err);
@@ -269,8 +292,13 @@ const PublicationManagement = ({ showFlashMessage }) => {
             discount: publicationItem.discount,
             address: publicationItem.address,
             status: publicationItem.status,
+            // Subtitles are not edited via the main form
         });
         setEditingPublicationId(publicationItem._id);
+        // When editing, also set the selected publication for potential subtitle operations
+        setSelectedPublicationForSubtitle(publicationItem);
+        // Clear temporary subtitles when starting to edit an existing one
+        setNewPublicationSubtitles([]);
         setLocalError(null);
         window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to form
     };
@@ -310,20 +338,19 @@ const PublicationManagement = ({ showFlashMessage }) => {
         }
     };
 
-    // --- Subtitle Management Handlers ---
-    const openSubtitleModal = (publicationItem) => {
-        setSelectedPublicationForSubtitle(publicationItem);
-        setNewSubtitleName(''); // Clear previous input
+    // --- Subtitle Management Functions ---
+    // This function will now be called from the main form
+    const handleOpenSubtitleModalFromForm = () => {
+        // The button is always available, but we need to manage if we are adding for new or existing
+        setNewSubtitleName('');
         setSubtitleModalError(null);
         setShowSubtitleModal(true);
     };
 
     const closeSubtitleModal = () => {
         setShowSubtitleModal(false);
-        setSelectedPublicationForSubtitle(null);
         setNewSubtitleName('');
         setSubtitleModalError(null);
-        setSubtitleModalLoading(false);
     };
 
     const handleAddSubtitle = async (e) => {
@@ -337,64 +364,96 @@ const PublicationManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        try {
-            const response = await api.post(`/publications/${selectedPublicationForSubtitle._id}/subtitles`, {
-                name: newSubtitleName.trim(),
-                publication: selectedPublicationForSubtitle._id
-            });
-            if (response.data.status === 'success') {
-                showFlashMessage('Subtitle added successfully!', 'success');
-                closeSubtitleModal();
-                fetchPublications(); // Re-fetch publications to update the table with new subtitle
-            } else {
-                throw new Error(response.data.message || 'Failed to add subtitle.');
+        if (editingPublicationId) {
+            // Logic for adding subtitle to an existing publication
+            if (!selectedPublicationForSubtitle?._id) {
+                setSubtitleModalError('No publication selected to add subtitle.');
+                setSubtitleModalLoading(false);
+                return;
             }
-        } catch (err) {
-            console.error('Error adding subtitle:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to add subtitle. Ensure it is unique for this publication.';
-            setSubtitleModalError(errorMessage);
-            showFlashMessage(errorMessage, 'error');
-        } finally {
-            setSubtitleModalLoading(false);
+            try {
+                const response = await api.post(`/publications/${selectedPublicationForSubtitle._id}/subtitles`, { name: newSubtitleName.trim() });
+                if (response.data.status === 'success') {
+                    showFlashMessage('Subtitle added successfully!', 'success');
+                    closeSubtitleModal();
+                    fetchPublications(); // Re-fetch publications to update the table with new subtitle
+                    // Update selectedPublicationForSubtitle with new subtitles array for immediate feedback
+                    setSelectedPublicationForSubtitle(prev => ({
+                        ...prev,
+                        subtitles: [...(prev?.subtitles || []), response.data.data.subtitle]
+                    }));
+                } else {
+                    throw new Error(response.data.message || 'Failed to add subtitle.');
+                }
+            } catch (err) {
+                console.error('Error adding subtitle:', err);
+                const errorMessage = err.response?.data?.message || 'Failed to add subtitle.';
+                setSubtitleModalError(errorMessage);
+                showFlashMessage(errorMessage, 'error');
+            } finally {
+                setSubtitleModalLoading(false);
+            }
+        } else {
+            // Logic for adding subtitle to a new (unsaved) publication
+            // Generate a temporary unique ID for new subtitles
+            const tempSubtitle = { _id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, name: newSubtitleName.trim() };
+            setNewPublicationSubtitles(prev => [...prev, tempSubtitle]);
+            showFlashMessage('Subtitle added temporarily. It will be saved with the new publication.', 'info');
+            closeSubtitleModal();
+            setSubtitleModalLoading(false); // Manually set false as no API call for temporary add
         }
     };
 
     const handleRemoveSubtitle = async (subtitleId, publicationId, subtitleName) => {
-        // Changed from window.confirm to ConfirmationModal for consistency
         const isConfirmed = window.confirm(`Are you sure you want to remove subtitle "${subtitleName}"?`);
 
         if (!isConfirmed) {
             return;
         }
-        
+
         setLoading(true); // Use main loading for this action
         setLocalError(null);
 
-        try {
-            const response = await api.delete(`/publications/subtitles/${subtitleId}`);
-            if (response.status === 204) {
-                showFlashMessage('Subtitle removed successfully!', 'success');
-                fetchPublications(); // Re-fetch publications to update the table
-            } else {
-                throw new Error(response.data?.message || 'Failed to remove subtitle.');
+        if (editingPublicationId) {
+            // Logic for removing subtitle from an existing publication
+            try {
+                const response = await api.delete(`/publications/subtitles/${subtitleId}`);
+                if (response.status === 204) {
+                    showFlashMessage('Subtitle removed successfully!', 'success');
+                    fetchPublications(); // Re-fetch publications to update the table
+
+                    // Also update selectedPublicationForSubtitle if it's the current one being edited
+                    setSelectedPublicationForSubtitle(prev => {
+                        if (prev && prev._id === publicationId) {
+                            return { ...prev, subtitles: prev.subtitles.filter(sub => sub._id !== subtitleId) };
+                        }
+                        return prev;
+                    });
+
+                } else {
+                    throw new Error(response.data?.message || 'Failed to remove subtitle.');
+                }
+            } catch (err) {
+                console.error('Error removing subtitle:', err);
+                const errorMessage = err.response?.data?.message || 'Failed to remove subtitle.';
+                setLocalError(errorMessage);
+                showFlashMessage(errorMessage, 'error');
+            } finally {
+                setLoading(false);
             }
-        } catch (err) {
-            console.error('Error removing subtitle:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to remove subtitle.';
-            setLocalError(errorMessage);
-            showFlashMessage(errorMessage, 'error');
-        } finally {
-            setLoading(false);
+        } else {
+            // Logic for removing subtitle from a new (unsaved) publication
+            setNewPublicationSubtitles(prev => prev.filter(sub => sub._id !== subtitleId));
+            showFlashMessage('Subtitle removed temporarily.', 'info');
+            setLoading(false); // Manually set false as no API call for temporary remove
         }
     };
 
     const handleCancelEdit = () => {
-        setFormData({
-            name: '', personName: '', city: '', 
-            mobileNumber: '', bank: '', accountNumber: '', ifsc: '', gstin: '',
-            discount: 0, address: '', status: 'active',
-        });
+        setFormData(initialFormData); // Reset to initial state
         setEditingPublicationId(null);
+        setSelectedPublicationForSubtitle(null); // Also clear selected publication for subtitle ops
+        setNewPublicationSubtitles([]); // IMPORTANT: Clear temporary subtitles
         setLocalError(null);
     };
 
@@ -406,13 +465,13 @@ const PublicationManagement = ({ showFlashMessage }) => {
         (publicationItem.city && publicationItem.city.name && publicationItem.city.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (publicationItem.mobileNumber && publicationItem.mobileNumber.includes(searchTerm)) ||
         (publicationItem.gstin && publicationItem.gstin.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (Array.isArray(publicationItem.subtitles) && publicationItem.subtitles.some(sub => sub && sub.name && sub.name.toLowerCase().includes(searchTerm.toLowerCase()))) 
+        (Array.isArray(publicationItem.subtitles) && publicationItem.subtitles.some(sub => sub && sub.name && sub.name.toLowerCase().includes(searchTerm.toLowerCase())))
         )
     );
 
     // --- Pagination Logic ---
     const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage; 
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentPublications = filteredPublications.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(filteredPublications.length / itemsPerPage);
 
@@ -438,8 +497,9 @@ const PublicationManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        const doc = new window.jspdf.jsPDF('landscape'); // Use landscape for more columns
-        
+        // Changed: Set PDF to A4 portrait using 'mm' units
+        const doc = new window.jspdf.jsPDF('portrait', 'mm', 'a4');
+
         if (typeof doc.autoTable !== 'function') {
             showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
             console.error("PDF generation failed: doc.autoTable is not a function. Ensure jspdf.plugin.autotable.min.js is correctly linked and loaded AFTER jspdf.umd.min.js.");
@@ -452,7 +512,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
         const companyMobile = "Mobile Number: 7024136476";
         const companyGST = "GST NO: 23EAVPP3772F1Z8";
         const companyLogoUrl = companyLogo; // Use the imported logo directly
-        
+
         // Function to generate the main report content (title, line, table, save)
         // This function now accepts the dynamic startYPositionForTable as an argument
         const generateReportBody = (startYPositionForTable) => {
@@ -461,7 +521,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30); // Dark gray for title
             // Adjust Y position for the report title to be below company info
-            doc.text("Publication List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
+            doc.text("Publication List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' });
 
             // Add a line separator below the main title
             doc.setLineWidth(0.5);
@@ -474,23 +534,18 @@ const PublicationManagement = ({ showFlashMessage }) => {
             // Generate table data
             const tableColumn = [
                 "S.No.", "Name", "Person", "Address", "City", "Mobile",
-                "Bank", "Acc No.", "IFSC", "GSTIN", "Discount", "Add Date", "Status"
+                "GSTIN", "Discount" // NOTE: Removed Bank, Acc No., IFSC from PDF columns as they were missing from column headers.
             ];
             const tableRows = filteredPublications.map((pubItem, index) => [
                 // S.No. is always index + 1 for the filtered data for PDF
-                index + 1, 
+                index + 1,
                 pubItem.name,
                 pubItem.personName,
                 pubItem.address,
                 pubItem.city ? pubItem.city.name : 'N/A', // Display city name
                 pubItem.mobileNumber,
-                pubItem.bank,
-                pubItem.accountNumber,
-                pubItem.ifsc,
                 pubItem.gstin,
                 `${pubItem.discount}%`,
-                formatDateWithTime(pubItem.createdAt),
-                pubItem.status.charAt(0).toUpperCase() + pubItem.status.slice(1)
             ]);
 
             // Add the table to the document with professional styling
@@ -525,8 +580,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                     2: { cellWidth: 'auto', halign: 'left' }, 3: { cellWidth: 'auto', halign: 'left' },
                     4: { cellWidth: 'auto', halign: 'left' }, 5: { cellWidth: 'auto', halign: 'center' },
                     6: { cellWidth: 'auto', halign: 'left' }, 7: { cellWidth: 'auto', halign: 'center' },
-                    8: { cellWidth: 'auto', halign: 'center' }, 9: { cellWidth: 'auto', halign: 'left' },
-                    10: { cellWidth: 'auto', halign: 'center' }, 11: { halign: 'center' }, 12: { halign: 'center' }
                 },
                 margin: { top: 10, right: 14, bottom: 10, left: 14 },
                 didDrawPage: function (data) {
@@ -547,18 +600,18 @@ const PublicationManagement = ({ showFlashMessage }) => {
         img.onload = () => {
             const logoX = 14; // Left margin for logo
             const logoY = 10; // Top margin for logo
-            const imgWidth = 40; // Adjust as needed for your logo size
+            const imgWidth = 25; // Changed: Reduced logo width
             const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
-            
+
             // Add the logo at the top-left
-            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
-            
+            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight);
+
             // Add company name and details next to logo
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
             doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
-            
+
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
@@ -578,14 +631,14 @@ const PublicationManagement = ({ showFlashMessage }) => {
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
             doc.text(companyName, 14, 20); // Company Name
-            
+
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
             doc.text(companyAddress, 14, 27); // Address
             doc.text(companyMobile, 14, 32); // Mobile
             doc.text(companyGST, 14, 37); // GST No.
-            
+
             const calculatedStartY = 45; // Adjust startY since no logo
             generateReportBody(calculatedStartY); // Pass the calculated Y position
         };
@@ -596,6 +649,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(100, 100, 100); // Gray color for date text
+        // For portrait, adjust X position for right alignment
         doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
     };
 
@@ -649,7 +703,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                             <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                             <td>{pubItem.name}</td>
                                             <td>
-                                                {/* Display Subtitles and Add Button */}
+                                                {/* Display Subtitles */}
                                                 <div className="subtitle-list">
                                                     {pubItem.subtitles && pubItem.subtitles.length > 0 ? (
                                                         pubItem.subtitles.map(sub => (
@@ -668,14 +722,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                                     ) : (
                                                         <span>No subtitles</span>
                                                     )}
-                                                    <button
-                                                        className="btn-add-subtitle"
-                                                        onClick={() => openSubtitleModal(pubItem)}
-                                                        title="Add New Subtitle"
-                                                        disabled={loading}
-                                                    >
-                                                        + Add
-                                                    </button>
+                                                    {/* Removed Add button from here */}
                                                 </div>
                                             </td>
                                             <td>{pubItem.personName}</td>
@@ -742,7 +789,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
                         <h3 className="form-title">{editingPublicationId ? 'Edit Publication' : 'Add Publication'}</h3>
-                        
+
                         <div className="form-row"> {/* Use form-row for multi-column layout */}
                             <div className="form-group">
                                 <label htmlFor="name">Publication Name:</label>
@@ -895,6 +942,58 @@ const PublicationManagement = ({ showFlashMessage }) => {
                             </div>
                         </div>
 
+                        {/* Display temporarily added subtitles for new publication OR existing for edited one */}
+                        {(!editingPublicationId && newPublicationSubtitles.length > 0) || (editingPublicationId && selectedPublicationForSubtitle?.subtitles?.length > 0) ? (
+                            <div className="form-group">
+                                <label>Subtitles:</label>
+                                <div className="subtitle-list form-subtitle-list">
+                                    {editingPublicationId
+                                        ? selectedPublicationForSubtitle.subtitles.map(sub => (
+                                            <span key={sub._id} className="subtitle-tag">
+                                                {sub.name}
+                                                <button
+                                                    className="remove-subtitle-btn"
+                                                    onClick={() => handleRemoveSubtitle(sub._id, selectedPublicationForSubtitle._id, sub.name)}
+                                                    title="Remove Subtitle"
+                                                    disabled={loading}
+                                                >
+                                                    <FaTimes />
+                                                </button>
+                                            </span>
+                                        ))
+                                        : newPublicationSubtitles.map(sub => (
+                                            <span key={sub._id} className="subtitle-tag">
+                                                {sub.name}
+                                                <button
+                                                    className="remove-subtitle-btn"
+                                                    onClick={() => handleRemoveSubtitle(sub._id, null, sub.name)} // Pass null for publicationId as it's temporary
+                                                    title="Remove temporary Subtitle"
+                                                    disabled={loading}
+                                                >
+                                                    <FaTimes />
+                                                </button>
+                                            </span>
+                                        ))
+                                    }
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {/* Add Subtitle button - always visible and enabled as per user request */}
+                        <div className="form-group mt-3">
+                            <button
+                                type="button"
+                                onClick={handleOpenSubtitleModalFromForm}
+                                className="btn btn-info"
+                                disabled={loading}
+                            >
+                                <FaPlusCircle className="mr-2" /> Add Subtitle
+                            </button>
+                            <small className="form-text-muted ml-2">
+                                Add new subtitles {editingPublicationId ? 'to this publication.' : 'for the new publication.'}
+                            </small>
+                        </div>
+
                         <div className="form-group">
                             <label htmlFor="status">Status:</label>
                             <select
@@ -946,16 +1045,11 @@ const PublicationManagement = ({ showFlashMessage }) => {
             )}
 
             {/* Subtitle Management Modal */}
-            {showSubtitleModal && selectedPublicationForSubtitle && (
+            {showSubtitleModal && (
                 <div className="modal-backdrop">
                     <div className="modal-content">
-                        <div className="form-header">
-                            <h3>Add Subtitle for "{selectedPublicationForSubtitle.name}"</h3>
-                            <button onClick={closeSubtitleModal} className="close-button" disabled={subtitleModalLoading}>
-                                <FaTimes />
-                            </button>
-                        </div>
-                        <form onSubmit={handleAddSubtitle} className="app-form">
+                        <h3>Add Subtitle {editingPublicationId ? `for "${selectedPublicationForSubtitle?.name}"` : 'for New Publication'}</h3>
+                        <form onSubmit={handleAddSubtitle}>
                             <div className="form-group">
                                 <label htmlFor="newSubtitleName">Subtitle Name:</label>
                                 <input
@@ -975,8 +1069,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                             )}
                             <div className="form-actions">
                                 <button type="submit" className="btn btn-primary" disabled={subtitleModalLoading}>
-                                    {subtitleModalLoading ? 'Adding...' : 'Add Subtitle'}
-                                    <FaPlusCircle className="ml-2" />
+                                    {subtitleModalLoading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Add Subtitle'}
                                 </button>
                                 <button type="button" className="btn btn-secondary" onClick={closeSubtitleModal} disabled={subtitleModalLoading}>
                                     Cancel

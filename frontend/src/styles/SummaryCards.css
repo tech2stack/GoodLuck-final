@@ -1,13 +1,17 @@
 /* src/styles/SummaryCards.css */
 
 .summary-section {
-    margin-bottom: 2rem;
+    /* Ensure no top margin on the summary section itself */
+    margin-top: 0 !important; 
+    /* Reduced margin-bottom for tighter spacing after the section */
+    margin-bottom: 0.5rem; /* Or even 0 if you truly want no space after it */
 }
 
 .summary-section .section-title {
     font-size: 2rem;
     color: #2c3e50;
-    margin-bottom: 1.5rem;
+    /* Reduced margin-bottom to pull the cards closer to the title */
+    margin-bottom: 0.3rem; /* Can be reduced further to 0 if desired */
     text-align: center;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid #eee;
@@ -15,41 +19,44 @@
 
 .summary-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    padding: 1rem;
+    /* Adjusted for better space utilization on larger screens */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Increased min-width for more items per row */
+    gap: 1.2rem; /* Slightly reduced gap */
+    padding: 1rem; /* This padding is *internal* to the grid of cards */
     background-color: #f9fafb;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    /* Simplified outer shadow */
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .summary-card {
     background-color: #ffffff;
-    border-radius: 12px;
-    padding: 1.5rem;
+    border-radius: 10px; /* Slightly smaller border-radius */
+    padding: 1.2rem; /* Slightly reduced padding */
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    /* Simplified inner shadow, almost flat */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #e9e9e9; /* Lighter border */
 }
 
 .summary-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px); /* Less pronounced lift */
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08); /* Slightly more visible on hover */
 }
 
 .summary-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    padding: 0.5rem;
+    font-size: 2.8rem; /* Slightly smaller icon */
+    margin-bottom: 0.8rem; /* Reduced margin */
+    padding: 0.4rem;
     border-radius: 50%;
-    background-color: rgba(0, 0, 0, 0.05); /* Light background for icon */
+    background-color: rgba(0, 0, 0, 0.03); /* Lighter background for icon */
 }
 
-/* Color variations for icons */
+/* Color variations for icons (no changes here as requested) */
 .summary-card.purple .summary-icon { color: #8e44ad; background-color: rgba(142, 68, 173, 0.1); }
 .summary-card.indigo .summary-icon { color: #34495e; background-color: rgba(52, 73, 94, 0.1); }
 .summary-card.teal .summary-icon { color: #1abc9c; background-color: rgba(26, 188, 156, 0.1); }
@@ -58,17 +65,18 @@
 .summary-card.blue .summary-icon { color: #2980b9; background-color: rgba(41, 128, 185, 0.1); }
 .summary-card.brown .summary-icon { color: #7f8c8d; background-color: rgba(127, 140, 141, 0.1); }
 .summary-card.violet .summary-icon { color: #9b59b6; background-color: rgba(155, 89, 182, 0.1); }
+.summary-card.green .summary-icon { color: #27ae60; background-color: rgba(39, 174, 96, 0.1); } /* Added for green icon if not present */
 
 
 .summary-card .summary-title {
-    font-size: 1.1rem;
+    font-size: 1rem; /* Slightly smaller font size */
     font-weight: 600;
     color: #555;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem; /* Reduced margin */
 }
 
 .summary-card .summary-count {
-    font-size: 2.2rem;
+    font-size: 2rem; /* Slightly smaller count font size */
     font-weight: 700;
     color: #2c3e50;
 }
@@ -86,8 +94,7 @@
     color: #e74c3c;
 }
 
-/* Master Dropdown Styles (should ideally be in a general dropdown.css or here) */
-/* This ensures consistency for the Master dropdown in the sidebar */
+/* Master Dropdown Styles (no changes here as requested) */
 .sidebar-nav .relative-dropdown {
     position: relative;
     width: 100%;
@@ -110,15 +117,15 @@
 
 .sidebar-nav .dropdown-menu {
     position: absolute;
-    top: 100%; /* Just below the button */
+    top: 100%;
     left: 0;
-    background-color: #34495e; /* Sidebar background color match */
+    background-color: #34495e;
     border-radius: 8px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     z-index: 1000;
     min-width: 200px;
     padding: 0.5rem 0;
-    margin-top: 5px; /* Small gap from button */
+    margin-top: 5px;
 }
 
 .sidebar-nav .dropdown-menu button {
@@ -137,7 +144,7 @@
 }
 
 .sidebar-nav .dropdown-menu button:hover {
-    background-color: #44607a; /* Lighter shade on hover */
+    background-color: #44607a;
 }
 
 .sidebar-nav .dropdown-icon {
@@ -167,7 +174,7 @@
 /* Responsive adjustments for summary cards */
 @media (max-width: 768px) {
     .summary-cards-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Smaller cards on mobile */
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 1rem;
     }
 

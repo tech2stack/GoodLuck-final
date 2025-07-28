@@ -8,7 +8,7 @@ import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
 // Import the new CustomerManagement specific styles
-import '../../styles/CustomerManagement.css'; // New import for specific styles
+import '../../styles/CustomerManagement.css'; // NEW: Import specific styles
 
 // NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
 // If you are using npm, you'd do: npm install jspdf jspdf-autotable
@@ -23,7 +23,7 @@ import companyLogo from '../../assets/glbs-logo.jpg';
 const CustomerManagement = ({ showFlashMessage }) => {
     // Backend base URL ko environment variable se fetch karein.
     // Ismein sirf domain aur port hoga, /api/v1 nahi.
-    const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'; 
+    const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
     // State for managing list of customers
     const [customers, setCustomers] = useState([]);
@@ -31,7 +31,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
     const [branches, setBranches] = useState([]);
     const [cities, setCities] = useState([]);
     // State for form inputs
-    const [formData, setFormData] = useState({ 
+    const [formData, setFormData] = useState({
         customerName: '',
         schoolCode: '',
         branch: '', // Will store Branch ID
@@ -135,14 +135,14 @@ const CustomerManagement = ({ showFlashMessage }) => {
             if (response.data.status === 'success' && response.data.data && Array.isArray(response.data.data.customers)) {
                 setCustomers(response.data.data.customers);
                 console.log('Customers fetched and set to state:', response.data.data.customers); // Debugging: Confirm state update
-                
+
                 const totalPagesCalculated = Math.ceil(response.data.data.customers.length / itemsPerPage);
                 if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
                     setCurrentPage(totalPagesCalculated);
                 } else if (response.data.data.customers.length === 0) {
                     setCurrentPage(1);
                 }
-                
+
                 if (scrollToNew && tableBodyRef.current) {
                     setTimeout(() => {
                         const lastPageIndex = Math.ceil(response.data.data.customers.length / itemsPerPage);
@@ -192,7 +192,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     fetchedBranches = branchesRes.data.data;
                     console.log('DEBUG: Branches found directly under data.data');
                 } else if (branchesRes.data.data && Array.isArray(branchesRes.data.data.branches)) { // Fallback: if array is under 'data.branches'
-                    fetchedBranches = branchesRes.data.data.branches; 
+                    fetchedBranches = branchesRes.data.data.branches;
                     console.log('DEBUG: Branches found under data.data.branches');
                 } else if (Array.isArray(branchesRes.data)) { // Fallback: if array is directly under the root response.data
                     fetchedBranches = branchesRes.data;
@@ -280,6 +280,16 @@ const CustomerManagement = ({ showFlashMessage }) => {
                 setImagePreviewUrl('');
                 return;
             }
+
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                showFlashMessage('Invalid file type. Please upload an image (JPEG, PNG, GIF, WEBP).', 'error');
+                e.target.value = null; // Clear the input
+                setSelectedImageFile(null);
+                setImagePreviewUrl('');
+                return;
+            }
+
 
             setSelectedImageFile(file); // Store the File object
             const reader = new FileReader();
@@ -436,7 +446,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
             homeAddress: customerItem.homeAddress || '',
             status: customerItem.status || 'active'
         });
-        setImagePreviewUrl(customerItem.image || ''); // Set preview URL from existing image
+        setImagePreviewUrl(customerItem.image ? (customerItem.image.startsWith('/customer-logos/') ? `${BACKEND_BASE_URL}/uploads${customerItem.image}` : customerItem.image) : '');
         setSelectedImageFile(null); // No file selected during edit initially
         setEditingCustomerId(customerItem._id);
         setLocalError(null);
@@ -525,7 +535,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
         }
 
         const doc = new window.jspdf.jsPDF('landscape'); // Use landscape for more columns
-        
+
         if (typeof doc.autoTable !== 'function') {
             showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
             console.error("PDF generation failed: doc.autoTable is not a function. Ensure jspdf.plugin.autotable.min.js is correctly linked and loaded AFTER jspdf.umd.min.js.");
@@ -538,7 +548,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
         const companyMobile = "Mobile Number: 7024136476";
         const companyGST = "GST NO: 23EAVPP3772F1Z8";
         const companyLogoUrl = companyLogo; // Use the imported logo directly
-        
+
         // Function to generate the main report content (title, line, table, save)
         // This function now accepts the dynamic startYPositionForTable as an argument
         const generateReportBody = (startYPositionForTable) => {
@@ -547,7 +557,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30); // Dark gray for title
             // Adjust Y position for the report title to be below company info
-            doc.text("Customer List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
+            doc.text("Customer List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' });
 
             // Add a line separator below the main title
             doc.setLineWidth(0.5);
@@ -572,8 +582,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
                 // Construct the full image URL for PDF
                 // Now, customer.image will be like '/customer-logos/image.jpg'
-                const imageUrlForPdf = customer.image && customer.image.startsWith('/customer-logos/') 
-                    ? `${BACKEND_BASE_URL}/uploads${customer.image}` 
+                const imageUrlForPdf = customer.image && customer.image.startsWith('/customer-logos/')
+                    ? `${BACKEND_BASE_URL}/uploads${customer.image}`
                     : customer.image;
 
                 const customerData = [
@@ -649,16 +659,16 @@ const CustomerManagement = ({ showFlashMessage }) => {
             const logoY = 10; // Top margin for logo
             const imgWidth = 40; // Adjust as needed for your logo size
             const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
-            
+
             // Add the logo at the top-left
-            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
-            
+            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight);
+
             // Add company name and details next to logo
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
             doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
-            
+
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
@@ -678,14 +688,14 @@ const CustomerManagement = ({ showFlashMessage }) => {
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
             doc.text(companyName, 14, 20); // Company Name
-            
+
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
             doc.text(companyAddress, 14, 27); // Address
             doc.text(companyMobile, 14, 32); // Mobile
             doc.text(companyGST, 14, 37); // GST No.
-            
+
             const calculatedStartY = 45; // Adjust startY since no logo
             generateReportBody(calculatedStartY); // Pass the calculated Y position
         };
@@ -702,18 +712,18 @@ const CustomerManagement = ({ showFlashMessage }) => {
     // --- UI Rendering ---
     return (
         <div className="customer-management-container">
-            <h2 className="section-title">Customer Management</h2>
+            <h2 className="page-section-title">Customer Management</h2> {/* Renamed class */}
 
             {localError && (
                 <p className="error-message text-center">
-                    <FaTimesCircle className="error-icon" /> {localError}
+                    <FaTimesCircle className="icon error-icon mr-2" /> {localError} {/* Added icon and margin utility */}
                 </p>
             )}
 
             {/* Main content layout for two columns */}
             <div className="main-content-layout">
                 {/* Customer List Table - FIRST CHILD */}
-                <div className="table-section">
+                <div className="table-container"> {/* Renamed class from table-section to table-container (for the card) */}
                     <h3 className="table-title">Existing Customers</h3>
 
                     {/* Search and Filter Section */}
@@ -754,20 +764,20 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             </select>
                         </div>
 
-                        <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || customers.length === 0}>
-                            <FaFilePdf className="btn-icon-mr" /> Download PDF
+                        <button onClick={downloadPdf} className="download-pdf-btn" disabled={loading || customers.length === 0}>
+                            <FaFilePdf className="icon mr-2" /> Download PDF {/* Renamed class */}
                         </button>
                     </div>
 
                     {loading && customers.length === 0 ? (
                         <p className="loading-state text-center">
-                            <FaSpinner className="animate-spin mr-2" /> Loading customers...
+                            <FaSpinner className="icon animate-spin mr-2" /> Loading customers... {/* Added icon class */}
                         </p>
                     ) : customers.length === 0 ? (
                         <p className="no-data-message text-center">No customers found matching your criteria. Start by adding one!</p>
                     ) : (
-                        <div className="table-container"> {/* This div is for table overflow, not layout */}
-                            <table className="data-table">
+                        <div className="table-scroll-wrapper"> {/* Renamed class for table overflow */}
+                            <table className="app-table"> {/* Renamed class from data-table to app-table */}
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>
@@ -822,7 +832,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                                     title="Edit Customer"
                                                     disabled={loading}
                                                 >
-                                                    <FaEdit />
+                                                    <FaEdit className="icon" /> {/* Added icon class */}
                                                 </button>
                                                 <button
                                                     onClick={() => openConfirmModal(customer)}
@@ -830,7 +840,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                                     title="Delete Customer"
                                                     disabled={loading}
                                                 >
-                                                    {loading && customerToDeleteId === customer._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
+                                                    {loading && customerToDeleteId === customer._id ? <FaSpinner className="icon animate-spin" /> : <FaTrashAlt className="icon" />} {/* Added icon class */}
                                                 </button>
                                             </td>
                                         </tr>
@@ -841,12 +851,12 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             {/* Pagination Controls */}
                             {totalPages > 1 && (
                                 <div className="pagination-controls">
-                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
-                                        <FaChevronLeft className="btn-icon-mr" /> Previous
+                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn-page"> {/* Renamed class */}
+                                        <FaChevronLeft className="icon mr-2" /> Previous {/* Renamed class */}
                                     </button>
                                     <span>Page {currentPage} of {totalPages}</span>
-                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
-                                        Next <FaChevronRight className="btn-icon-ml" />
+                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn-page"> {/* Renamed class */}
+                                        Next <FaChevronRight className="icon ml-2" /> {/* Renamed class */}
                                     </button>
                                 </div>
                             )}
@@ -861,7 +871,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                 <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
                         <h3 className="form-title">{editingCustomerId ? 'Edit Customer' : 'Add New Customer'}</h3>
-                        
+
                         <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="customerName">Customer Name:</label>
@@ -1085,7 +1095,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                         }}
                                         disabled={loading}
                                     >
-                                        <FaTimesCircle /> Clear Image
+                                        <FaTimesCircle className="icon mr-1" /> Clear Image {/* Added icon and margin utility */}
                                     </button>
                                 </div>
                             )}
@@ -1107,13 +1117,13 @@ const CustomerManagement = ({ showFlashMessage }) => {
                         </div>
 
                         <div className="form-actions">
-                            <button type="submit" className="btn btn-primary" disabled={loading}>
-                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingCustomerId ? 'Update Customer' : 'Add Customer')}
+                            <button type="submit" className="btn-primary" disabled={loading}> {/* Renamed class */}
+                                {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : (editingCustomerId ? 'Update Customer' : 'Add Customer')} {/* Added icon class */}
                             </button>
                             {editingCustomerId && (
                                 <button
                                     type="button"
-                                    className="btn btn-secondary ml-2"
+                                    className="btn-secondary ml-2" 
                                     onClick={handleCancelEdit}
                                     disabled={loading}
                                 >
@@ -1132,10 +1142,10 @@ const CustomerManagement = ({ showFlashMessage }) => {
                         <h3>Confirm Deletion</h3>
                         <p>Are you sure you want to delete customer: <strong>{customerToDeleteName}</strong>?</p>
                         <div className="modal-actions">
-                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>
-                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Delete'}
+                            <button onClick={confirmDelete} className="btn-danger" disabled={loading}> {/* Renamed class */}
+                                {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : 'Delete'} {/* Added icon class */}
                             </button>
-                            <button onClick={closeConfirmModal} className="btn btn-secondary" disabled={loading}>Cancel</button>
+                            <button onClick={closeConfirmModal} className="btn-secondary" disabled={loading}>Cancel</button> {/* Renamed class */}
                         </div>
                     </div>
                 </div>

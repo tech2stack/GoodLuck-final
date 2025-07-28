@@ -7,14 +7,6 @@ import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, F
 import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
-// Import the new LanguageManagement specific styles
-import '../../styles/LanguageManagement.css'; 
-
-// NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
-// If you are using npm, you'd do: npm install jspdf jspdf-autotable
-// Then import them here:
-// import { jsPDF } from 'jspdf';
-// import 'jspdf-autotable';
 
 // Import the logo image directly (assuming it exists at this path)
 import companyLogo from '../../assets/glbs-logo.jpg';
@@ -74,7 +66,7 @@ const LanguageManagement = ({ showFlashMessage }) => {
             if (response.data.status === 'success') {
                 setLanguages(response.data.data.languages);
                 
-                // Client-side pagination adjustment
+                // Client-client side pagination adjustment
                 const totalPagesCalculated = Math.ceil(response.data.data.languages.length / itemsPerPage);
                 if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
                     setCurrentPage(totalPagesCalculated);
@@ -122,8 +114,7 @@ const LanguageManagement = ({ showFlashMessage }) => {
 
     // Debugging useEffect for PDF libraries
     useEffect(() => {
-        console.log("PDF Libraries Check (LanguageManagement):");
-        console.log("window.jspdf (global object):", typeof window.jspdf);
+        console.log("PDF Libraries Check (LanguageManagement):", typeof window.jspdf);
         console.log("window.jspdf.jsPDF (constructor):", typeof window.jspdf?.jsPDF);
     }, []);
 
@@ -287,61 +278,52 @@ const LanguageManagement = ({ showFlashMessage }) => {
         const companyLogoUrl = companyLogo; // Use the imported logo directly
         
         // Function to generate the main report content (title, line, table, save)
-        // This function now accepts the dynamic startYPositionForTable as an argument
         const generateReportBody = (startYPositionForTable) => {
-            // Add a professional report title (centered, below company info)
             doc.setFontSize(18);
             doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30); // Dark gray for title
-            // Adjust Y position for the report title to be below company info
+            doc.setTextColor(30, 30, 30);
             doc.text("Language List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
 
-            // Add a line separator below the main title
             doc.setLineWidth(0.5);
-            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15); // Line spanning almost full width
+            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15);
 
-            // Update startYPositionForTable for autoTable
             const tableStartY = startYPositionForTable + 20;
 
-
-            // Generate table data
             const tableColumn = [
                 "S.No.", "Name", "Add Date", "Status"
             ];
             const tableRows = filteredLanguages.map((langItem, index) => [
-                // S.No. is always index + 1 for the filtered data for PDF
                 index + 1, 
                 langItem.name,
                 formatDateWithTime(langItem.createdAt),
                 langItem.status.charAt(0).toUpperCase() + langItem.status.slice(1)
             ]);
 
-            // Add the table to the document with professional styling
             doc.autoTable({
                 head: [tableColumn],
                 body: tableRows,
-                startY: tableStartY, // Use our dynamic start position
-                theme: 'plain', // Changed to 'plain' for a cleaner look like the reference PDF
+                startY: tableStartY,
+                theme: 'plain',
                 styles: {
                     font: 'helvetica',
                     fontSize: 10,
                     cellPadding: 3,
-                    textColor: [51, 51, 51], // Default text color for body
+                    textColor: [51, 51, 51],
                     valign: 'middle',
                     halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [240, 240, 240], // Light gray header
-                    textColor: [51, 51, 51], // Dark text for header
+                    fillColor: [240, 240, 240],
+                    textColor: [51, 51, 51],
                     fontStyle: 'bold',
-                    halign: 'center', // Center align header text
-                    valign: 'middle', // Vertically align header text
-                    lineWidth: 0.1, // Add a thin border to header cells
-                    lineColor: [200, 200, 200] // Light gray border
+                    halign: 'center',
+                    valign: 'middle',
+                    lineWidth: 0.1,
+                    lineColor: [200, 200, 200]
                 },
                 bodyStyles: {
-                    lineWidth: 0.1, // Add a thin border to body cells
-                    lineColor: [200, 200, 200] // Light gray border
+                    lineWidth: 0.1,
+                    lineColor: [200, 200, 200]
                 },
                 columnStyles: {
                     0: { cellWidth: 15, halign: 'center' }, 1: { cellWidth: 'auto', halign: 'left' },
@@ -349,9 +331,8 @@ const LanguageManagement = ({ showFlashMessage }) => {
                 },
                 margin: { top: 10, right: 14, bottom: 10, left: 14 },
                 didDrawPage: function (data) {
-                    // Add footer on each page
                     doc.setFontSize(10);
-                    doc.setTextColor(100); // Gray color for footer text
+                    doc.setTextColor(100);
                     const pageCount = doc.internal.getNumberOfPages();
                     doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
                 }
@@ -360,103 +341,97 @@ const LanguageManagement = ({ showFlashMessage }) => {
             showFlashMessage('Language list downloaded as PDF!', 'success');
         };
 
-        // 5. **Handle Logo Loading Asynchronously:**
         const img = new Image();
-        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
+        img.crossOrigin = 'Anonymous';
         img.onload = () => {
-            const logoX = 14; // Left margin for logo
-            const logoY = 10; // Top margin for logo
-            const imgWidth = 40; // Adjust as needed for your logo size
-            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+            const logoX = 14;
+            const logoY = 10;
+            const imgWidth = 40;
+            const imgHeight = (img.height * imgWidth) / img.width;
             
-            // Add the logo at the top-left
             doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
             
-            // Add company name and details next to logo
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
-            doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
+            doc.text(companyName, logoX + imgWidth + 5, logoY + 5);
             
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
-            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12); // Address
-            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17); // Mobile
-            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22); // GST No.
+            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12);
+            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17);
+            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22);
 
-            // Calculate startYPositionForTable based on logo and company info block
-            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10); // Ensure enough space
-            generateReportBody(calculatedStartY); // Pass the calculated Y position
+            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10);
+            generateReportBody(calculatedStartY);
         };
 
         img.onerror = () => {
             console.warn("Logo image could not be loaded. Generating PDF without logo.");
-            // If logo fails, add only company info block
             doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
-            doc.text(companyName, 14, 20); // Company Name
+            doc.text(companyName, 14, 20);
             
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
-            doc.text(companyAddress, 14, 27); // Address
-            doc.text(companyMobile, 14, 32); // Mobile
-            doc.text(companyGST, 14, 37); // GST No.
+            doc.text(companyAddress, 14, 27);
+            doc.text(companyMobile, 14, 32);
+            doc.text(companyGST, 14, 37);
             
-            const calculatedStartY = 45; // Adjust startY since no logo
-            generateReportBody(calculatedStartY); // Pass the calculated Y position
+            const calculatedStartY = 45;
+            generateReportBody(calculatedStartY);
         };
 
-        img.src = companyLogoUrl; // This will now use the imported image data
+        img.src = companyLogoUrl;
 
-        // Add generation date/time to the top right (this part can run immediately)
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100); // Gray color for date text
+        doc.setTextColor(100, 100, 100);
         doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
     };
 
     // --- UI Rendering ---
     return (
-        <div className="language-management-container">
-            <h2 className="section-title">Language Management</h2>
+        <div className="language-management-container"> {/* This can be a general container or custom for this page */}
+            <h2 className="main-table-header">Language Management</h2> {/* Changed to main-table-header */}
 
             {localError && (
                 <p className="error-message text-center">{localError}</p>
             )}
 
-            {/* Main content layout for two columns */}
             <div className="main-content-layout">
-                {/* Language List Table - FIRST CHILD */}
-                <div className="table-section"> {/* Changed to table-section for consistency */}
-                    <h3 className="table-title">Existing Languages</h3>
+                <div className="table-container"> {/* Use table-container for the entire table wrapper */}
+                    <h3 className="table-title">Existing Languages</h3> {/* Specific title for table */}
 
-                    {/* Search and PDF Download Section */}
                     <div className="table-controls">
                         <div className="search-input-group">
+                            <FaSearch className="search-icon" /> {/* Icon placed before input */}
                             <input
                                 type="text"
                                 placeholder="Search by Language Name..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="search-input"
+                                className="search-input" /* Corrected: className inside the input tag */
+                                disabled={loading} // Disable search while loading
                             />
-                            <FaSearch className="search-icon" />
                         </div>
-                        <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredLanguages.length === 0}>
-                            <FaFilePdf className="mr-2" /> Download PDF
+                        <button onClick={downloadPdf} className="download-pdf-btn" disabled={loading || filteredLanguages.length === 0}>
+                            <FaFilePdf className="icon" /> Download PDF {/* Use 'icon' class for consistent styling */}
                         </button>
                     </div>
 
                     {loading && languages.length === 0 ? (
-                        <p className="loading-state">Loading languages...</p>
+                        <p className="loading-state text-center">
+                            <FaSpinner className="animate-spin mr-2" /> Loading languages...
+                        </p>
                     ) : filteredLanguages.length === 0 ? (
-                        <p className="no-data-message">No languages found matching your criteria. Start by adding one!</p>
+                        <p className="no-data-message text-center">No languages found matching your criteria. Start by adding one!</p>
                     ) : (
                         <>
-                            <table className="data-table">
+                            <table className="app-table"> {/* Use app-table as defined in Table.css */}
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>
@@ -484,7 +459,7 @@ const LanguageManagement = ({ showFlashMessage }) => {
                                                     title="Edit Language"
                                                     disabled={loading}
                                                 >
-                                                    <FaEdit />
+                                                    <FaEdit className="icon" /> {/* Use 'icon' class for consistent styling */}
                                                 </button>
                                                 <button
                                                     onClick={() => openConfirmModal(langItem)}
@@ -492,7 +467,7 @@ const LanguageManagement = ({ showFlashMessage }) => {
                                                     title="Delete Language"
                                                     disabled={loading}
                                                 >
-                                                    {loading && languageToDeleteId === langItem._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
+                                                    {loading && languageToDeleteId === langItem._id ? <FaSpinner className="icon animate-spin" /> : <FaTrashAlt className="icon" />} {/* Apply 'icon' class */}
                                                 </button>
                                             </td>
                                         </tr>
@@ -503,16 +478,16 @@ const LanguageManagement = ({ showFlashMessage }) => {
                             {/* Pagination Controls */}
                             {totalPages > 1 && (
                                 <div className="pagination-controls">
-                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
-                                        <FaChevronLeft /> Previous
+                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn-page"> {/* No 'btn' class needed here, use btn-page for pagination buttons */}
+                                        <FaChevronLeft className="icon" /> Previous
                                     </button>
                                     <span>Page {currentPage} of {totalPages}</span>
-                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
-                                        Next <FaChevronRight />
+                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn-page"> {/* No 'btn' class needed here */}
+                                        Next <FaChevronRight className="icon" />
                                     </button>
                                 </div>
                             )}
-                            <div className="total-records text-center mt-2">
+                            <div className="total-records text-center mt-2"> {/* Added text-center as per typical utility classes */}
                                 Total Records: {filteredLanguages.length}
                             </div>
                         </>
@@ -520,12 +495,12 @@ const LanguageManagement = ({ showFlashMessage }) => {
                 </div>
 
                 {/* Language Creation/Update Form - SECOND CHILD */}
-                <div className="form-container-card">
-                    <form onSubmit={handleSubmit} className="app-form">
+                <div className="form-container-card"> {/* This class should be defined in Form.css */}
+                    <form onSubmit={handleSubmit} className="app-form"> {/* Use app-form as defined in Form.css */}
                         <h3 className="form-title">{editingLanguageId ? 'Edit Language' : 'Add Language'}</h3>
                         
                         <div className="form-row"> {/* Use form-row for multi-column layout */}
-                            <div className="form-group">
+                            <div className="form-group"> {/* Use form-group */}
                                 <label htmlFor="name">Language Name:</label>
                                 <input
                                     type="text"
@@ -536,10 +511,10 @@ const LanguageManagement = ({ showFlashMessage }) => {
                                     placeholder="e.g., English, Hindi"
                                     required
                                     disabled={loading}
-                                    className="form-input"
+                                    className="form-input" // Corrected: All attributes must be within the same opening tag
                                 />
                             </div>
-                            <div className="form-group">
+                            <div className="form-group"> {/* Use form-group */}
                                 <label htmlFor="status">Status:</label>
                                 <select
                                     id="status"
@@ -547,7 +522,7 @@ const LanguageManagement = ({ showFlashMessage }) => {
                                     value={formData.status}
                                     onChange={handleChange}
                                     disabled={loading}
-                                    className="form-select"
+                                    className="form-select" /* Use form-select */
                                 >
                                     <option value="active">Active</option>
                                     <option value="inactive">Inactive</option>
@@ -555,10 +530,10 @@ const LanguageManagement = ({ showFlashMessage }) => {
                             </div>
                         </div>
 
-                        <div className="form-actions">
+                        <div className="form-actions"> {/* Use form-actions */}
                             <button type="submit" className="btn btn-primary" disabled={loading}>
                                 {loading ? (editingLanguageId ? 'Updating...' : 'Adding...') : (editingLanguageId ? 'Update Language' : 'Add Language')}
-                                <FaPlusCircle className="ml-2" />
+                                <FaPlusCircle className="icon ml-2" /> {/* Use 'icon' class and ml-2 */}
                             </button>
                             {editingLanguageId && (
                                 <button
@@ -567,7 +542,7 @@ const LanguageManagement = ({ showFlashMessage }) => {
                                     onClick={handleCancelEdit}
                                     disabled={loading}
                                 >
-                                    Cancel Edit
+                                    <FaTimesCircle className="icon mr-2" /> Cancel Edit {/* Added FaTimesCircle icon and mr-2 */}
                                 </button>
                             )}
                         </div>
@@ -582,7 +557,9 @@ const LanguageManagement = ({ showFlashMessage }) => {
                         <h3>Confirm Deletion</h3>
                         <p>Are you sure you want to delete language: <strong>{languageToDeleteName}</strong>?</p>
                         <div className="modal-actions">
-                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>Delete</button>
+                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>
+                                {loading && languageToDeleteId === languageToDeleteId ? <FaSpinner className="icon animate-spin" /> : 'Delete'} {/* Added loading spinner */}
+                            </button>
                             <button onClick={closeConfirmModal} className="btn btn-secondary" disabled={loading}>Cancel</button>
                         </div>
                     </div>

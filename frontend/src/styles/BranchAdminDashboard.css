@@ -1,0 +1,467 @@
+/* src/styles/BranchAdminDashboard.css */
+
+/* Branch Admin Dashboard specific container */
+.branch-admin-dashboard-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem; /* Equivalent to p-6 */
+    background-color: #f3f4f6; /* bg-gray-100 */
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif; /* Consistent font */
+}
+
+/* Branch Admin Dashboard specific header */
+.branch-admin-dashboard-header {
+    width: 100%;
+    max-width: 600px; /* Adjust as needed for larger screens */
+    text-align: center;
+    margin-bottom: 2rem; /* mb-8 */
+    display: flex;
+    flex-direction: column; /* Changed to column for better stacking on smaller screens */
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background-color: #ffffff;
+    border-radius: 0.75rem; /* rounded-xl */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* shadow-md */
+    position: relative; /* For refresh button positioning */
+}
+
+.branch-admin-dashboard-title-group {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center the title and refresh button */
+    width: 100%;
+    margin-bottom: 0.5rem; /* Space below title before admin/branch info */
+}
+
+.branch-admin-dashboard-title {
+    font-size: 2.25rem; /* text-4xl */
+    font-weight: 700; /* font-bold */
+    color: #1f2937; /* text-gray-900 */
+    margin-right: 0.5rem; /* mr-2 */
+}
+
+.branch-admin-refresh-button {
+    background-color: #60a5fa; /* bg-blue-400 */
+    color: white;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.branch-admin-refresh-button:hover {
+    background-color: #3b82f6; /* bg-blue-500 */
+    transform: rotate(15deg);
+}
+
+.branch-admin-refresh-button .refresh-icon {
+    margin-right: 0.25rem;
+}
+
+.branch-admin-admin-info {
+    font-size: 1rem; /* text-base */
+    color: #4b5563; /* text-gray-700 */
+    margin-top: 0.5rem; /* mt-2 */
+    font-weight: 500;
+}
+
+/* Branch Admin Metrics Grid */
+.branch-admin-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive grid */
+    gap: 1rem; /* gap-4 */
+    width: 100%;
+    max-width: 600px; /* Adjust as needed */
+    margin-bottom: 2rem; /* mb-8 */
+}
+
+.branch-admin-metric-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1rem; /* py-6 px-4 */
+    border-radius: 0.75rem; /* rounded-xl */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* shadow-md */
+    color: white; /* Text color for all cards */
+    text-align: center;
+    position: relative; /* For generate token button */
+    overflow: hidden; /* For background gradients */
+    transition: transform 0.2s ease-in-out;
+}
+
+.branch-admin-metric-card:hover {
+    transform: translateY(-5px);
+}
+
+.branch-admin-metric-card .metric-icon {
+    font-size: 2.5rem; /* text-4xl */
+    margin-bottom: 0.5rem; /* mb-2 */
+    opacity: 0.8;
+}
+
+.branch-admin-metric-card .metric-value {
+    font-size: 1.875rem; /* text-3xl */
+    font-weight: 700; /* font-bold */
+    margin-bottom: 0.25rem; /* mb-1 */
+}
+
+.branch-admin-metric-card .metric-label {
+    font-size: 0.875rem; /* text-sm */
+    font-weight: 500; /* font-medium */
+    opacity: 0.9;
+}
+
+/* Specific Metric Card Colors & Gradients */
+.branch-admin-metric-card.blue-card {
+    background: linear-gradient(135deg, #3b82f6, #2563eb); /* bg-blue-500 to blue-700 */
+}
+
+.branch-admin-metric-card.green-card {
+    background: linear-gradient(135deg, #22c55e, #16a34a); /* bg-green-500 to green-700 */
+}
+
+.branch-admin-metric-card.red-card {
+    background: linear-gradient(135deg, #ef4444, #dc2626); /* bg-red-500 to red-700 */
+}
+
+.branch-admin-metric-card.yellow-card {
+    background: linear-gradient(135deg, #f59e0b, #d97706); /* bg-yellow-500 to yellow-700 */
+}
+
+.branch-admin-metric-card.gray-card {
+    background: linear-gradient(135deg, #6b7280, #4b5563); /* bg-gray-500 to gray-700 */
+}
+
+.branch-admin-metric-card.purple-card {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed); /* bg-purple-500 to purple-700 */
+}
+
+.branch-admin-generate-token-btn {
+    background-color: rgba(255, 255, 255, 0.2); /* Semi-transparent white */
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem; /* text-xs */
+    font-weight: 600; /* font-semibold */
+    margin-top: 0.75rem; /* mt-3 */
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.branch-admin-generate-token-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+
+/* Branch Admin Action Buttons Grid */
+.branch-admin-action-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Responsive grid for buttons */
+    gap: 1rem; /* gap-4 */
+    width: 100%;
+    max-width: 600px; /* Adjust as needed */
+    margin-top: 2rem; /* mt-8 */
+}
+
+.branch-admin-action-btn {
+    font-weight: 700; /* font-bold */
+    padding: 0.75rem 1.5rem; /* py-3 px-6 */
+    border-radius: 0.5rem; /* rounded-lg */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* shadow-md */
+    transition: background-color 0.3s ease-in-out, transform 0.2s ease-in-out;
+    text-align: center;
+    white-space: nowrap; /* Prevent text wrapping */
+    color: white; /* All action buttons have white text */
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase; /* As per design */
+}
+
+.branch-admin-action-btn:hover {
+    transform: translateY(-3px);
+}
+
+/* Specific Action Button Colors */
+.branch-admin-action-btn.green-btn {
+    background-color: #10b981; /* bg-green-600 */
+}
+.branch-admin-action-btn.green-btn:hover {
+    background-color: #059669; /* hover:bg-green-700 */
+}
+
+.branch-admin-action-btn.blue-btn {
+    background-color: #3b82f6; /* bg-blue-600 */
+}
+.branch-admin-action-btn.blue-btn:hover {
+    background-color: #2563eb; /* hover:bg-blue-700 */
+}
+
+.branch-admin-action-btn.black-btn {
+    background-color: #1f2937; /* bg-black */
+}
+.branch-admin-action-btn.black-btn:hover {
+    background-color: #374151; /* hover:bg-gray-800 */
+}
+
+.branch-admin-action-btn.red-btn {
+    background-color: #ef4444; /* bg-red-600 */
+}
+.branch-admin-action-btn.red-btn:hover {
+    background-color: #dc2626; /* hover:bg-red-700 */
+}
+
+.branch-admin-action-btn.purple-btn {
+    background-color: #8b5cf6; /* bg-purple-600 */
+}
+.branch-admin-action-btn.purple-btn:hover {
+    background-color: #7c3aed; /* hover:bg-purple-700 */
+}
+
+/* Specific span for Payment History button */
+.branch-admin-action-btn.col-span-2 {
+    grid-column: span 2 / span 2;
+}
+
+
+/* Modal Styles (from existing Modal.css but with specific overrides for design) */
+/* Prefixing modal styles too, as they might be generic in global Modal.css */
+.branch-admin-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent overlay */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000; /* Ensure it's on top */
+}
+
+.branch-admin-modal-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 0.75rem; /* rounded-lg */
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2); /* shadow-xl */
+    width: 90%;
+    max-width: 400px; /* Max width as per image */
+    text-align: center;
+    animation: fadeInScale 0.3s ease-out;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.branch-admin-modal-header {
+    font-size: 1.5rem; /* text-xl */
+    font-weight: 600; /* font-semibold */
+    margin-bottom: 1.5rem; /* mb-6 */
+    color: #1f2937; /* text-gray-900 */
+}
+
+.branch-admin-form-group {
+    margin-bottom: 1rem; /* mb-4 */
+}
+
+.branch-admin-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151; /* text-gray-700 */
+}
+
+.branch-admin-form-input {
+    width: 100%;
+    padding: 0.75rem; /* p-3 */
+    border: 1px solid #d1d5db; /* border border-gray-300 */
+    border-radius: 0.375rem; /* rounded-md */
+    font-size: 1rem;
+    color: #1f2937;
+    box-sizing: border-box; /* Include padding in width */
+}
+
+.branch-admin-form-input:focus {
+    outline: none;
+    border-color: #3b82f6; /* focus:ring-blue-500 */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* focus:ring-2 */
+}
+
+.branch-admin-modal-actions {
+    display: flex;
+    justify-content: space-around;
+    gap: 1rem; /* gap-4 */
+    margin-top: 1.5rem; /* mt-6 */
+}
+
+.branch-admin-modal-actions .btn {
+    flex-grow: 1; /* Make buttons take equal width */
+    padding: 0.75rem 1rem; /* py-2 px-4 */
+    font-weight: 700; /* font-bold */
+    border-radius: 0.375rem; /* rounded-md */
+    transition: background-color 0.2s ease-in-out;
+    border: none;
+    cursor: pointer;
+    color: white; /* Text color for modal buttons */
+}
+
+.branch-admin-modal-actions .btn.btn-secondary {
+    background-color: #6b7280; /* bg-gray-500 */
+}
+.branch-admin-modal-actions .btn.btn-secondary:hover {
+    background-color: #4b5563; /* hover:bg-gray-600 */
+}
+
+.branch-admin-modal-actions .btn.btn-primary {
+    background-color: #3b82f6; /* bg-blue-500 */
+}
+.branch-admin-modal-actions .btn.btn-primary:hover {
+    background-color: #2563eb; /* hover:bg-blue-600 */
+}
+
+/* Utility for screen reader only labels */
+.branch-admin-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Error Message Styling */
+.branch-admin-error-message {
+    display: flex;
+    align-items: center;
+    background-color: #fee2e2; /* bg-red-100 */
+    color: #dc2626; /* text-red-700 */
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.branch-admin-error-icon {
+    margin-right: 0.5rem;
+    font-size: 1.25rem;
+}
+
+/* Responsive adjustments for smaller screens (e.g., mobile) */
+@media (max-width: 768px) {
+    .branch-admin-dashboard-container {
+        padding: 1rem;
+    }
+    .branch-admin-dashboard-header {
+        padding: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .branch-admin-dashboard-title {
+        font-size: 1.75rem; /* Smaller title on mobile */
+    }
+
+    .branch-admin-admin-info {
+        font-size: 0.9rem;
+    }
+
+    .branch-admin-metrics-grid,
+    .branch-admin-action-buttons-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Adjust min width for smaller cards/buttons */
+        gap: 0.75rem;
+    }
+
+    .branch-admin-metric-card {
+        padding: 1rem 0.75rem;
+    }
+
+    .branch-admin-metric-card .metric-icon {
+        font-size: 2rem;
+    }
+
+    .branch-admin-metric-card .metric-value {
+        font-size: 1.5rem;
+    }
+
+    .branch-admin-metric-card .metric-label {
+        font-size: 0.75rem;
+    }
+
+    .branch-admin-generate-token-btn {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.65rem;
+    }
+
+    .branch-admin-action-btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .branch-admin-action-btn.col-span-2 {
+        grid-column: span 1 / span 1; /* On very small screens, make it single column */
+    }
+
+    .branch-admin-modal-content {
+        padding: 1.5rem;
+    }
+
+    .branch-admin-modal-header {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .branch-admin-modal-actions {
+        flex-direction: column; /* Stack buttons vertically in modal on small screens */
+        gap: 0.75rem;
+    }
+}
+
+/* Tablet adjustments (e.g., 768px to 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .branch-admin-dashboard-container {
+        padding: 2rem;
+    }
+
+    .branch-admin-dashboard-header,
+    .branch-admin-metrics-grid,
+    .branch-admin-action-buttons-grid {
+        max-width: 768px; /* Slightly wider for tablets */
+    }
+
+    .branch-admin-dashboard-title {
+        font-size: 2rem;
+    }
+
+    .branch-admin-metrics-grid {
+        grid-template-columns: repeat(3, 1fr); /* 3 columns for metrics on tablet */
+    }
+    
+    .branch-admin-action-buttons-grid {
+        grid-template-columns: repeat(3, 1fr); /* 3 columns for buttons on tablet */
+    }
+
+    .branch-admin-action-btn.col-span-2 {
+        grid-column: span 2 / span 2; /* Keep spanning 2 columns if enough space */
+    }
+}

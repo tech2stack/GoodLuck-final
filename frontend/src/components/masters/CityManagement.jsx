@@ -15,7 +15,7 @@ import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
 import '../../styles/CommonLayout.css'; // Import the common layout styles
-import '../../styles/CityManagement.css'; // Component-specific layout overrides
+// import '../../styles/CityManagement.css'; // Component-specific layout overrides
 
 // Import the logo image directly (assuming it's in src/assets)
 import companyLogo from '../../assets/glbs-logo.jpg'; 

@@ -1,4 +1,4 @@
-// src/components/dashboard/StockManagerDashboardSummary.jsx
+// StockManagerDashboardSummary.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/api'; // Assuming this is your configured axios instance
 import SummaryCard from '../common/SummaryCard'; // Reusable component for displaying summary data
@@ -28,7 +28,7 @@ const StockManagerDashboardSummary = ({ showFlashMessage }) => {
         bookCatalogs: 0,
         stationeryItems: 0,
         customers: 0,
-        transports: 0, // <--- NEW: Initialize transports count
+        transports: 0,
         classes: 0
     });
     const [loading, setLoading] = useState(true);
@@ -50,11 +50,11 @@ const StockManagerDashboardSummary = ({ showFlashMessage }) => {
                 api.get('/summary/book-catalogs'),
                 api.get('/summary/stationery-items'),
                 api.get('/summary/customers'),
-                api.get('/summary/transports') // <--- NEW: Fetch Transport count
+                api.get('/summary/transports')
             ];
 
             const [
-                zonesRes, citiesRes, classesRes, publicationsRes, languagesRes, bookCatalogsRes, stationeryItemsRes, customersRes, transportsRes // <--- NEW: Add transportsRes
+                zonesRes, citiesRes, classesRes, publicationsRes, languagesRes, bookCatalogsRes, stationeryItemsRes, customersRes, transportsRes
             ] = await Promise.all(apiCalls);
 
             setCounts(prevCounts => ({ // Use functional update to preserve existing state
@@ -67,7 +67,7 @@ const StockManagerDashboardSummary = ({ showFlashMessage }) => {
                 bookCatalogs: bookCatalogsRes.data.data.count,
                 stationeryItems: stationeryItemsRes.data.data.count,
                 customers: customersRes.data.data.count || 0,
-                transports: transportsRes.data.data.count || 0, // <--- NEW: Set transports count
+                transports: transportsRes.data.data.count || 0,
             }));
             showFlashMessage('Dashboard summary updated!', 'success');
         } catch (err) {
@@ -114,9 +114,8 @@ const StockManagerDashboardSummary = ({ showFlashMessage }) => {
                 <SummaryCard title="Total Languages" count={counts.languages} icon={FaLanguage} color="orange" />
                 <SummaryCard title="Total Book Catalogs" count={counts.bookCatalogs} icon={FaBookOpen} color="purple" />
                 <SummaryCard title="Total Stationery Items" count={counts.stationeryItems} icon={FaPencilRuler} color="green" />
-                
                 <SummaryCard title="Total Customers" count={counts.customers} icon={FaUserCheck} color="indigo" />
-                <SummaryCard title="Total Transports" count={counts.transports} icon={FaTruck} color="teal" /> {/* <--- NEW: Transport Summary Card */}
+                <SummaryCard title="Total Transports" count={counts.transports} icon={FaTruck} color="teal" />
             </div>
         </div>
     );

@@ -14,7 +14,7 @@ import ConfirmationModal from '../common/ConfirmationModal';
 import '../../styles/Form.css'; // Generic form styles
 import '../../styles/Table.css'; // Generic table styles
 import '../../styles/Modal.css'; // Generic modal styles
-import '../../styles/ClassManagement.css'; // Component-specific layout overrides
+// import '../../styles/ClassManagement.css'; // Component-specific layout overrides
 import '../../styles/CommonLayout.css'; // Ensure CommonLayout is imported
 
 // Import the logo image directly

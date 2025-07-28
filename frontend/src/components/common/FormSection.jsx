@@ -1,22 +1,14 @@
 // src/components/common/FormSection.jsx
 import React from 'react';
-import '../../styles/Form.css'; // Import generic form styles
+import '../../styles/Form.css'; // Ensure this path is absolutely correct
+import '../../styles/CommonLayout.css'; // Also ensure CommonLayout.css is imported for section-container, etc.
 
-/**
- * FormSection Component
- * Provides a generic structure for a form, including a header, form groups, and action buttons.
- *
- * Props:
- * - sectionTitle (string): The title for this form section (e.g., "Add Class", "Edit Zone").
- * - onSubmit (function): Callback for form submission.
- * - children (ReactNode): The form fields (labels, inputs, selects) and action buttons to be rendered inside the form.
- */
 const FormSection = ({ sectionTitle, onSubmit, children }) => {
     return (
-        <div className="form-section-card section-container">
-            <form onSubmit={onSubmit} className="app-form">
-                <h3 className="section-header">{sectionTitle}</h3>
-                {children} {/* Render form fields and action buttons */}
+        <div className="form-section-card section-container"> {/* CommonLayout.css for these */}
+            <h3 className="section-header">{sectionTitle}</h3> {/* CommonLayout.css for this */}
+            <form onSubmit={onSubmit} className="app-form"> {/* Form.css applies here */}
+                {children}
             </form>
         </div>
     );

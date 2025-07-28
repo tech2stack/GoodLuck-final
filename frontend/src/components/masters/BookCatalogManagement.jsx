@@ -819,20 +819,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                         <h3 className="form-title">{editingBookCatalogId ? 'Edit Book Catalog' : 'Add Book Catalog'}</h3>
                         
                         <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="bookName">Book Name:</label>
-                                <input
-                                    type="text"
-                                    id="bookName"
-                                    name="bookName"
-                                    value={formData.bookName}
-                                    onChange={handleChange}
-                                    placeholder="e.g., Science Textbook"
-                                    required
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
+                           
                             <div className="form-group">
                                 <label htmlFor="publication">Publication:</label>
                                 <select
@@ -857,6 +844,20 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                         </>
                                     )}
                                 </select>
+                            </div>
+                             <div className="form-group">
+                                <label htmlFor="bookName">Book Name:</label>
+                                <input
+                                    type="text"
+                                    id="bookName"
+                                    name="bookName"
+                                    value={formData.bookName}
+                                    onChange={handleChange}
+                                    placeholder="e.g., Science Textbook"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
                             </div>
                         </div>
 
@@ -988,7 +989,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="discountPercentage">Discount Percentage (%):</label>
+                                <label htmlFor="discountPercentage">Discount %:</label>
                                 <input
                                     type="number"
                                     id="discountPercentage"
@@ -1004,7 +1005,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="gstPercentage">GST Percentage (%):</label>
+                                <label htmlFor="gstPercentage">Net Profit %:</label>
                                 <input
                                     type="number"
                                     id="gstPercentage"

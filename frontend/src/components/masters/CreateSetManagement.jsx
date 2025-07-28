@@ -7,7 +7,7 @@ import { FaPlusCircle, FaSearch, FaCopy, FaEdit, FaTrashAlt, FaSpinner, FaDownlo
 
 // Stylesheets (ensure these paths are correct in your project)
 import '../../styles/Form.css';
-import '../../styles/Table.css';
+import '../../styles/Table.css'; // This will be updated for compressed and colorful tables
 import '../../styles/Modal.css'; 
 import '../../styles/CreateSetManagement.css'; 
 import companyLogo from '../../assets/glbs-logo.jpg'; 
@@ -660,11 +660,12 @@ export default function CreateSetManagement({ showFlashMessage }) {
             return;
         }
 
-        const doc = new window.jspdf.jsPDF('landscape'); 
+        // Changed: Set PDF to A4 portrait
+        const doc = new window.jspdf.jsPDF('portrait', 'mm', 'a4'); 
         
         if (typeof doc.autoTable !== 'function') {
-            showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
-            console.error("PDF generation failed: doc.autoTable is not a function. Ensure jspdf.plugin.autotable.min.js is correctly linked and loaded AFTER jspdf.umd.min.js.");
+            showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details. (The PDF libraries might be loaded as global variables; ensure jspdf and jspdf-autotable are correctly linked in your `public/index.html` file, with `jspdf.plugin.autotable.min.js` loaded AFTER `jspdf.umd.min.js`.)', 'error');
+            console.error("PDF generation failed: doc.autoTable is not a function.");
             return;
         }
 
@@ -742,18 +743,18 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 head: [columns],
                 body: rows,
                 startY: startY + 5, // Start table slightly below sub-title
-                theme: 'plain', // Changed to 'plain' for a cleaner look
+                theme: 'striped', // Changed to 'striped' for alternating row colors
                 styles: {
                     font: 'helvetica',
-                    fontSize: 9,
-                    cellPadding: 3,
-                    textColor: [51, 51, 51], // Default text color for body
+                    fontSize: 8, // Compressed: Reduced font size
+                    cellPadding: 2, // Compressed: Reduced cell padding
+                    textColor: [0, 0, 0], // Changed: Black text for body
                     valign: 'middle',
                     halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [240, 240, 240], // Light gray header
-                    textColor: [51, 51, 51], // Dark text for header
+                    fillColor: [37, 99, 235], // Colorful: Darker blue header (Tailwind blue-700 equivalent)
+                    textColor: [255, 255, 255], // Colorful: White text for header
                     fontStyle: 'bold',
                     halign: 'center', // Center align header text
                     valign: 'middle', // Vertically align header text
@@ -763,6 +764,16 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 bodyStyles: {
                     lineWidth: 0.1, // Add a thin border to body cells
                     lineColor: [200, 200, 200] // Light gray border
+                },
+                // Colorful: Alternating row colors using didParseCell
+                didParseCell: function (data) {
+                    if (data.section === 'body') {
+                        if (data.row.index % 2 === 0) { // Even rows
+                            data.cell.styles.fillColor = [240, 248, 255]; // Alice Blue
+                        } else { // Odd rows
+                            data.cell.styles.fillColor = [255, 255, 255]; // White
+                        }
+                    }
                 },
                 columnStyles: {
                     // Specific column styling for books
@@ -841,7 +852,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
 
             if (type === 'books' || type === 'both') {
                 if (booksDetail.length > 0) {
-                    finalTitle = `Books Detail for ${customerName} - ${className}`;
+                    finalTitle = `${customerName} - ${className} Class`;
                     currentY = addHeaderAndSetStartY(docInstance, finalTitle, img, imgWidth, imgHeight);
                     const { columns, rows } = generateBooksData();
                     currentY = addTableToDoc(docInstance, "Books Detail", columns, rows, currentY);
@@ -918,6 +929,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
             return stationeryItemsMaster;
         } else if (selectedSubtitle) { 
             if (isEditMode && !showAllBooksForSubtitle) {
+                // Corrected: Get subtitle object from subtitles array using selectedSubtitle (ID)
                 const selectedSubtitleObj = subtitles.find(s => s._id === selectedSubtitle); 
                 const selectedSubtitleName = selectedSubtitleObj ? selectedSubtitleObj.name : null;
 
@@ -1324,7 +1336,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         </tr>
                                     ) : (
                                         booksDetail.map((item, index) => ( 
-                                            <tr key={item.book._id}>
+                                            <tr key={item.book._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}> {/* Added for coloring */}
                                                 <td className="table-cell whitespace-nowrap font-medium">{index + 1}</td>
                                                 <td className="table-cell whitespace-nowrap">{getStringValue(item.book.subtitle)}</td>
                                                 <td className="table-cell whitespace-normal">{getStringValue(item.book.bookName)}</td>
@@ -1387,7 +1399,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                             </tr>
                                         ) : (
                                             stationeryDetail.map((item, index) => ( 
-                                                <tr key={item.item._id}>
+                                                <tr key={item.item._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}> {/* Added for coloring */}
                                                     <td className="table-cell whitespace-nowrap font-medium">{index + 1}</td>
                                                     <td className="table-cell whitespace-normal">{getStringValue(item.item.itemName)}</td>
                                                     <td className="table-cell whitespace-nowrap">{item.quantity}</td>

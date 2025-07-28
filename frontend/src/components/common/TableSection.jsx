@@ -66,9 +66,14 @@ const TableSection = ({
                 <p className="no-data-message">No data found matching your criteria. Start by adding one!</p>
             ) : (
                 <>
-                    <table className="data-table">
-                        {renderTableContent()} {/* Render the actual table content (thead and tbody) */}
-                    </table>
+                    {/* ADDED A WRAPPER DIV WITH table-container CLASS */}
+                    <div className="table-container">
+                        {/* CHANGED class to app-table for consistency with Table.css */}
+                        {/* The renderTableContent will now receive currentItems and tableBodyRef */}
+                        <table className="app-table">
+                            {renderTableContent(data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), tableBodyRef)}
+                        </table>
+                    </div>
 
                     {/* Pagination Controls */}
                     {totalPages > 1 && (

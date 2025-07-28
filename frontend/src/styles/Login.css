@@ -44,10 +44,16 @@
   font-weight: 500;
 }
 
+/* New styling for password input container */
+.password-input-container {
+  position: relative;
+  width: 100%;
+  margin: 10px 0;
+}
+
 .login-box input {
   width: 100%;
   padding: 12px 15px;
-  margin: 10px 0;
   border: none;
   border-radius: 6px;
   font-size: 15px;
@@ -56,8 +62,43 @@
   outline: none;
 }
 
+/* Adjust padding for password input to make space for the icon */
+.password-input-container input[type="password"],
+.password-input-container input[type="text"] {
+  padding-right: 45px; /* Adjust based on icon size */
+}
+
+
 .login-box input::placeholder {
   color: #777;
+}
+
+/* Styling for the password toggle icon */
+.password-toggle-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #555; /* Adjust icon color */
+  display: flex; /* To center the SVG */
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 30px; /* clickable area */
+  z-index: 10; /* Ensure it's above the input */
+}
+
+.password-toggle-icon svg {
+  fill: #555; /* Icon color */
+}
+
+.password-toggle-icon:hover {
+  color: #333; /* Hover color */
+}
+
+.password-toggle-icon svg:hover {
+  fill: #333;
 }
 
 
@@ -106,6 +147,12 @@
   .login-box input {
     font-size: 14px;
     padding: 10px;
+  }
+
+  /* Adjust padding for password input on smaller screens */
+  .password-input-container input[type="password"],
+  .password-input-container input[type="text"] {
+    padding-right: 40px;
   }
 
   .login-box button {

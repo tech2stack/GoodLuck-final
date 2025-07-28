@@ -1,301 +1,295 @@
 /* src/styles/Table.css */
 
-/* General Table Container */
-.table-container {
-    overflow-x: auto; /* Allows horizontal scrolling for wide tables */
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e9e9e9;
-}
-
-/* Data Table Styling */
-.data-table {
+/* General Table Styling */
+.app-table {
     width: 100%;
-    border-collapse: collapse;
-    min-width: 450px; /* Ensures table is not too narrow on smaller screens */
+    border-collapse: collapse; /* Essential for border control */
+    margin-top: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+    border: 1px solid black; /* Table outer border */
 }
 
-/* Table Headers */
-.data-table th {
-    padding: 10px 12px;
+.app-table th,
+.app-table td {
+    padding: 8px 15px; /* ADJUSTED: Reduced vertical padding for denser look */
     text-align: left;
-    background-color: #f8f8f8;
-    color: #666;
+    border: 1px solid black; /* Vertical and horizontal internal black borders */
+}
+
+/* Colorful Table Header */
+.app-table thead th {
+    background-color: #4A90E2; /* A nice blue color */
+    color: white; /* White text for contrast */
+    font-weight: bold;
+    text-align: center; /* Center header text */
+    padding: 15px 15px; /* Slightly more padding for header */
+    font-size: 1.1em; /* Explicitly set header font size for prominence */
+}
+
+/* Table Body Content Styling */
+.app-table tbody td {
+    font-size: 0.9em; /* ADJUSTED: Make content smaller than header */
+}
+
+/* Colorful Table Rows (Alternating colors) */
+.app-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9; /* Light grey for even rows */
+}
+
+.app-table tbody tr:nth-child(odd) {
+    background-color: #ffffff; /* White for odd rows (explicitly white) */
+}
+
+.app-table tbody tr:hover {
+    background-color: #e0e0e0; /* A slightly darker grey on hover for all rows */
+}
+
+
+/* Status Badges (Keep existing, ensure they're not affected) */
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
     font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    border-bottom: 1px solid #c0c0c0;
-    border-top: 1px solid #c0c0c0;
-    /* Added vertical borders */
-    border-left: 1px solid #e0e0e0; /* Lighter for internal vertical lines */
-    border-right: 1px solid #e0e0e0; /* Lighter for internal vertical lines */
-}
-
-/* Ensure first/last header doesn't have an extra border if table-container already has one */
-.data-table th:first-child {
-    border-left: none;
-}
-
-.data-table th:last-child {
-    border-right: none;
-}
-
-/* Table Cells (Data) */
-.data-table td {
-    padding: 8px 12px;
-    text-align: left;
-    border-bottom: 1px solid #d0d0d0;
-    color: #333;
-    font-size: 0.85rem;
-    /* Added vertical borders */
-    border-left: 1px solid #f0f0f0; /* Even lighter for internal cell vertical lines */
-    border-right: 1px solid #f0f0f0; /* Even lighter for internal cell vertical lines */
-}
-
-/* Ensure first/last cell in a row doesn't have an extra border if table-container already has one */
-.data-table td:first-child {
-    border-left: none;
-}
-
-.data-table td:last-child {
-    border-right: none;
-}
-
-/* Table Row Hover Effect */
-.data-table tbody tr:hover {
-    background-color: #fdfdfd;
-}
-
-/* Text alignment utility classes for table cells */
-.text-center {
+    color: #fff;
     text-align: center;
 }
 
-.text-right {
-    text-align: right;
+.status-badge.active {
+    background-color: #28a745; /* Green */
 }
 
-/* Specific column styling for actions */
+.status-badge.inactive {
+    background-color: #dc3545; /* Red */
+}
+
+/* Actions Column Styling (Keep refined styles, no background issues) */
 .actions-column {
     text-align: center;
     white-space: nowrap;
 }
 
-/* Action Icon Buttons within tables */
 .action-icon-button {
-    background: none;
-    border: 1px solid #d0d0d0;
-    color: #666;
-    padding: 6px 10px;
-    border-radius: 4px;
+    background: none; /* Crucial: No default button background */
+    border: none;      /* Crucial: No default button border */
+    padding: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    margin: 0 3px;
-    font-size: 0.8rem;
+    font-size: 1.1em;
+    margin: 0 5px;
+    transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+    z-index: 10; /* Ensure it's on top */
 }
 
 .action-icon-button:hover {
-    background-color: #e9e9e9;
-    border-color: #b0b0b0;
-    color: #6a0dad;
+    transform: translateY(-2px);
 }
 
-/* Specific hover colors for edit and delete buttons */
-.action-icon-button.edit-button:hover {
-    color: #007bff;
-    border-color: #007bff;
+.action-icon-button.edit-button .icon {
+    color: #007bff; /* Blue for edit */
+}
+.action-icon-button.edit-button:hover .icon {
+    color: #0056b3;
 }
 
-.action-icon-button.delete-button:hover {
-    color: #dc3545;
-    border-color: #dc3545;
+.action-icon-button.delete-button .icon {
+    color: #dc3545; /* Red for delete */
+}
+.action-icon-button.delete-button:hover .icon {
+    color: #b02a37;
 }
 
-/* Status Badges (e.g., Active/Inactive) */
-.status-badge {
-    font-weight: 500;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    display: inline-block;
-    min-width: 50px;
-    text-align: center;
+.action-icon-button .icon {
+    display: block; /* Essential for proper alignment */
 }
 
-/* Specific colors for status badges */
-.status-badge.active {
-    background-color: #e6ffe6;
-    color: #28a745;
-}
 
-.status-badge.inactive {
-    background-color: #ffe6e6;
-    color: #dc3545;
-}
-
-/* Table Controls (Search and Download PDF) */
+/* Search and PDF Button Styling (Keep existing) */
 .table-controls {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
-    justify-content: flex-start; /* Default alignment, can be overridden by specific component CSS */
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
-.table-controls .search-input-group {
-    flex-grow: 1;
+.search-input-group {
     position: relative;
-    min-width: 180px;
+    flex-grow: 1;
+    max-width: 300px;
 }
 
-.table-controls .search-input {
+.search-input {
     width: 100%;
-    padding: 8px 10px 8px 30px;
+    padding: 10px 10px 10px 35px;
     border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    color: #333;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 5px;
+    font-size: 1em;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    box-sizing: border-box; /* Added box-sizing */
 }
 
-.table-controls .search-input:focus {
-    border-color: #6a0dad;
-    box-shadow: 0 0 0 2px rgba(106, 13, 173, 0.2);
-    outline: none;
-}
-
-.table-controls .search-icon {
+.search-icon {
     position: absolute;
     left: 10px;
     top: 50%;
     transform: translateY(-50%);
     color: #888;
-    font-size: 0.9rem;
+    font-size: 0.9em;
 }
 
-.table-controls .download-pdf-btn {
-    white-space: nowrap;
+.download-pdf-btn {
+    background-color: #6c757d;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s ease-in-out;
 }
 
-/* Pagination Controls */
+.download-pdf-btn:hover {
+    background-color: #5a6268;
+}
+
+.download-pdf-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Pagination Controls (Keep existing) */
 .pagination-controls {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 12px;
-    background-color: #f8f8f8;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
-    flex-wrap: wrap;
-    gap: 8px;
-    border-top: 1px solid #c0c0c0;
+    margin-top: 20px;
+    gap: 15px;
 }
 
-.pagination-controls .btn-page {
-    background-color: #6a0dad;
+.btn-page {
+    background-color: #007bff;
     color: white;
-    padding: 6px 12px;
-    font-size: 0.85rem;
+    padding: 8px 15px;
     border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.2s ease-in-out;
 }
 
-.pagination-controls .btn-page:hover:not(:disabled) {
-    background-color: #5a0b9a;
+.btn-page:hover {
+    background-color: #0056b3;
 }
 
-.pagination-controls .btn-page:disabled {
-    background-color: #ccc;
+.btn-page:disabled {
+    background-color: #cccccc;
     cursor: not-allowed;
+    opacity: 0.7;
 }
 
-.pagination-controls span {
-    font-size: 0.9rem;
-    color: #555;
-    margin: 0 6px;
-    font-weight: 500;
+/* General Layout */
+.main-content-layout {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap; /* Allows wrapping to column on smaller screens */
+    margin-top: 20px;
+    justify-content: space-between; /* Pushes table to left, form to right */
+    align-items: flex-start; /* Align items to the top if they are different heights */
+    /* Added a max-width and auto margins to center the entire layout on very large screens. */
+    max-width: 1400px; /* Adjust this value based on desired max content width */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.table-container { /* This is the main card container for the table side */
+    flex: 2; /* Allows table to grow 2x more than the form */
+    min-width: 650px; /* Increased min-width for table to ensure content readability */
+    background-color: #fff;
+    padding: 25px; /* ADJUSTED: Matched form-container-card padding */
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-sizing: border-box;
+    /* overflow-x: auto; -- Removed from here, moved to .table-scroll-wrapper */
+}
+
+.table-scroll-wrapper { /* NEW: Class to handle horizontal scrolling of the actual table */
+    overflow-x: auto;
+    /* You can add specific padding/margin here if needed, but typically it's just for overflow */
+}
+
+.table-title {
+    margin-top: 0; /* ADJUSTED: Removed default top margin to prevent misalignment */
+    margin-bottom: 25px; /* Added for consistency with form-title */
+    text-align: center; /* Center the title */
+    color: #333; /* Darker color for prominence */
+    font-size: 1.8em; /* Consistent with form-title */
+    font-weight: 600; /* Consistent with form-title */
+}
+
+
+/* Responsive adjustments for layout - refined for better flow */
+@media (max-width: 1024px) { /* Breakpoint for stacking */
+    .main-content-layout {
+        flex-direction: column; /* Stack vertically */
+        align-items: center; /* Center items when stacked */
+    }
+    .table-container {
+        flex: 1 1 100%; /* Take full width on smaller screens */
+        min-width: unset; /* Remove min-width constraint to allow shrinking */
+        max-width: 95%; /* Make it almost full width, with some margin */
+    }
 }
 
 /* Loading and No Data Messages */
-.loading-state,
-.no-data-message {
+.loading-state, .no-data-message {
+    padding: 20px;
     text-align: center;
-    padding: 15px;
-    font-size: 0.95rem;
     color: #666;
-    background-color: #ffffff;
-    border-radius: 8px;
-    margin-top: 15px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e9e9e9;
+    font-style: italic;
 }
 
-/* Responsive adjustments for tables */
-@media (max-width: 768px) {
-    .data-table th,
-    .data-table td {
-        padding: 8px 10px;
-        font-size: 0.8rem;
+/* Utility for icons in buttons */
+.icon {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
     }
-    .action-icon-button {
-        padding: 5px 9px;
-        font-size: 0.75rem;
-    }
-    .status-badge {
-        padding: 3px 6px;
-        font-size: 0.7rem;
-    }
-    .pagination-controls {
-        padding: 10px;
-        flex-direction: column;
-        gap: 8px;
-    }
-    .pagination-controls .btn-page {
-        width: 100%;
-    }
-    .table-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .table-controls .search-input-group {
-        width: 100%;
-        max-width: none;
-    }
-    .table-controls .download-pdf-btn {
-        width: 100%;
-        margin-left: 0;
+    to {
+        transform: rotate(360deg);
     }
 }
 
-@media (max-width: 576px) {
-    .data-table {
-        min-width: 100%;
-    }
-    .data-table th,
-    .data-table td {
-        padding: 6px 8px;
-        font-size: 0.7rem;
-    }
-    .action-icon-button {
-        padding: 3px 6px;
-        font-size: 0.65rem;
-    }
-    .status-badge {
-        padding: 2px 5px;
-        font-size: 0.65rem;
-    }
-    .pagination-controls {
-        padding: 8px;
-    }
-    .pagination-controls .btn-page {
-        padding: 4px 8px;
-        font-size: 0.75rem;
-    }
-    .pagination-controls span {
-        font-size: 0.75rem;
-    }
+/* Spacing Utilities */
+.ml-2 { margin-left: 0.5rem; }
+.mr-2 { margin-right: 0.5rem; }
+.text-center { text-align: center; }
+.mt-2 { margin-top: 0.5rem; }
+
+/* Ensure the total records text is styled */
+.total-records {
+    font-size: 0.9em;
+    color: #555;
+    margin-top: 10px;
 }

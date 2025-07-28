@@ -1,4 +1,3 @@
-// src/pages/Login.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
@@ -12,6 +11,7 @@ const Login = () => {
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // New state for password visibility
 
   const { login, isLoggedIn, userData } = useAuth();
   const navigate = useNavigate();
@@ -19,10 +19,10 @@ const Login = () => {
 
   useEffect(() => {
     console.log('Login useEffect running');
-    console.log('   isLoggedIn:', isLoggedIn);
-    console.log('   userData:', userData);
-    console.log('   userData?.role:', userData?.role);
-    console.log('   location.state:', location.state);
+    console.log('    isLoggedIn:', isLoggedIn);
+    console.log('    userData:', userData);
+    console.log('    userData?.role:', userData?.role);
+    console.log('    location.state:', location.state);
 
     if (location.state && location.state.fromLogout) {
       setMessage(location.state.message || 'You have successfully logged out.');
@@ -56,7 +56,7 @@ const Login = () => {
 
     try {
       // <<< CRITICAL CHANGE: 'result' is the user object directly >>>
-      const loggedInUser = await login(credentials.username, credentials.password); 
+      const loggedInUser = await login(credentials.username, credentials.password);
 
       // <<< CRITICAL CHANGE: Access properties directly from 'loggedInUser' >>>
       setMessage(`Login successful! Welcome, ${loggedInUser.name || loggedInUser.username || loggedInUser.email}. Role: ${loggedInUser.role}`);
@@ -84,6 +84,11 @@ const Login = () => {
     }
   };
 
+  // Function to toggle password visibility
+  const togglePasswordVisibility = () => {
+    setShowPassword(prev => !prev);
+  };
+
   return (
     <div className="login-container">
       <div className="login-box">
@@ -108,16 +113,33 @@ const Login = () => {
               autoComplete="username"
               disabled={loading}
             />
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={credentials.password}
-              onChange={handleChange}
-              required
-              autoComplete="current-password"
-              disabled={loading}
-            />
+            <div className="password-input-container"> {/* Added a container for the password field and eye icon */}
+              <input
+                type={showPassword ? 'text' : 'password'} // Dynamically change type
+                name="password"
+                placeholder="Password"
+                value={credentials.password}
+                onChange={handleChange}
+                required
+                autoComplete="current-password"
+                disabled={loading}
+              />
+              <span
+                className="password-toggle-icon"
+                onClick={togglePasswordVisibility}
+              >
+                {/* Basic eye icon - you might want to use an actual icon library like Font Awesome */}
+                {showPassword ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20px" height="20px">
+                    <path d="M12 4.5c5 0 9.27 3.03 11 7.5-1.73 4.47-6 7.5-11 7.5S2.73 16.47 1 12c1.73-4.47 6-7.5 11-7.5zM12 17c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0-8c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/>
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20px" height="20px">
+                    <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.47-6-7.5-11-7.5-1.4 0-2.74.25-3.98.71l2.48 2.48c.82-.47 1.73-.71 2.58-.71zm0 9c-2.76 0-5-2.24-5-5 0-.65.13-1.26.36-1.83L3.5 6.05C2.18 7.35 1 8.94 1 12c1.73 4.47 6 7.5 11 7.5 1.4 0 2.74-.25 3.98-.71l-2.48-2.48c-.82.47-1.73.71-2.58.71zm0-4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                  </svg>
+                )}
+              </span>
+            </div>
             <button type="submit" disabled={loading}>
               {loading ? 'Logging in...' : 'Login'}
             </button>

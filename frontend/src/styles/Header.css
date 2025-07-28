@@ -30,7 +30,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  /* MODIFIED: Reduced the downward spread of the shadow */
+  /* Original: box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* Smaller blur, less spread downwards */
+  /* OR, if you want it almost completely gone vertically, but keep some horizontal: */
+  /* box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); */
+  /* OR, if you want only a subtle border-like shadow: */
+  /* box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05); */
   position: sticky;
   top: 0;
   z-index: 1000;
