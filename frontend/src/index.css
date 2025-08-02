@@ -11,3 +11,23 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* <<< NAYA CODE: &nbsp; को छिपाने के लिए CSS हैक >>> */
+/* यह नियम body के उन सीधे बच्चों को छिपाता है जो #root या noscript नहीं हैं।
+   अक्सर &nbsp; सीधे body में टेक्स्ट नोड्स के रूप में रेंडर होते हैं। */
+body > *:not(div#root):not(noscript) {
+  display: none !important;
+}
+
+/* वैकल्पिक, अधिक आक्रामक तरीका (अगर ऊपर वाला काम नहीं करता है):
+   यह body के अंदर के सभी टेक्स्ट को अदृश्य कर देगा और फिर #root के लिए वापस सेट करेगा।
+   अगर ऊपर वाला काम नहीं करता, तो इसे आजमा सकते हैं।
+body {
+  font-size: 0;
+  line-height: 0;
+}
+#root {
+  font-size: initial; // या कोई विशिष्ट मान जैसे 16px, 1rem
+  line-height: initial; // या कोई विशिष्ट मान
+}
+*/
