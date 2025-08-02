@@ -1,132 +1,88 @@
-/* src/styles/StockManagerDashboard.css */
+/*
+ * StockManagerDashboard.css
+ * This file contains the styles for the Stock Manager Dashboard.
+ * It's structured to support a responsive layout with a collapsible sidebar.
+ */
 
-:root {
-    /* Colors (kept similar to original, but can be fine-tuned) */
-    --primary-color: #007bff;
-    --secondary-color: #6c757d;
-    --background-light: #f8f9fa; /* A very light background, almost white */
-    --text-dark: #343a40;
-    --card-bg: #ffffff;
-    --border-color: #e0e0e0; /* Subtle border for clean separation */
-    --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.05); /* Very light shadow for depth */
-    --header-bg: #ffffff; /* White header as per reference */
-
-    /* Sidebar Dimensions */
-    --sidebar-width: 220px; /* Adjusted to be slightly wider than your last ask, similar to reference */
-    --sidebar-collapsed-width: 60px; /* Fits small icons + padding */
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden; /* Prevent horizontal scroll for the body itself */
-    color: var(--text-dark);
-    line-height: 1.5; /* Good default line height */
-}
-
+/* ================== General Dashboard Layout ================== */
 .dashboard-container {
-    display: flex;
     min-height: 100vh;
-    background-color: var(--background-light);
-    overflow: hidden; /* Hide any content that goes beyond the flex container */
-    position: relative; /* For sidebar's fixed positioning relative to this container */
+    background-color: #f4f7f9;
 }
 
-/* --- Sidebar styles (Aligned with reference sidebar style) --- */
+/* Assuming there's a fixed header component that is 60px tall */
+.header-placeholder {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background-color: #333;
+    z-index: 2000;
+}
+
+/* ================== Sidebar Styles ================== */
 .sidebar {
-    width: var(--sidebar-width);
-    background-color: var(--text-dark); /* Dark background */
-    color: #e0e6eb; /* Light text for contrast */
-    padding-top: 1rem; /* Padding at top, similar to reference */
-    padding-bottom: 1rem;
-    box-shadow: 1px 0 5px rgba(0, 0, 0, 0.1); /* Visible but not harsh shadow */
-    transition: width 0.3s ease-in-out, transform 0.3s ease-in-out;
-    flex-shrink: 0; /* Prevents sidebar from shrinking */
+    position: fixed;
+    top: 90px; /* Positions the sidebar below the fixed header */
+    left: 0;
+    width: 250px;
+    height: calc(100vh - 60px); /* Makes sidebar full height below the header */
+    background-color: #ffffff;
+    color: #4b5563; /* Tailwind gray-600 */
+    transition: all 0.3s ease;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: column;
-    position: sticky; /* Always visible */
-    top: 0;
-    height: 100vh; /* Full viewport height */
-    overflow-y: auto; /* Scrollable if content is long */
-    z-index: 100;
-    margin: 0;
+    z-index: 1500; /* Sidebar is above the content but below the header */
 }
 
+/* Collapsed state for sidebar */
 .sidebar.collapsed {
-    width: var(--sidebar-collapsed-width);
+    width: 80px;
 }
 
+/* Sidebar Header */
 .sidebar-header {
     display: flex;
     align-items: center;
-    /* Adjusted to push toggle to the right when not collapsed */
     justify-content: space-between;
-    margin-bottom: 1.5rem; /* Sufficient space below header */
-    padding: 0 1rem 1rem 1.5rem; /* Padding for branding/toggle */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Subtle separator */
-    flex-wrap: nowrap; /* Prevent wrapping of title and toggle */
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid #e5e7eb; /* Tailwind gray-200 */
 }
 
-.sidebar-header h3 {
-    margin: 0;
-    font-size: 1.4rem; /* Readable font size */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    transition: opacity 0.3s ease-in-out, width 0.3s ease-in-out;
-}
-
-/* New style for user greeting in sidebar */
+/* User greeting */
 .user-greeting {
     display: flex;
     flex-direction: column;
-    color: white; /* Or a slightly lighter shade */
-    margin-right: 10px; /* Space between greeting and toggle */
-    flex-grow: 1; /* Allow it to take available space */
-    overflow: hidden; /* Hide overflow text */
+    overflow: hidden;
     white-space: nowrap;
 }
 
-.user-greeting h3 {
-    font-size: 1.4rem;
-    margin-bottom: 0.2rem;
-}
-
-.user-greeting p {
-    font-size: 0.9rem;
-    opacity: 0.8;
-    margin: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-
-.sidebar.collapsed .sidebar-header h3,
 .sidebar.collapsed .user-greeting {
-    opacity: 0;
-    width: 0;
-    padding: 0;
-    margin: 0;
+    display: none;
 }
 
 .sidebar-toggle {
     background: none;
     border: none;
-    color: white;
-    font-size: 1.4rem;
+    color: #4b5563;
+    font-size: 1.5rem;
     cursor: pointer;
-    padding: 0.4rem;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0; /* Prevent toggle from shrinking */
+    transition: transform 0.3s ease;
+    padding: 0;
 }
 
-.sidebar-toggle:hover {
-    background-color: rgba(255, 255, 255, 0.15);
+.sidebar.collapsed .sidebar-toggle {
+    justify-content: center;
+    width: 100%;
+}
+
+/* Navigation List */
+.sidebar-nav {
+    flex-grow: 1;
+    padding-top: 1rem;
+    overflow-y: auto; /* Allow scrolling for long nav lists */
 }
 
 .sidebar-nav ul {
@@ -136,277 +92,107 @@ body {
 }
 
 .sidebar-nav li {
-    margin-bottom: 0.4rem;
+    position: relative;
 }
 
 .sidebar-nav button {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
-    color: #e0e6eb;
-    text-decoration: none;
-    padding: 0.7rem 1.2rem;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     width: 100%;
-    text-align: left;
-    background: none;
+    padding: 12px 16px;
+    background-color: transparent;
     border: none;
     cursor: pointer;
-    font-size: 0.95rem;
+    color: #4b5563;
+    text-align: left;
+    font-size: 1rem;
+    transition: background-color 0.2s ease, padding 0.2s ease;
 }
 
 .sidebar-nav button:hover,
 .sidebar-nav button.active {
-    background-color: var(--primary-color);
-    color: white;
+    background-color: #e5e7eb; /* Tailwind gray-200 */
 }
 
-.sidebar-nav button .nav-icon,
-.sidebar-nav button .dropdown-icon {
-    font-size: 1.1rem;
-    flex-shrink: 0;
+/* Icons */
+.nav-icon,
+.dropdown-icon {
+    font-size: 1.25rem;
+    min-width: 2rem;
+    text-align: center;
 }
 
-.sidebar-nav button .dropdown-arrow {
+/* Text in sidebar */
+.sidebar .text {
+    margin-left: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.2s ease;
+}
+
+.sidebar.collapsed .text {
+    display: none;
+}
+
+/* Dropdown Arrow */
+.dropdown-arrow {
     margin-left: auto;
     transition: transform 0.2s ease;
 }
 
-.sidebar-nav button .text {
-    transition: opacity 0.3s ease-in-out;
+.sidebar.collapsed .dropdown-arrow {
+    display: none;
 }
 
-.sidebar.collapsed .sidebar-nav button .text {
-    opacity: 0;
-    width: 0;
-}
-
-.sidebar.collapsed .sidebar-nav button .dropdown-arrow {
-    opacity: 0;
-}
-
-/* --- Dropdown menu styles --- */
-.relative-dropdown {
-    position: relative;
-}
-
+/* Dropdown Menu */
 .dropdown-menu {
-    background-color: #495057;
-    border-radius: 4px;
-    margin-top: 0.2rem;
-    padding: 0.2rem 0;
-    box-shadow: var(--shadow-subtle);
-    position: absolute;
-    left: var(--sidebar-width);
-    top: 0;
-    min-width: 180px;
-    z-index: 10;
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(0);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.sidebar.collapsed .dropdown-menu {
-    left: var(--sidebar-collapsed-width);
+    background-color: #f3f4f6; /* Tailwind gray-100 */
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .dropdown-menu button {
-    padding: 0.6rem 1rem;
-    width: 100%;
-    text-align: left;
-    color: white;
-    background: none;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    font-size: 0.9rem;
+    padding-left: 3rem; /* Indent dropdown items */
 }
 
-.dropdown-menu button:hover {
-    background-color: var(--primary-color);
-}
-
-
-/* --- Main content wrapper FIX --- */
+/* ================== Main Content Area ================== */
 .main-content-wrapper {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
+    margin-left: 250px; /* Space for the sidebar */
+    padding: 30px 2rem 2rem 2rem; /* Top padding for the header, then normal padding */
+    transition: margin-left 0.3s ease;
 }
 
-/* Dashboard Header (FIXED MARGINS) */
-.dashboard-header {
-    background-color: var(--header-bg);
-    padding: 0.8rem 1.5rem;
-    border-bottom: 1px solid var(--border-color); /* This creates the 1px line */
-    display: flex;
-    justify-content: flex-end; /* Removed user info, so push content to end */
-    align-items: center;
-    box-shadow: var(--shadow-subtle);
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    width: 100%;
-    box-sizing: border-box;
-    margin: 0; /* Ensure no vertical margins */
-    flex-shrink: 0;
-    height: 60px; /* Give it a fixed height */
+.main-content-wrapper.sidebar-collapsed {
+    margin-left: 80px; /* Adjusted space for collapsed sidebar */
 }
 
-/* User Info and Logout Button Styles (Removed from header in JSX) */
-/* .user-info { /* ... */ /* } */
-/* .logout-btn { /* ... */ /* } */
-
-/* Dashboard Main Content */
 .dashboard-main-content {
-    
-    flex-grow: 1;
-    padding: 0 1.5rem; /* Only horizontal padding */
-    width: 100%;
-    box-sizing: border-box;
-    /* margin-top is now effectively 0 because header has a fixed height and border */
-    margin-top: 0;
-    padding-top: 1px; /* This creates the 1px margin effect below the header */
+    max-width: 100%;
 }
 
-/* IMPORTANT: This targets the first direct child of .dashboard-main-content
-    and removes its top margin, which is often the cause of extra space. */
-.dashboard-main-content > *:first-child {
-    margin-top: 0 !important;
-}
-
-
-/* Widget containers and Card styles (No changes needed here) */
-.dashboard-content-grid { /* ... */ }
-.content-card { /* ... */ }
-.content-card h3 { /* ... */ }
-.content-card p, .content-card ul { /* ... */ }
-.content-card ul { /* ... */ }
-.content-card ul li { /* ... */ }
-
-/* --- Specific Table/Form Enhancements (Improved Overflow Handling) --- */
-/* (These styles are from PublicationManagement.css, ensure they are NOT duplicated) */
-/* (The user's request implies only StockManagerDashboard.css and PublicationManagement.jsx need changes) */
-/* .table-container { ... }
-.data-table { ... }
-.data-table th, .data-table td { ... }
-.data-table th { ... }
-.data-table tbody tr:nth-child(even) { ... }
-.data-table tbody tr:nth-child(odd) { ... }
-.data-table tbody tr:hover { ... }
-.table-controls { ... }
-.search-input-group { ... }
-.search-input { ... }
-.search-icon { ... }
-.pagination-controls { ... }
-.total-records { ... }
-.btn { ... }
-.btn-primary { ... }
-.action-icon-button { ... }
-.flash-message { ... }
-.error-message { ... }
-.loading-state, .no-data-message { ... }
-.status-badge { ... }
-.subtitle-list { ... }
-.subtitle-tag { ... }
-.remove-subtitle-btn { ... }
-.modal-backdrop { ... }
-.modal-content { ... }
-.modal-content h3 { ... }
-.modal-content p { ... }
-.modal-actions { ... } */
-
-
-/* Responsive Adjustments */
-@media (max-width: 768px) { /* Changed from 992px for mobile breakpoint */
-    .dashboard-container {
-        flex-direction: column;
-    }
-
+/* ================== Responsiveness (Mobile) ================== */
+@media (max-width: 768px) {
     .sidebar {
-        position: fixed; /* Fixed position on mobile */
-        top: 0;
-        left: 0;
         width: 100%;
-        height: 100%; /* Full screen height */
-        transform: translateX(-100%); /* Hidden by default */
-        background-color: var(--text-dark); /* Ensure dark background */
-        z-index: 1000; /* Above everything else */
-        padding-top: 50px; /* Account for header */
+        position: fixed;
+        top: 60px;
+        transform: translateX(-100%);
+        box-shadow: none;
+        height: calc(100vh - 60px);
     }
 
     .sidebar.mobile-visible {
-        transform: translateX(0); /* Show sidebar */
+        transform: translateX(0);
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
     }
 
-    .sidebar.mobile-hidden {
-        transform: translateX(-100%); /* Hide sidebar */
-    }
-
-    .sidebar.collapsed .sidebar-header h3,
-    .sidebar.collapsed .user-greeting { /* Ensures user greeting is hidden when sidebar is collapsed on mobile */
-        opacity: 0;
-        width: 0;
-        padding: 0;
-        margin: 0;
-    }
-
-    .sidebar-toggle {
-        display: block; /* Show toggle button on mobile */
-        position: absolute;
-        top: 10px; /* Position within mobile header */
-        right: 15px;
-        color: white; /* Make it visible against header background */
-    }
-
-    .dashboard-header {
-        position: sticky;
-        top: 0;
-        z-index: 60; /* Above main content but below mobile sidebar */
-        justify-content: flex-start; /* Align header content to start */
-    }
-
-    .dashboard-header .sidebar-toggle { /* This is the hamburger icon in the header */
-        display: flex; /* Show the hamburger icon */
-        position: static; /* Reset position */
-        margin-right: 15px; /* Space between toggle and other header content */
-        color: var(--text-dark); /* Icon color in header */
-    }
-
-    /* Adjust main content to account for header, no sidebar space */
     .main-content-wrapper {
         margin-left: 0;
+        padding-top: 80px;
+        padding-left: 0;
+        padding-right: 0;
     }
-
-    .dashboard-main-content {
-        padding: 0 1rem; /* Slightly less padding on small screens */
-    }
-}
-
-@media (min-width: 769px) { /* Desktop styles */
-    .sidebar.mobile-visible, .sidebar.mobile-hidden {
-        transform: translateX(0) !important; /* Override mobile transform */
-    }
-    .sidebar-toggle {
-        /* The sidebar toggle within the sidebar-header, visible only on desktop */
-        display: flex;
-        position: static;
-    }
-    .dashboard-header .sidebar-toggle { /* Hide the mobile hamburger in desktop header */
-        display: none;
-    }
-}
-
-
-/* Adjustments for PublicationManagement.jsx FaSpinner display */
-.btn-icon-mr {
-    margin-right: 5px; /* Consistent margin for icons in buttons */
 }

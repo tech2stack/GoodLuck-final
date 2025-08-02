@@ -246,3 +246,35 @@
         max-width: 95%; /* Make it almost full width */
     }
 }
+
+/* src/styles/ClassManagement.css */
+
+/* This container ensures the two sections are side-by-side on large screens */
+.class-management-layout {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+/* Each section takes up equal space on a large screen */
+.class-management-layout .table-section-card,
+.class-management-layout .form-section-card {
+    flex: 1 1 0; /* Ensures both take equal space */
+    min-width: 450px; /* Adjust this value as needed, it's the minimum width before wrapping */
+    box-sizing: border-box;
+}
+
+/* Media query to stack the sections on smaller screens (e.g., tablets and mobile) */
+@media (max-width: 1024px) {
+    .class-management-layout {
+        flex-direction: column;
+        align-items: stretch; /* stretch to full width */
+    }
+
+    .class-management-layout .table-section-card,
+    .class-management-layout .form-section-card {
+        min-width: unset; /* remove the minimum width constraint */
+        flex-basis: 100%;
+    }
+}

@@ -116,7 +116,6 @@
 /* Main Content Area */
 .dashboard-main-content {
     flex-grow: 1;
-    padding: 2rem;
     background-color: #f9fafb; /* Even lighter background for content */
     display: flex;
     flex-direction: column;

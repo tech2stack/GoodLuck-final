@@ -23,6 +23,7 @@
 }
 
 /* === HEADER === */
+/* === HEADER === */
 .header {
   background-color: var(--color-primary-light);
   color: var(--text-primary-dark);
@@ -30,15 +31,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  /* MODIFIED: Reduced the downward spread of the shadow */
-  /* Original: box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* Smaller blur, less spread downwards */
-  /* OR, if you want it almost completely gone vertically, but keep some horizontal: */
-  /* box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); */
-  /* OR, if you want only a subtle border-like shadow: */
-  /* box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05); */
-  position: sticky;
-  top: 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  position: fixed; /* Changed from sticky to fixed */
+  top: 0; /* Anchor to the top of the viewport */
+  left: 0; /* Anchor to the left of the viewport */
+  width: 100%; /* Ensure it spans the full width */
   z-index: 1000;
   flex-wrap: wrap;
 }

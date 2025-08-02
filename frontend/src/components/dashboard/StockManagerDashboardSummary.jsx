@@ -1,124 +1,104 @@
-// StockManagerDashboardSummary.jsx
+// src/components/dashboard/StockManagerDashboardSummary.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import api from '../../utils/api'; // Assuming this is your configured axios instance
-import SummaryCard from '../common/SummaryCard'; // Reusable component for displaying summary data
+import api from '../../utils/api';
+import SummaryCard from '../common/SummaryCard';
 import {
-    FaUsers, FaBuilding, FaUserTie, FaBoxes, FaGlobeAsia, FaCity,
-    FaBook, FaBookOpen, FaUserCheck, FaTruck, FaUserCog, FaGraduationCap,
-    FaLanguage,
-    FaPencilRuler
-} from 'react-icons/fa'; // Icons for various summary cards
-
-// Stylesheets
-import '../../styles/SummaryCards.css'; // Styles for the summary cards grid and individual cards
-
+  FaGraduationCap, FaGlobeAsia, FaCity, FaBook,
+  FaLanguage, FaBookOpen, FaPencilRuler, FaUserCheck, FaTruck
+} from 'react-icons/fa';
 
 const StockManagerDashboardSummary = ({ showFlashMessage }) => {
-    // State to hold counts for various entities
-    const [counts, setCounts] = useState({
-        // Initialize only the counts for implemented modules to avoid errors
-        branches: 0,
-        employees: 0,
-        branchAdmins: 0,
-        stockManagers: 0,
-        zones: 0,
-        cities: 0,
-        publications: 0,
-        languages: 0,
-        bookCatalogs: 0,
-        stationeryItems: 0,
-        customers: 0,
-        transports: 0,
-        classes: 0
-    });
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const [counts, setCounts] = useState({
+    classes: 0,
+    zones: 0,
+    cities: 0,
+    publications: 0,
+    languages: 0,
+    bookCatalogs: 0,
+    stationeryItems: 0,
+    customers: 0,
+    transports: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    // Function to fetch all counts from the backend
-    const fetchCounts = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            // Array of API calls to fetch counts for each entity
-            // ONLY include API calls for models that are currently implemented and have backend routes
-            const apiCalls = [
-                api.get('/summary/zones'),
-                api.get('/summary/cities'),
-                api.get('/summary/classes'),
-                api.get('/summary/publications'),
-                api.get('/summary/languages'),
-                api.get('/summary/book-catalogs'),
-                api.get('/summary/stationery-items'),
-                api.get('/summary/customers'),
-                api.get('/summary/transports')
-            ];
+  const fetchCounts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const responses = await Promise.all([
+        api.get('/summary/classes'),
+        api.get('/summary/zones'),
+        api.get('/summary/cities'),
+        api.get('/summary/publications'),
+        api.get('/summary/languages'),
+        api.get('/summary/book-catalogs'),
+        api.get('/summary/stationery-items'),
+        api.get('/summary/customers'),
+        api.get('/summary/transports')
+      ]);
 
-            const [
-                zonesRes, citiesRes, classesRes, publicationsRes, languagesRes, bookCatalogsRes, stationeryItemsRes, customersRes, transportsRes
-            ] = await Promise.all(apiCalls);
-
-            setCounts(prevCounts => ({ // Use functional update to preserve existing state
-                ...prevCounts, // Keep any counts not explicitly updated
-                zones: zonesRes.data.data.count,
-                cities: citiesRes.data.data.count,
-                classes: classesRes.data.data.count,
-                publications: publicationsRes.data.data.count,
-                languages: languagesRes.data.data.count,
-                bookCatalogs: bookCatalogsRes.data.data.count,
-                stationeryItems: stationeryItemsRes.data.data.count,
-                customers: customersRes.data.data.count || 0,
-                transports: transportsRes.data.data.count || 0,
-            }));
-            // showFlashMessage('Dashboard summary updated!', 'success');
-        } catch (err) {
-            console.error('Error fetching dashboard summary:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to load dashboard summary.';
-            setError(errorMessage);
-            showFlashMessage(errorMessage, 'error');
-        } finally {
-            setLoading(false);
-        }
-    }, [showFlashMessage]);
-
-    // Fetch counts on component mount
-    useEffect(() => {
-        fetchCounts();
-    }, [fetchCounts]);
-
-    if (loading) {
-        return (
-            <div className="summary-section loading-state">
-                <p>Loading dashboard summary...</p>
-            </div>
-        );
+      setCounts({
+        classes: responses[0].data.data.count,
+        zones: responses[1].data.data.count,
+        cities: responses[2].data.data.count,
+        publications: responses[3].data.data.count,
+        languages: responses[4].data.data.count,
+        bookCatalogs: responses[5].data.data.count,
+        stationeryItems: responses[6].data.data.count,
+        customers: responses[7].data.data.count || 0,
+        transports: responses[8].data.data.count || 0,
+      });
+    } catch (err) {
+      console.error('Error fetching dashboard summary:', err);
+      setError(err.response?.data?.message || 'Failed to load dashboard summary.');
+      showFlashMessage(err.response?.data?.message || 'Failed to load dashboard summary.', 'error');
+    } finally {
+      setLoading(false);
     }
+  }, [showFlashMessage]);
 
-    if (error) {
-        return (
-            <div className="summary-section error-state">
-                <p>Error: {error}</p>
-                <button onClick={fetchCounts} className="btn btn-primary mt-3">Retry</button>
-            </div>
-        );
-    }
+  useEffect(() => { fetchCounts(); }, [fetchCounts]);
 
+  if (loading) {
     return (
-        <div className="summary-section">
-            <h2 className="section-title">Overall Dashboard Summary</h2>
-            <div className="summary-cards-grid">
-                {/* Only render cards for currently implemented modules */}
-                <SummaryCard title="Total Classes" count={counts.classes} icon={FaGraduationCap} color="cyan" />
-                <SummaryCard title="Total Zones" count={counts.zones} icon={FaGlobeAsia} color="blue" />
-                <SummaryCard title="Total Cities" count={counts.cities} icon={FaCity} color="brown" />
-                <SummaryCard title="Total Publications" count={counts.publications} icon={FaBook} color="violet" />
-                <SummaryCard title="Total Languages" count={counts.languages} icon={FaLanguage} color="orange" />
-                <SummaryCard title="Total Book Catalogs" count={counts.bookCatalogs} icon={FaBookOpen} color="purple" />
-                <SummaryCard title="Total Stationery Items" count={counts.stationeryItems} icon={FaPencilRuler} color="green" />
-                <SummaryCard title="Total Customers" count={counts.customers} icon={FaUserCheck} color="indigo" />
-                <SummaryCard title="Total Transports" count={counts.transports} icon={FaTruck} color="teal" />
-            </div>
-        </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 p-4 rounded-lg">
+        <p className="text-red-600 mb-3">Error: {error}</p>
+        <button
+          onClick={fetchCounts}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-semibold text-gray-800">Overall Dashboard Summary</h2>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <SummaryCard title="Total Classes" count={counts.classes} icon={FaGraduationCap} color="green" />
+        <SummaryCard title="Total Zones" count={counts.zones} icon={FaGlobeAsia} color="teal" />
+        <SummaryCard title="Total Cities" count={counts.cities} icon={FaCity} color="emerald" />
+        <SummaryCard title="Total Publications" count={counts.publications} icon={FaBook} color="green" />
+        <SummaryCard title="Total Languages" count={counts.languages} icon={FaLanguage} color="teal" />
+        <SummaryCard title="Total Book Catalogs" count={counts.bookCatalogs} icon={FaBookOpen} color="emerald" />
+        <SummaryCard title="Total Stationery Items" count={counts.stationeryItems} icon={FaPencilRuler} color="green" />
+        <SummaryCard title="Total Customers" count={counts.customers} icon={FaUserCheck} color="teal" />
+        <SummaryCard title="Total Transports" count={counts.transports} icon={FaTruck} color="emerald" />
+      </div>
+    </div>
+  );
 };
 
 export default StockManagerDashboardSummary;
