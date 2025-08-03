@@ -691,7 +691,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                         <p className="no-data-message">No publications found matching your criteria. Start by adding one!</p>
                     ) : (
                         <div className="table-container"> {/* This div is for table overflow, not layout */}
-                            <table className="data-table">
+                            <table className="app-table">
                                 <thead>
                                     <tr>
                                         <th>S.No.</th><th>Name</th><th>Sub Title</th><th>Person</th><th>Address</th><th>City</th><th>Phone</th><th>Bank</th><th>Acc No.</th><th>IFSC</th><th>OTHER (GSTIN/Disc)</th><th>Add Date</th><th>Status</th><th>Action</th>

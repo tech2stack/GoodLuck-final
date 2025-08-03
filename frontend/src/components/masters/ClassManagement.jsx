@@ -296,7 +296,7 @@ const ClassManagement = ({ showFlashMessage }) => {
 
 
             // Generate table data
-            const tableColumn = ["S.No.", "Class Name", "Status", "Add Date"];
+            const tableColumn = ["S.No.", "Class Name", "Status"];
             const tableRows = filteredClasses.map((classItem, index) => [
                 // S.No. is always index + 1 for the filtered data for PDF
                 index + 1, 
@@ -360,8 +360,9 @@ const ClassManagement = ({ showFlashMessage }) => {
         img.onload = () => {
             const logoX = 14; // Left margin for logo
             const logoY = 10; // Top margin for logo
-            const imgWidth = 40; // Adjust as needed for your logo size
+            const imgWidth = 25; // Changed: Reduced logo width
             const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+
             
             // Add the logo at the top-left
             doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 

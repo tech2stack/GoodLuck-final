@@ -533,7 +533,8 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        const doc = new window.jspdf.jsPDF('landscape'); // Use landscape for more columns
+         const doc = new window.jspdf.jsPDF('portrait', 'mm', 'a4');
+
         
         if (typeof doc.autoTable !== 'function') {
             showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
@@ -569,7 +570,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             // Generate table data
             const tableColumn = [
                 "S.No.", "Name", "Publisher", "Subtitle", "Language", "Price",
-                "Discount %", "GST %", "Add Date", "Status"
+
             ];
             const tableRows = filteredBookCatalogs.map((bookItem, index) => [
                 // S.No. is always index + 1 for the filtered data for PDF
@@ -641,7 +642,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         img.onload = () => {
             const logoX = 14; // Left margin for logo
             const logoY = 10; // Top margin for logo
-            const imgWidth = 40; // Adjust as needed for your logo size
+            const imgWidth = 25; // Changed: Reduced logo width
             const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
             
             // Add the logo at the top-left
@@ -738,7 +739,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                         <p className="no-data-message text-center">No book catalogs found matching your criteria. Start by adding one!</p>
                     ) : (
                         <div className="table-container"> {/* This div is for table overflow, not layout */}
-                            <table className="data-table">
+                            <table className="app-table">
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>

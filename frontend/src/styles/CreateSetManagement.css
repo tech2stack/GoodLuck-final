@@ -238,7 +238,7 @@
 }
 
 .btn-primary {
-    background-color: #4b5563; /* bg-gray-700 */
+    background-color: #3d3d3d; /* bg-gray-700 */
 }
 
 .btn-primary:hover {
@@ -246,7 +246,13 @@
 }
 
 .btn-success {
-    background-color: #10b981; /* bg-green-600 */
+    background-color: #10b981;
+    border-radius: 5px;
+    padding: 8px;
+    width: 100%;
+    font-size: 15px;
+    font-weight: bold;
+
 }
 
 .btn-success:hover {
@@ -255,6 +261,11 @@
 
 .btn-purple {
     background-color: #9333ea; /* bg-purple-600 */
+     border-radius: 5px;
+    padding: 8px;
+    width: 100%;
+    font-size: 15px;
+    font-weight: bold;
 }
 
 .btn-purple:hover {
@@ -263,6 +274,7 @@
 
 .btn-blue {
     background-color: #2563eb; /* bg-blue-600 */
+    border-radius: 5px;
 }
 
 .btn-blue:hover {

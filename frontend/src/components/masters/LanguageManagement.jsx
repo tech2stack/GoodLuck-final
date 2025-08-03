@@ -344,10 +344,11 @@ const LanguageManagement = ({ showFlashMessage }) => {
         const img = new Image();
         img.crossOrigin = 'Anonymous';
         img.onload = () => {
-            const logoX = 14;
-            const logoY = 10;
-            const imgWidth = 40;
-            const imgHeight = (img.height * imgWidth) / img.width;
+            const logoX = 14; // Left margin for logo
+            const logoY = 10; // Top margin for logo
+            const imgWidth = 25; // Changed: Reduced logo width
+            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+
             
             doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
             
@@ -396,7 +397,7 @@ const LanguageManagement = ({ showFlashMessage }) => {
     // --- UI Rendering ---
     return (
         <div className="language-management-container"> {/* This can be a general container or custom for this page */}
-            <h2 className="main-table-header">Language Management</h2> {/* Changed to main-table-header */}
+            <h2 className="main-section-title">Language Management</h2> {/* Changed to main-table-header */}
 
             {localError && (
                 <p className="error-message text-center">{localError}</p>

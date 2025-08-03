@@ -534,7 +534,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        const doc = new window.jspdf.jsPDF('landscape'); // Use landscape for more columns
+        // Changed: Set PDF to A4 portrait
+        const doc = new window.jspdf.jsPDF('portrait', 'mm', 'a4'); 
 
         if (typeof doc.autoTable !== 'function') {
             showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
@@ -570,7 +571,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
             // Generate table data
             const tableColumn = [
                 "S.No.", "Name (Code)", "Branch", "City", "Contact Person", "Mobile", "Email",
-                "Documents", "Address", "Logo", "Add Date", "Status"
+                "Documents", "Address"
             ];
             const tableRows = [];
 
@@ -657,8 +658,9 @@ const CustomerManagement = ({ showFlashMessage }) => {
         img.onload = () => {
             const logoX = 14; // Left margin for logo
             const logoY = 10; // Top margin for logo
-            const imgWidth = 40; // Adjust as needed for your logo size
+            const imgWidth = 25; // Changed: Reduced logo width
             const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+
 
             // Add the logo at the top-left
             doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight);

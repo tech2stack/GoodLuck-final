@@ -16,7 +16,7 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      return (
+      return (~
         <div style={{ textAlign: "center", marginTop: "50px" }}>
           <h2>⚠️ Something went wrong.</h2>
           <p>Please refresh the page or try again later.</p>

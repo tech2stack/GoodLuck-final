@@ -111,7 +111,7 @@
 
 .sidebar-nav button:hover,
 .sidebar-nav button.active {
-    background-color: #e5e7eb; /* Tailwind gray-200 */
+    background-color: #34495e; /* Tailwind gray-200 */
 }
 
 /* Icons */

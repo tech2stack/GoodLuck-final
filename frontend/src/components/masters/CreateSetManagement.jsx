@@ -905,8 +905,11 @@ export default function CreateSetManagement({ showFlashMessage }) {
         const img = new Image();
         img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
         img.onload = () => {
-            const imgWidth = 40; 
-            const imgHeight = (img.height * imgWidth) / img.width; 
+            const logoX = 14; // Left margin for logo
+            const logoY = 10; // Top margin for logo
+            const imgWidth = 25; // Changed: Reduced logo width
+            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+
             
             // Now generate the rest of the content after the image is loaded
             generatePdfContent(doc, img, imgWidth, imgHeight);
@@ -1198,7 +1201,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             disabled={isAddItemButtonDisabled || loading}
                             className="btn-success"
                         >
-                            <FaPlusCircle className="btn-icon-mr" /> {editingItemId ? 'Update Item' : 'Add Item'}
+                            {/* <FaPlusCircle className="btn-icon-mr" />  */}
+                            {editingItemId ? 'Update Item' : 'Add Item'}
                         </button>
                     </section>
 
@@ -1243,7 +1247,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             disabled={isCopySetButtonDisabled || loading}
                             className="btn-purple"
                         >
-                            <FaCopy className="btn-icon-mr" /> Copy Set
+                            {/* <FaCopy className="btn-icon-mr" /> */}
+                             Copy Set
                         </button>
                     </section>
 
@@ -1317,7 +1322,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             </div>
                         </div>
                         <div className="table-container">
-                            <table className="data-table">
+                            <table className="app-table">
                                 <thead className="table-header-group">
                                     <tr>
                                         <th className="table-header-cell">#</th>
@@ -1381,7 +1386,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         <section className="section-container">
                             <h2 className="section-header">Stationery Item Detail</h2>
                             <div className="table-container">
-                                <table className="data-table">
+                                <table className="app-table">
                                     <thead className="table-header-group">
                                         <tr>
                                             <th className="table-header-cell">#</th>

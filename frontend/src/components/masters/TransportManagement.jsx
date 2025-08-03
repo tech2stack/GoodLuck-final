@@ -273,8 +273,9 @@ const TransportManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        const doc = new window.jspdf.jsPDF('landscape'); // Use landscape for more columns
-        
+        // Changed: Set PDF to A4 portrait
+        const doc = new window.jspdf.jsPDF('portrait', 'mm', 'a4'); 
+
         if (typeof doc.autoTable !== 'function') {
             showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
             console.error("PDF generation failed: doc.autoTable is not a function. Ensure jspdf.plugin.autotable.min.js is correctly linked and loaded AFTER jspdf.umd.min.js.");
@@ -308,7 +309,7 @@ const TransportManagement = ({ showFlashMessage }) => {
 
             // Generate table data
             const tableColumn = [
-                "S.No.", "Transport Name", "Person", "Mobile", "Address", "Add Date", "Status"
+                "S.No.", "Transport Name", "Person", "Mobile", "Address"
             ];
             const tableRows = [];
 
@@ -376,8 +377,9 @@ const TransportManagement = ({ showFlashMessage }) => {
         img.onload = () => {
             const logoX = 14; // Left margin for logo
             const logoY = 10; // Top margin for logo
-            const imgWidth = 40; // Adjust as needed for your logo size
+            const imgWidth = 25; // Changed: Reduced logo width
             const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+
             
             // Add the logo at the top-left
             doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
@@ -475,7 +477,7 @@ const TransportManagement = ({ showFlashMessage }) => {
                         <p className="no-data-message">No transports found matching your criteria. Start by adding one!</p>
                     ) : (
                         <div className="table-container"> {/* This div is for table overflow, not layout */}
-                            <table className="data-table">
+                            <table className="app-table">
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>

@@ -418,10 +418,12 @@ export default function PendingBookManagement({ showFlashMessage }) {
         // Handle Logo Loading Asynchronously and then generate content
         const img = new Image();
         img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
-        img.onload = () => {
-            const imgWidth = 40; 
-            const imgHeight = (img.height * imgWidth) / img.width; 
-            generatePdfContent(doc, img, imgWidth, imgHeight);
+         img.onload = () => {
+            const logoX = 14; // Left margin for logo
+            const logoY = 10; // Top margin for logo
+            const imgWidth = 25; // Changed: Reduced logo width
+            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+
         };
 
         img.onerror = () => {
@@ -519,7 +521,7 @@ export default function PendingBookManagement({ showFlashMessage }) {
                     )}
                     {books.length > 0 && (
                         <div className="table-container"> {/* This div is for table overflow, not layout */}
-                            <table className="data-table">
+                            <table className="app-table">
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>

@@ -4,32 +4,34 @@
 .app-table {
     width: 100%;
     border-collapse: collapse; /* Essential for border control */
-    margin-top: 20px;
+    margin-top: 15px; /* Reduced margin */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     background-color: #fff;
     border: 1px solid black; /* Table outer border */
+    table-layout: auto; /* Allows columns to adjust based on content */
 }
 
+/* Reduced padding for a more compact look */
 .app-table th,
 .app-table td {
-    padding: 8px 15px; /* ADJUSTED: Reduced vertical padding for denser look */
+    padding: 4px 8px; /* Significantly reduced padding for tighter cell spacing */
     text-align: left;
     border: 1px solid black; /* Vertical and horizontal internal black borders */
 }
-
+        
 /* Colorful Table Header */
 .app-table thead th {
     background-color: #4A90E2; /* A nice blue color */
     color: white; /* White text for contrast */
     font-weight: bold;
     text-align: center; /* Center header text */
-    padding: 15px 15px; /* Slightly more padding for header */
-    font-size: 1.1em; /* Explicitly set header font size for prominence */
+    padding: 6px 8px; /* Reduced header padding for consistency */
+    font-size: 0.9em; /* Adjusted header font size to be smaller */
 }
 
 /* Table Body Content Styling */
 .app-table tbody td {
-    font-size: 0.9em; /* ADJUSTED: Make content smaller than header */
+    font-size: 0.8em; /* Adjusted to be smaller for more compactness */
 }
 
 /* Colorful Table Rows (Alternating colors) */
@@ -46,12 +48,12 @@
 }
 
 
-/* Status Badges (Keep existing, ensure they're not affected) */
+/* Status Badges */
 .status-badge {
     display: inline-block;
-    padding: 4px 8px;
+    padding: 2px 5px; /* Slightly reduced padding */
     border-radius: 4px;
-    font-size: 0.85em;
+    font-size: 0.75em; /* Adjusted font size to be smaller */
     font-weight: 600;
     color: #fff;
     text-align: center;
@@ -65,7 +67,7 @@
     background-color: #dc3545; /* Red */
 }
 
-/* Actions Column Styling (Keep refined styles, no background issues) */
+/* Actions Column Styling */
 .actions-column {
     text-align: center;
     white-space: nowrap;
@@ -74,16 +76,16 @@
 .action-icon-button {
     background: none; /* Crucial: No default button background */
     border: none;      /* Crucial: No default button border */
-    padding: 8px;
+    padding: 3px; /* Reduced padding for action icons */
     cursor: pointer;
-    font-size: 1.1em;
-    margin: 0 5px;
+    font-size: 0.9em; /* Adjusted font size to be smaller */
+    margin: 0 2px; /* Reduced margin */
     transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     position: relative;
-    z-index: 10; /* Ensure it's on top */
+    z-index: 10;
 }
 
 .action-icon-button:hover {
@@ -109,13 +111,13 @@
 }
 
 
-/* Search and PDF Button Styling (Keep existing) */
+/* Search and PDF Button Styling */
 .table-controls {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
-    gap: 10px;
+    gap: 8px; /* Reduced gap */
     flex-wrap: wrap;
 }
 
@@ -127,34 +129,34 @@
 
 .search-input {
     width: 100%;
-    padding: 10px 10px 10px 35px;
+    padding: 6px 8px 6px 30px; /* Adjusted padding for smaller input and icon */
     border: 1px solid #ccc;
     border-radius: 5px;
-    font-size: 1em;
+    font-size: 0.85em; /* Adjusted font size to be smaller */
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-    box-sizing: border-box; /* Added box-sizing */
+    box-sizing: border-box;
 }
 
 .search-icon {
     position: absolute;
-    left: 10px;
+    left: 8px; /* Adjusted left position for smaller padding */
     top: 50%;
     transform: translateY(-50%);
     color: #888;
-    font-size: 0.9em;
+    font-size: 0.8em; /* Adjusted font size to be smaller */
 }
 
 .download-pdf-btn {
     background-color: #6c757d;
     color: white;
-    padding: 10px 15px;
+    padding: 6px 10px; /* Adjusted padding to be smaller */
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 0.9em;
+    font-size: 0.8em; /* Adjusted font size to be smaller */
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 5px; /* Reduced gap */
     transition: background-color 0.2s ease-in-out;
 }
 
@@ -168,26 +170,26 @@
     opacity: 0.7;
 }
 
-/* Pagination Controls (Keep existing) */
+/* Pagination Controls */
 .pagination-controls {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-top: 20px;
-    gap: 15px;
+    margin-top: 15px; /* Reduced margin */
+    gap: 8px; /* Reduced gap */
 }
 
 .btn-page {
     background-color: #007bff;
     color: white;
-    padding: 8px 15px;
+    padding: 4px 10px; /* Adjusted padding to be smaller */
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 0.9em;
+    font-size: 0.8em; /* Adjusted font size to be smaller */
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 3px; /* Reduced gap */
     transition: background-color 0.2s ease-in-out;
 }
 
@@ -204,10 +206,10 @@
 /* General Layout */
 .main-content-layout {
     display: flex;
-    gap: 30px;
+    gap: 30px; /* Gap between table and form (if present) */
     flex-wrap: wrap; /* Allows wrapping to column on smaller screens */
-    margin-top: 20px;
-    justify-content: space-between; /* Pushes table to left, form to right */
+    margin-top: 15px; /* Reduced margin */
+    /* justify-content: space-between; Pushes table to left, form to right */
     align-items: flex-start; /* Align items to the top if they are different heights */
     /* Added a max-width and auto margins to center the entire layout on very large screens. */
     max-width: 1400px; /* Adjust this value based on desired max content width */
@@ -217,9 +219,8 @@
 
 .table-container { /* This is the main card container for the table side */
     flex: 2; /* Allows table to grow 2x more than the form */
-    min-width: 650px; /* Increased min-width for table to ensure content readability */
     background-color: #fff;
-    padding: 25px; /* ADJUSTED: Matched form-container-card padding */
+    padding: 8px; /* Adjusted padding to be smaller */
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     box-sizing: border-box;
@@ -232,11 +233,11 @@
 }
 
 .table-title {
-    margin-top: 0; /* ADJUSTED: Removed default top margin to prevent misalignment */
-    margin-bottom: 25px; /* Added for consistency with form-title */
+    margin-top: 0; /* Removed default top margin to prevent misalignment */
+    margin-bottom: 20px; /* Reduced margin */
     text-align: center; /* Center the title */
     color: #333; /* Darker color for prominence */
-    font-size: 1.8em; /* Consistent with form-title */
+    font-size: 1.6em; /* Reduced font size */
     font-weight: 600; /* Consistent with form-title */
 }
 
@@ -289,7 +290,7 @@
 
 /* Ensure the total records text is styled */
 .total-records {
-    font-size: 0.9em;
+    font-size: 0.85em; /* Adjusted font size to be smaller */
     color: #555;
     margin-top: 10px;
 }
