@@ -32,10 +32,21 @@
   padding: 0 1rem;
   width: 100%;
   box-sizing: border-box;
+  z-index: 1000;
 }
 
+/* ---------------------------------------------------------------------------
+   FOOTER WRAPPER - To prevent overlap
+--------------------------------------------------------------------------- */
+.footer {
+  position: relative;
+  z-index: 9999;
+  background-color: var(--color-primary-light);
+}
 
-
+/* ---------------------------------------------------------------------------
+   FOOTER CONTENT
+--------------------------------------------------------------------------- */
 .footer-content {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
