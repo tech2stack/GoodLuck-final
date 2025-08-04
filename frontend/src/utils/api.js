@@ -1,13 +1,17 @@
 // src/api/api.js
+
 import axios from 'axios';
 
 // ✅ Automatically use local or deployed backend URL
-// This variable should be just the base domain/port, e.g., 'http://localhost:5000'
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+
+// Yahan par hum cache store karenge. Yeh object data ko store karega.
+const apiCache = {};
+// Aap yahan cache ka samay (expiry time) set kar sakte hain. 60000ms = 1 minute.
+const CACHE_EXPIRY_TIME = 600000;
 
 // Create an Axios instance
 const api = axios.create({
-    // The baseURL for the instance now correctly includes /api/v1
     baseURL: `${API_BASE_URL}/api/v1`, 
     withCredentials: true,
     headers: {
@@ -40,5 +44,37 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+// Ab hum yahan ek custom get() method banayenge jismein caching logic hogi
+const originalGet = api.get; // Original get method ko save kar lete hain
+
+api.get = async (url, config = {}) => {
+    // Cache mein entry ko check karein
+    const cacheKey = JSON.stringify({ url, params: config.params });
+    const cachedEntry = apiCache[cacheKey];
+
+    // Agar data cache mein maujood hai aur expire nahi hua hai
+    if (cachedEntry && (Date.now() - cachedEntry.timestamp < CACHE_EXPIRY_TIME)) {
+        console.log(`Cache se data use kiya: ${url}`);
+        return Promise.resolve({ data: cachedEntry.data });
+    }
+
+    // Agar data cache mein nahi hai ya expire ho gaya hai, toh network call karein
+    try {
+        const response = await originalGet(url, config);
+
+        // Naye data ko cache mein store karein aur timestamp record karein
+        apiCache[cacheKey] = {
+            data: response.data,
+            timestamp: Date.now()
+        };
+
+        return response;
+    } catch (error) {
+        // Error ko handle karein
+        return Promise.reject(error);
+    }
+};
+
 
 export default api;

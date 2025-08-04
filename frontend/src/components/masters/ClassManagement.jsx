@@ -1,7 +1,7 @@
 // src/components/masters/ClassManagement.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../utils/api';
-import FlashMessage from '../FlashMessage'; // Assuming FlashMessage is directly under src/components
+import useDataFetching from '../../hooks/useDataFetching'; // NEW: Import the custom hook
 import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 // Import new common components
@@ -14,11 +14,10 @@ import ConfirmationModal from '../common/ConfirmationModal';
 import '../../styles/Form.css'; // Generic form styles
 import '../../styles/Table.css'; // Generic table styles
 import '../../styles/Modal.css'; // Generic modal styles
-// import '../../styles/ClassManagement.css'; // Component-specific layout overrides
 import '../../styles/CommonLayout.css'; // Ensure CommonLayout is imported
 
 // Import the logo image directly
-import companyLogo from '../../assets/glbs-logo.jpg'; 
+import companyLogo from '../../assets/glbs-logo.jpg';
 
 // NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
 // If you are using npm, you'd do: npm install jspdf jspdf-autotable
@@ -28,25 +27,23 @@ import companyLogo from '../../assets/glbs-logo.jpg';
 
 
 const ClassManagement = ({ showFlashMessage }) => {
-    // State for managing list of classes
-    const [classes, setClasses] = useState([]);
+    // NEW: Use the custom hook to fetch all classes.
+    // The data is automatically managed, along with loading and error states.
+    const { data: classesData, loading, error, refetch } = useDataFetching('/classes');
+    const classes = classesData?.data?.classes || []; // Extract the classes array or default to an empty array
+
     // State for form inputs (for creating new or editing existing class)
     const [formData, setFormData] = useState({
         name: '',
         status: 'active', // Default status
     });
-    // State for loading indicators
-    const [loading, setLoading] = useState(false);
-    // State for managing local errors (e.g., form validation)
-    const [localError, setLocalError] = useState(null);
     // State to track if we are in edit mode and which class is being edited
     const [editingClassId, setEditingClassId] = useState(null);
 
     // States for confirmation modal
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [classToDeleteId, setClassToDeleteId] = useState(null);
-    // FIX: Correctly initialize setClassToDeleteName with useState
-    const [classToDeleteName, setClassToDeleteName] = useState(''); 
+    const [classToDeleteName, setClassToDeleteName] = useState('');
 
     // Ref for scrolling to the new item in the table
     const tableBodyRef = useRef(null);
@@ -69,74 +66,20 @@ const ClassManagement = ({ showFlashMessage }) => {
             minute: '2-digit',
             hour12: true // For AM/PM format
         };
-        // Ensure date is valid before formatting
         const date = new Date(dateString);
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
 
-    // --- Fetch Classes ---
-    const fetchClasses = useCallback(async (scrollToNew = false) => { // Added scrollToNew param
-        setLoading(true);
-        setLocalError(null); // Clear local errors
-        try {
-            const response = await api.get('/classes'); // API endpoint to get all classes
-            if (response.data.status === 'success') {
-                setClasses(response.data.data.classes);
-                // After fetching, ensure we are on a valid page (e.g., if items were deleted)
-                const totalPages = Math.ceil(response.data.data.classes.length / itemsPerPage);
-                if (currentPage > totalPages && totalPages > 0) {
-                    setCurrentPage(totalPages); // Go to last page if current page is now out of bounds
-                } else if (totalPages === 0) {
-                    setCurrentPage(1); // If no items, ensure page 1
-                }
-                
-                if (scrollToNew && tableBodyRef.current) {
-                    // Timeout to ensure DOM has updated with new data before scrolling
-                    setTimeout(() => {
-                        // For auto-scrolling to newly created items, ensure it's on the correct page
-                        const lastPageIndex = Math.ceil(response.data.data.classes.length / itemsPerPage);
-                        if (currentPage !== lastPageIndex) {
-                           setCurrentPage(lastPageIndex); // Move to the page where the new item exists
-                           // Set a second timeout to scroll AFTER the page has potentially changed
-                           setTimeout(() => {
-                               if (tableBodyRef.current.lastElementChild) {
-                                   tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                               } else {
-                                   tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                               }
-                           }, 50); // Small delay after page change
-                        } else {
-                            if (tableBodyRef.current.lastElementChild) {
-                                tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                            } else {
-                                tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                            }
-                        }
-                    }, 100); // Small initial delay for DOM update
-                }
-            } else {
-                setLocalError(response.data.message || 'Failed to fetch classes.');
-            }
-        } catch (err) {
-            console.error('Error fetching classes:', err);
-            setLocalError(err.response?.data?.message || 'Failed to load classes due to network error.');
-        } finally {
-            setLoading(false);
+    // NOTE: The useEffect to fetch data on component mount is now handled inside useDataFetching hook.
+    // We only need a useEffect to handle pagination when the data changes.
+    useEffect(() => {
+        const totalPages = Math.ceil(classes.length / itemsPerPage);
+        if (currentPage > totalPages && totalPages > 0) {
+            setCurrentPage(totalPages);
+        } else if (totalPages === 0) {
+            setCurrentPage(1);
         }
-    }, [currentPage]);
-
-    // Fetch classes on component mount
-    useEffect(() => {
-        fetchClasses();
-    }, [fetchClasses]);
-
-    // Debugging useEffect for PDF libraries (now less verbose, as it was confirmed working but for the deprecation warning)
-    useEffect(() => {
-        console.log("PDF Libraries Check (on mount):");
-        console.log("window.jspdf (global object):", typeof window.jspdf);
-        console.log("window.jspdf.jsPDF (constructor):", typeof window.jspdf?.jsPDF);
-    }, []);
-
+    }, [classes, itemsPerPage]);
 
     // --- Form Handling ---
     const handleChange = (e) => {
@@ -146,9 +89,6 @@ const ClassManagement = ({ showFlashMessage }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
-        setLocalError(null); // Clear local errors on submit
-
         try {
             let response;
             if (editingClassId) {
@@ -171,14 +111,12 @@ const ClassManagement = ({ showFlashMessage }) => {
             // After successful create/update, clear form, exit edit mode, and refetch classes
             setFormData({ name: '', status: 'active' });
             setEditingClassId(null);
-            fetchClasses(true); // Re-fetch and indicate to scroll for new items
+            // NEW: Use refetch from the hook to update the list
+            await refetch();
         } catch (err) {
             console.error('Error saving class:', err);
             const errorMessage = err.response?.data?.message || 'Failed to save class. Please check your input and ensure class name is unique.';
-            setLocalError(errorMessage); // Display local error for form-specific issues
             showFlashMessage(errorMessage, 'error'); // Also send to global flash message
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -186,14 +124,13 @@ const ClassManagement = ({ showFlashMessage }) => {
     const handleEdit = (classItem) => {
         setFormData({ name: classItem.name, status: classItem.status });
         setEditingClassId(classItem._id);
-        setLocalError(null); // Clear any previous local errors when starting edit
         window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to form
     };
 
     // Function to open confirmation modal
     const openConfirmModal = (classItem) => {
         setClassToDeleteId(classItem._id);
-        setClassToDeleteName(classItem.name); // This will now correctly call the state setter
+        setClassToDeleteName(classItem.name);
         setShowConfirmModal(true);
     };
 
@@ -206,25 +143,21 @@ const ClassManagement = ({ showFlashMessage }) => {
 
     // Function to confirm and proceed with deletion
     const confirmDelete = async () => {
-        setLoading(true);
-        setLocalError(null); // Clear local errors
         closeConfirmModal(); // Close modal immediately
 
         try {
             const response = await api.delete(`/classes/${classToDeleteId}`);
             if (response.status === 204) { // 204 No Content is successful deletion
                 showFlashMessage('Class deleted successfully!', 'success'); // Using parent's flash message
-                fetchClasses(); // Refetch classes to update the list (no scroll needed for delete)
+                // NEW: Use refetch from the hook to update the list
+                await refetch();
             } else {
                 throw new Error(response.data?.message || 'Failed to delete class.');
             }
         } catch (err) {
             console.error('Error deleting class:', err);
             const errorMessage = err.response?.data?.message || 'Failed to delete class.';
-            setLocalError(errorMessage); // Display local error for form-specific issues
             showFlashMessage(errorMessage, 'error'); // Also send to global flash message
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -277,151 +210,132 @@ const ClassManagement = ({ showFlashMessage }) => {
         const companyGST = "GST NO: 23EAVPP3772F1Z8";
         const companyLogoUrl = companyLogo; // Use the imported logo directly
         
-        // Function to generate the main report content (title, line, table, save)
-        // This function now accepts the dynamic startYPositionForTable as an argument
         const generateReportBody = (startYPositionForTable) => {
-            // Add a professional report title (centered, below company info)
             doc.setFontSize(18);
             doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30); // Dark gray for title
-            // Adjust Y position for the report title to be below company info
+            doc.setTextColor(30, 30, 30);
             doc.text("Class List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
 
-            // Add a line separator below the main title
             doc.setLineWidth(0.5);
-            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15); // Line spanning almost full width
+            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15);
 
-            // Update startYPositionForTable for autoTable
             const tableStartY = startYPositionForTable + 20;
 
-
             // Generate table data
-            const tableColumn = ["S.No.", "Class Name", "Status"];
+            const tableColumn = ["S.No.", "Class Name", "Status", "Add Date"]; // NEW: Add 'Add Date' column
             const tableRows = filteredClasses.map((classItem, index) => [
-                // S.No. is always index + 1 for the filtered data for PDF
                 index + 1, 
                 classItem.name,
                 classItem.status.charAt(0).toUpperCase() + classItem.status.slice(1),
-                formatDateWithTime(classItem.createdAt)
+                formatDateWithTime(classItem.createdAt) // NEW: Add creation date
             ]);
 
-            // Add the table to the document with professional styling
             doc.autoTable({
                 head: [tableColumn],
                 body: tableRows,
-                startY: tableStartY, // Use our dynamic start position
-                theme: 'plain', // Changed to 'plain' for a cleaner look like the reference PDF
+                startY: tableStartY,
+                theme: 'plain',
                 styles: {
                     font: 'helvetica',
                     fontSize: 10,
                     cellPadding: 3,
-                    textColor: [51, 51, 51], // Default text color for body
+                    textColor: [51, 51, 51],
                     valign: 'middle',
                     halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [240, 240, 240], // Light gray header
-                    textColor: [51, 51, 51], // Dark text for header
+                    fillColor: [240, 240, 240],
+                    textColor: [51, 51, 51],
                     fontStyle: 'bold',
-                    halign: 'center', // Center align header text
-                    valign: 'middle', // Vertically align header text
-                    lineWidth: 0.1, // Add a thin border to header cells
-                    lineColor: [200, 200, 200] // Light gray border
+                    halign: 'center',
+                    valign: 'middle',
+                    lineWidth: 0.1,
+                    lineColor: [200, 200, 200]
                 },
                 bodyStyles: {
-                    lineWidth: 0.1, // Add a thin border to body cells
-                    lineColor: [200, 200, 200] // Light gray border
+                    lineWidth: 0.1,
+                    lineColor: [200, 200, 200]
                 },
                 columnStyles: {
-                    0: { cellWidth: 15, halign: 'center' }, // S.No. column: narrow and centered
-                    1: { cellWidth: 'auto', halign: 'left' }, // Class Name column: auto width, left-aligned
-                    2: { halign: 'center' }, // Status column: centered
-                    3: { halign: 'center' } // Add Date column: centered
+                    0: { cellWidth: 15, halign: 'center' },
+                    1: { cellWidth: 'auto', halign: 'left' },
+                    2: { halign: 'center' },
+                    3: { halign: 'center' }
                 },
-                margin: { top: 10, right: 14, bottom: 10, left: 14 }, // Consistent margins
+                margin: { top: 10, right: 14, bottom: 10, left: 14 },
                 didDrawPage: function (data) {
-                    // Add footer on each page
                     doc.setFontSize(10);
-                    doc.setTextColor(100); // Gray color for footer text
+                    doc.setTextColor(100);
                     const pageCount = doc.internal.getNumberOfPages();
                     doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
                 }
             });
 
-            // Save the PDF
-            // The toLocaleDateString('en-CA') gives YYYY-MM-DD, then replace hyphens with underscores for filename
             doc.save(`Class_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`); 
             showFlashMessage('Class list downloaded as PDF!', 'success');
         };
 
-        // 5. **Handle Logo Loading Asynchronously:**
         const img = new Image();
-        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
+        img.crossOrigin = 'Anonymous';
         img.onload = () => {
-            const logoX = 14; // Left margin for logo
-            const logoY = 10; // Top margin for logo
-            const imgWidth = 25; // Changed: Reduced logo width
-            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+            const logoX = 14;
+            const logoY = 10;
+            const imgWidth = 25;
+            const imgHeight = (img.height * imgWidth) / img.width;
 
-            
-            // Add the logo at the top-left
             doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
             
-            // Add company name and details next to logo
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
-            doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
+            doc.text(companyName, logoX + imgWidth + 5, logoY + 5);
             
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
-            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12); // Address
-            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17); // Mobile
-            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22); // GST No.
+            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12);
+            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17);
+            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22);
 
-            // Calculate startYPositionForTable based on logo and company info block
-            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10); // Ensure enough space
-            generateReportBody(calculatedStartY); // Pass the calculated Y position
+            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10);
+            generateReportBody(calculatedStartY);
         };
 
         img.onerror = () => {
             console.warn("Logo image could not be loaded. Generating PDF without logo.");
-            // If logo fails, add only company info block
             doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
-            doc.text(companyName, 14, 20); // Company Name
+            doc.text(companyName, 14, 20);
             
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
-            doc.text(companyAddress, 14, 27); // Address
-            doc.text(companyMobile, 14, 32); // Mobile
-            doc.text(companyGST, 14, 37); // GST No.
+            doc.text(companyAddress, 14, 27);
+            doc.text(companyMobile, 14, 32);
+            doc.text(companyGST, 14, 37);
             
-            const calculatedStartY = 45; // Adjust startY since no logo
-            generateReportBody(calculatedStartY); // Pass the calculated Y position
+            const calculatedStartY = 45;
+            generateReportBody(calculatedStartY);
         };
 
-        img.src = companyLogoUrl; // This will now use the imported image data
+        img.src = companyLogoUrl;
 
-        // Add generation date/time to the top right (this part can run immediately)
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100); // Gray color for date text
+        doc.setTextColor(100, 100, 100);
         doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
     };
 
     // --- UI Rendering ---
     return (
-        <PageLayout title="Class Management" errorMessage={localError}>
+        <PageLayout title="Class Management" errorMessage={error ? (error.message || 'Failed to load classes.') : null}>
             {/* Table Section - Left Side */}
             <TableSection
                 sectionTitle="Existing Classes"
                 searchTerm={searchTerm}
                 onSearchChange={(e) => setSearchTerm(e.target.value)}
-                onDownloadPdf={downloadPdf} // Pass the updated downloadPdf function
+                onDownloadPdf={downloadPdf}
                 loading={loading}
                 data={filteredClasses}
                 renderTableContent={() => (
@@ -514,7 +428,6 @@ const ClassManagement = ({ showFlashMessage }) => {
                             onClick={() => {
                                 setEditingClassId(null);
                                 setFormData({ name: '', status: 'active' });
-                                setLocalError(null); // Clear error on cancel
                             }}
                             disabled={loading}
                         >

@@ -140,7 +140,7 @@ function App() {
         // Simulate loading time for preloader
         const timer = setTimeout(() => {
             setIsLoading(false);
-        }, 1500);
+        }, 10);
 
         // Event listeners for online/offline status
         const handleOnline = () => setIsOnline(true);
