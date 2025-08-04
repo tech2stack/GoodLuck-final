@@ -38,7 +38,8 @@ if (process.env.NODE_ENV === 'production') {
     }
     // Also allow common localhost ports for frontend development servers
     allowedOrigins.push('http://localhost:3000'); // Common React dev server default
-    allowedOrigins.push('http://localhost:5173'); // Common Vite dev server default
+    allowedOrigins.push('http://localhost:5173');
+    allowedOrigins.push('https://goodluckstore.tech2stack.com/');// Common Vite dev server default
     // If your backend itself needs to make requests to itself (e.g., for testing),
     // you might include its own localhost URL, but typically not needed for frontend CORS.
     // allowedOrigins.push(`http://localhost:${process.env.PORT || 5000}`); 
