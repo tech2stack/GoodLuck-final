@@ -24,7 +24,8 @@
 /* ================== Sidebar Styles ================== */
 .sidebar {
     position: fixed;
-    top: 90px; /* Positions the sidebar below the fixed header */
+    /* साइडबार का top हमेशा 60px पर फिक्स रहेगा ताकि यह हेडर के ठीक नीचे से शुरू हो */
+    top: 60px;
     left: 0;
     width: 250px;
     height: calc(100vh - 60px); /* Makes sidebar full height below the header */
@@ -33,8 +34,8 @@
     transition: all 0.3s ease;
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
     display: flex;
-    flex-direction: column;
-    z-index: 1500; /* Sidebar is above the content but below the header */
+    flex-direction: row;
+    z-index: 1500;
 }
 
 /* Collapsed state for sidebar */
@@ -54,7 +55,7 @@
 /* User greeting */
 .user-greeting {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     overflow: hidden;
     white-space: nowrap;
 }
@@ -160,39 +161,63 @@
 
 /* ================== Main Content Area ================== */
 .main-content-wrapper {
-    margin-left: 250px; /* Space for the sidebar */
-    padding: 30px 2rem 2rem 2rem; /* Top padding for the header, then normal padding */
+    /* अब main content का margin-left हमेशा 80px रहेगा, ताकि गैप इमेज 2 जैसा हो */
+    margin-left: 80px;
+    padding: 30px 2rem 2rem 2rem;
     transition: margin-left 0.3s ease;
 }
 
-.main-content-wrapper.sidebar-collapsed {
-    margin-left: 80px; /* Adjusted space for collapsed sidebar */
-}
+/* यह क्लास अब ज़रूरी नहीं है क्योंकि मार्जिन ऊपर फिक्स हो गया है */
+/* .main-content-wrapper.sidebar-collapsed {
+    margin-left: 80px;
+    padding-left: 1.5rem;
+} */
 
 .dashboard-main-content {
     max-width: 100%;
 }
 
-/* ================== Responsiveness (Mobile) ================== */
+/* ================== Responsiveness (Mobile & Tablet) ================== */
+/* ================== Responsiveness (Mobile & Tablet) ================== */
 @media (max-width: 768px) {
     .sidebar {
-        width: 100%;
+        /* 👇️ मोबाइल पर साइडबार की चौड़ाई 180px कर दी गई है ताकि आइकॉन साफ़ दिखें */
+        width: 180px;
         position: fixed;
+        /* 👇️ टॉप को 60px पर सेट किया गया है ताकि हेडर के नीचे कोई गैप न हो */
         top: 60px;
-        transform: translateX(-100%);
-        box-shadow: none;
+        transform: translateX(0);
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
         height: calc(100vh - 60px);
     }
-
-    .sidebar.mobile-visible {
-        transform: translateX(0);
-        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+    
+    /* जब साइडबार कोलैप्स होगा, तब भी यह 80px रहेगा */
+    .sidebar.collapsed {
+        width: 80px;
     }
 
     .main-content-wrapper {
-        margin-left: 0;
-        padding-top: 80px;
+        /* 👇️ मार्जिन साइडबार की चौड़ाई के हिसाब से 180px एडजस्ट होगा */
+        margin-left: 180px;
+        /* 👇️ padding-top को हेडर की ऊंचाई के बराबर 60px रखा गया है */
+        padding-top: 60px;
         padding-left: 0;
         padding-right: 0;
     }
+
+    /* जब साइडबार कोलैप्स होगा तो कंटेंट का मार्जिन 80px हो जाएगा */
+    .main-content-wrapper.sidebar-collapsed {
+        margin-left: 80px;
+    }
+
+
+
+
+
+    /* main function dont delete*/
+    @media (max-width: 900px) {
+    .dashboard-container {
+        flex-direction: row;
+    }
+}
 }
