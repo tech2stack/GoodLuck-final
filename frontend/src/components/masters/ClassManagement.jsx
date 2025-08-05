@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../utils/api';
 import useDataFetching from '../../hooks/useDataFetching'; // NEW: Import the custom hook
-import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaSpinner } from 'react-icons/fa'; // Added FaSpinner
+import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 // Import new common components
 import PageLayout from '../common/PageLayout';
@@ -29,7 +29,7 @@ import companyLogo from '../../assets/glbs-logo.jpg';
 const ClassManagement = ({ showFlashMessage }) => {
     // NEW: Use the custom hook to fetch all classes.
     // The data is automatically managed, along with loading and error states.
-    const { data: classesData, loading: isTableLoading, error, refetch } = useDataFetching('/classes');
+    const { data: classesData, loading, error, refetch } = useDataFetching('/classes');
     const classes = classesData?.data?.classes || []; // Extract the classes array or default to an empty array
 
     // State for form inputs (for creating new or editing existing class)
@@ -44,9 +44,6 @@ const ClassManagement = ({ showFlashMessage }) => {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [classToDeleteId, setClassToDeleteId] = useState(null);
     const [classToDeleteName, setClassToDeleteName] = useState('');
-
-    // State for local form and modal loading
-    const [isSubmitting, setIsSubmitting] = useState(false); // NEW: For form submission and deletion loading
 
     // Ref for scrolling to the new item in the table
     const tableBodyRef = useRef(null);
@@ -92,8 +89,6 @@ const ClassManagement = ({ showFlashMessage }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setIsSubmitting(true); // NEW: Form submit ke dauran loading state ko true karein
-
         try {
             let response;
             if (editingClassId) {
@@ -122,8 +117,6 @@ const ClassManagement = ({ showFlashMessage }) => {
             console.error('Error saving class:', err);
             const errorMessage = err.response?.data?.message || 'Failed to save class. Please check your input and ensure class name is unique.';
             showFlashMessage(errorMessage, 'error'); // Also send to global flash message
-        } finally {
-            setIsSubmitting(false); // NEW: Request poora hone par loading state ko false karein
         }
     };
 
@@ -150,7 +143,6 @@ const ClassManagement = ({ showFlashMessage }) => {
 
     // Function to confirm and proceed with deletion
     const confirmDelete = async () => {
-        setIsSubmitting(true); // NEW: Deletion ke dauran loading state ko true karein
         closeConfirmModal(); // Close modal immediately
 
         try {
@@ -166,8 +158,6 @@ const ClassManagement = ({ showFlashMessage }) => {
             console.error('Error deleting class:', err);
             const errorMessage = err.response?.data?.message || 'Failed to delete class.';
             showFlashMessage(errorMessage, 'error'); // Also send to global flash message
-        } finally {
-            setIsSubmitting(false); // NEW: Request poora hone par loading state ko false karein
         }
     };
 
@@ -220,21 +210,21 @@ const ClassManagement = ({ showFlashMessage }) => {
         const companyGST = "GST NO: 23EAVPP3772F1Z8";
         const companyLogoUrl = companyLogo; // Use the imported logo directly
         
-        // --- Add headers and footers to all pages, and generate the table ---
         const generateReportBody = (startYPositionForTable) => {
             doc.setFontSize(18);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
-            doc.text("Class List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' });
+            doc.text("Class List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
+
             doc.setLineWidth(0.5);
             doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15);
-            
+
             const tableStartY = startYPositionForTable + 20;
 
             // Generate table data
             const tableColumn = ["S.No.", "Class Name", "Status", "Add Date"]; // NEW: Add 'Add Date' column
             const tableRows = filteredClasses.map((classItem, index) => [
-                index + 1,
+                index + 1, 
                 classItem.name,
                 classItem.status.charAt(0).toUpperCase() + classItem.status.slice(1),
                 formatDateWithTime(classItem.createdAt) // NEW: Add creation date
@@ -280,171 +270,172 @@ const ClassManagement = ({ showFlashMessage }) => {
                     doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
                 }
             });
+
+            doc.save(`Class_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`); 
+            showFlashMessage('Class list downloaded as PDF!', 'success');
         };
 
-        doc.save(`Class_List_${new Date().toISOString().slice(0, 10)}.pdf`);
-        showFlashMessage('PDF exported successfully!', 'success');
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+            const logoX = 14;
+            const logoY = 10;
+            const imgWidth = 25;
+            const imgHeight = (img.height * imgWidth) / img.width;
+
+            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
+            
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, logoX + imgWidth + 5, logoY + 5);
+            
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12);
+            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17);
+            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22);
+
+            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10);
+            generateReportBody(calculatedStartY);
+        };
+
+        img.onerror = () => {
+            console.warn("Logo image could not be loaded. Generating PDF without logo.");
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text(companyName, 14, 20);
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50, 50, 50);
+            doc.text(companyAddress, 14, 27);
+            doc.text(companyMobile, 14, 32);
+            doc.text(companyGST, 14, 37);
+            
+            const calculatedStartY = 45;
+            generateReportBody(calculatedStartY);
+        };
+
+        img.src = companyLogoUrl;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
     };
 
+    // --- UI Rendering ---
     return (
-        <PageLayout
-            headerTitle="Class Management"
-            headerLogo={companyLogo}
-            showFlashMessage={showFlashMessage}
-            onAddNew={() => {
-                setFormData({ name: '', status: 'active' });
-                setEditingClassId(null);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            onExportPdf={downloadPdf}
-            buttonText="Add New Class"
-        >
-            {/* Form Section */}
-            <FormSection title={editingClassId ? 'Edit Class' : 'Add New Class'} error={error}>
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label htmlFor="name" className="form-label">Class Name</label>
-                        <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            placeholder="e.g., Class 10"
-                            required
-                            className="form-input"
-                            disabled={isSubmitting} // NEW: isSubmitting ke dauran input ko disable karein
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="status" className="form-label">Status</label>
-                        <select
-                            id="status"
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            className="form-input"
-                            disabled={isSubmitting} // NEW: isSubmitting ke dauran select ko disable karein
-                        >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
-                    <div className="form-actions">
-                        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                            {isSubmitting ? (
-                                <FaSpinner className="btn-icon-mr animate-spin" />
-                            ) : (
-                                editingClassId ? 'Update Class' : 'Add Class'
-                            )}
-                        </button>
-                        {editingClassId && (
-                            <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={() => {
-                                    setEditingClassId(null);
-                                    setFormData({ name: '', status: 'active' });
-                                }}
-                                disabled={isSubmitting} // NEW: isSubmitting ke dauran cancel button ko disable karein
-                            >
-                                Cancel Edit
-                            </button>
-                        )}
-                    </div>
-                </form>
-            </FormSection>
-
-            {/* Table Section */}
+        <PageLayout title="Class Management" errorMessage={error ? (error.message || 'Failed to load classes.') : null}>
+            {/* Table Section - Left Side */}
             <TableSection
-                title="Existing Classes"
+                sectionTitle="Existing Classes"
                 searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-            >
-                {/* Conditional rendering for loading state */}
-                {isTableLoading && (
-                    <div className="flex justify-center items-center py-8">
-                        <FaSpinner className="animate-spin text-4xl text-blue-500" />
-                    </div>
-                )}
-                {/* Conditional rendering for error state */}
-                {error && !isTableLoading && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md mb-4" role="alert">
-                        <p>{error.message || 'Failed to fetch classes. Please try again.'}</p>
-                    </div>
-                )}
-                {/* Conditional rendering for no data */}
-                {!isTableLoading && !error && filteredClasses.length === 0 && (
-                    <p className="text-center text-gray-500 py-8">No classes found.</p>
-                )}
-                {/* Conditional rendering for the table itself */}
-                {!isTableLoading && !error && filteredClasses.length > 0 && (
+                onSearchChange={(e) => setSearchTerm(e.target.value)}
+                onDownloadPdf={downloadPdf}
+                loading={loading}
+                data={filteredClasses}
+                renderTableContent={() => (
                     <>
-                        <div className="overflow-x-auto rounded-lg shadow-md">
-                            <table className="min-w-full bg-white">
-                                <thead className="bg-gray-800 text-white">
-                                    <tr>
-                                        <th className="py-3 px-6 text-left">Class Name</th>
-                                        <th className="py-3 px-6 text-left">Status</th>
-                                        <th className="py-3 px-6 text-left">Add Date</th>
-                                        <th className="py-3 px-6 text-center">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody ref={tableBodyRef} className="divide-y divide-gray-200">
-                                    {currentClasses.map((classItem) => (
-                                        <tr key={classItem._id} className="hover:bg-gray-50 transition duration-150">
-                                            <td className="py-4 px-6">{classItem.name}</td>
-                                            <td className="py-4 px-6">
-                                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${classItem.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                                    {classItem.status}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-6">{formatDateWithTime(classItem.createdAt)}</td>
-                                            <td className="py-4 px-6 text-center">
-                                                <button
-                                                    onClick={() => handleEdit(classItem)}
-                                                    className="text-blue-600 hover:text-blue-900 mr-4 transition duration-150"
-                                                    title="Edit"
-                                                >
-                                                    <FaEdit />
-                                                </button>
-                                                <button
-                                                    onClick={() => openConfirmModal(classItem)}
-                                                    className="text-red-600 hover:text-red-900 transition duration-150"
-                                                    title="Delete"
-                                                >
-                                                    <FaTrashAlt />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        {/* Pagination controls */}
-                        {totalPages > 1 && (
-                            <div className="flex justify-center items-center mt-4 space-x-2">
-                                <button
-                                    onClick={goToPrevPage}
-                                    disabled={currentPage === 1}
-                                    className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50 transition"
-                                >
-                                    <FaChevronLeft />
-                                </button>
-                                <span className="text-gray-700">Page {currentPage} of {totalPages}</span>
-                                <button
-                                    onClick={goToNextPage}
-                                    disabled={currentPage === totalPages}
-                                    className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50 transition"
-                                >
-                                    <FaChevronRight />
-                                </button>
-                            </div>
-                        )}
+                        <thead>
+                            <tr>
+                                <th>S.No.</th>
+                                <th>Class Name</th>
+                                <th>Status</th>
+                                <th>Add Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody ref={tableBodyRef}>
+                            {currentClasses.map((classItem, index) => (
+                                <tr key={classItem._id}>
+                                    <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                    <td>{classItem.name}</td>
+                                    <td>
+                                        <span className={`status-badge ${classItem.status}`}>
+                                            {classItem.status.charAt(0).toUpperCase() + classItem.status.slice(1)}
+                                        </span>
+                                    </td>
+                                    <td>{formatDateWithTime(classItem.createdAt)}</td>
+                                    <td className="actions-column">
+                                        <button onClick={() => handleEdit(classItem)} className="action-icon-button edit-button" title="Edit Class">
+                                            <FaEdit />
+                                        </button>
+                                        <button onClick={() => openConfirmModal(classItem)} className="action-icon-button delete-button" title="Delete Class">
+                                            <FaTrashAlt />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
                     </>
                 )}
-            </TableSection>
+                currentPage={currentPage}
+                totalPages={totalPages}
+                goToPrevPage={goToPrevPage}
+                goToNextPage={goToNextPage}
+                itemsPerPage={itemsPerPage}
+                tableBodyRef={tableBodyRef}
+            />
 
+            {/* Form Section - Right Side */}
+            <FormSection
+                sectionTitle={editingClassId ? 'Edit Class' : 'Add Class'}
+                onSubmit={handleSubmit}
+            >
+                <div className="form-group">
+                    <label htmlFor="name" className="form-label">Class Name:</label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="e.g., Class 1, 10th Standard"
+                        required
+                        disabled={loading}
+                        className="form-input"
+                    />
+                </div>
+
+                <div className="form-group">
+                    <label htmlFor="status" className="form-label">Status:</label>
+                    <select
+                        id="status"
+                        name="status"
+                        value={formData.status}
+                        onChange={handleChange}
+                        disabled={loading}
+                        className="form-select"
+                    >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+
+                <div className="form-actions">
+                    <button type="submit" className="btn btn-primary" disabled={loading}>
+                        {loading ? (editingClassId ? 'Updating...' : 'Adding...') : (editingClassId ? 'Update Class' : 'Add Class')}
+                        <FaPlusCircle className="ml-2" />
+                    </button>
+                    {editingClassId && (
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => {
+                                setEditingClassId(null);
+                                setFormData({ name: '', status: 'active' });
+                            }}
+                            disabled={loading}
+                        >
+                            Cancel Edit
+                        </button>
+                    )}
+                </div>
+            </FormSection>
 
             {/* Confirmation Modal */}
             <ConfirmationModal
@@ -455,7 +446,7 @@ const ClassManagement = ({ showFlashMessage }) => {
                 onCancel={closeConfirmModal}
                 confirmText="Delete"
                 cancelText="Cancel"
-                loading={isSubmitting} // NEW: Modal ke loading state ko isSubmitting se jodein
+                loading={loading}
             />
         </PageLayout>
     );
