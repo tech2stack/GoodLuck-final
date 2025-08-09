@@ -714,18 +714,18 @@ const CustomerManagement = ({ showFlashMessage }) => {
     // --- UI Rendering ---
     return (
         <div className="customer-management-container">
-            <h2 className="page-section-title">Customer Management</h2> {/* Renamed class */}
+            <h2 className="page-section-title">Customer Management</h2> 
 
             {localError && (
                 <p className="error-message text-center">
-                    <FaTimesCircle className="icon error-icon mr-2" /> {localError} {/* Added icon and margin utility */}
+                    <FaTimesCircle className="icon error-icon mr-2" /> {localError}
                 </p>
             )}
 
-            {/* Main content layout for two columns */}
+           
             <div className="main-content-layout">
                 {/* Customer List Table - FIRST CHILD */}
-                <div className="table-container"> {/* Renamed class from table-section to table-container (for the card) */}
+                <div className="table-container"> 
                     <h3 className="table-title">Existing Customers</h3>
 
                     {/* Search and Filter Section */}
@@ -752,7 +752,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 value={selectedBranchFilter}
                                 onChange={(e) => {
                                     setSelectedBranchFilter(e.target.value);
-                                    setCurrentPage(1); // Reset to first page on filter change
+                                    setCurrentPage(1);
                                 }}
                                 className="filter-select"
                                 disabled={loading || branches.length === 0}
@@ -767,19 +767,19 @@ const CustomerManagement = ({ showFlashMessage }) => {
                         </div>
 
                         <button onClick={downloadPdf} className="download-pdf-btn" disabled={loading || customers.length === 0}>
-                            <FaFilePdf className="icon mr-2" /> Download PDF {/* Renamed class */}
+                            <FaFilePdf className="icon mr-2" /> Download PDF
                         </button>
                     </div>
 
                     {loading && customers.length === 0 ? (
                         <p className="loading-state text-center">
-                            <FaSpinner className="icon animate-spin mr-2" /> Loading customers... {/* Added icon class */}
+                            <FaSpinner className="icon animate-spin mr-2" /> Loading customers... 
                         </p>
                     ) : customers.length === 0 ? (
                         <p className="no-data-message text-center">No customers found matching your criteria. Start by adding one!</p>
                     ) : (
-                        <div className="table-scroll-wrapper"> {/* Renamed class for table overflow */}
-                            <table className="app-table"> {/* Renamed class from data-table to app-table */}
+                        <div className="table-scroll-wrapper"> 
+                            <table className="app-table"> 
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>
@@ -869,7 +869,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     )}
                 </div>
 
-                {/* Customer Creation/Update Form - SECOND CHILD */}
+               
                 <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
                         <h3 className="form-title">{editingCustomerId ? 'Edit Customer' : 'Add New Customer'}</h3>

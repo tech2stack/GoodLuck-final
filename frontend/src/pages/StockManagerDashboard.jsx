@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-
-// UI Components and Utilities
 import FlashMessage from '../components/FlashMessage';
 import StockManagerDashboardSummary from '../components/dashboard/StockManagerDashboardSummary';
 import ClassManagement from '../components/masters/ClassManagement';
@@ -16,9 +14,9 @@ import CustomerManagement from '../components/masters/CustomerManagement';
 import TransportManagement from '../components/masters/TransportManagement';
 import PendingBookManagement from '../components/PendingBookManagement';
 import CreateSetManagement from '../components/masters/CreateSetManagement';
-import SidebarStockManagerDashboard from '../components/SidebarStockManagerDashboard'; // Correct import path
+import SidebarStockManagerDashboard from '../components/SidebarStockManagerDashboard';
 
-// Stylesheets
+
 import '../styles/Dashboard.css';
 import '../styles/StockManagerDashboard.css';
 
@@ -94,6 +92,8 @@ const StockManagerDashboard = ({ showFlashMessage: propShowFlashMessage }) => {
 
     return (
         <>
+            <span className="spacer">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+            
             <div className="dashboard-container">
                 <SidebarStockManagerDashboard
                     userData={userData}

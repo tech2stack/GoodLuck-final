@@ -304,3 +304,19 @@
 
     
 }
+
+@media (max-width: 768px) {
+  .spacer {
+    display: none; /* Tablet par .spacer ko hide karega */
+  }
+}
+
+/*
+  Media query for Mobile phones (max-width: 480px)
+  Aap apne project ki zaroorat ke hisaab se width adjust kar sakte hain.
+*/
+@media (max-width: 480px) {
+  .spacer {
+    display: none; /* Mobile par bhi .spacer ko hide karega */
+  }
+}

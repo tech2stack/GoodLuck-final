@@ -432,7 +432,7 @@ const LanguageManagement = ({ showFlashMessage }) => {
                         <p className="no-data-message text-center">No languages found matching your criteria. Start by adding one!</p>
                     ) : (
                         <>
-                            <table className="app-table"> {/* Use app-table as defined in Table.css */}
+                            <table className="app-table">
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>

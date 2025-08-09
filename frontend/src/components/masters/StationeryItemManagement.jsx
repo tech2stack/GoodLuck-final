@@ -75,14 +75,14 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
             const response = await api.get('/stationery-items'); // API endpoint to get all stationery items
             if (response.data.status === 'success') {
                 setStationeryItems(response.data.data.stationeryItems);
-                
+
                 const totalPagesCalculated = Math.ceil(response.data.data.stationeryItems.length / itemsPerPage);
                 if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
                     setCurrentPage(totalPagesCalculated);
                 } else if (response.data.data.stationeryItems.length === 0) {
                     setCurrentPage(1);
                 }
-                
+
                 if (scrollToNew && tableBodyRef.current) {
                     setTimeout(() => {
                         const lastPageIndex = Math.ceil(response.data.data.stationeryItems.length / itemsPerPage);
@@ -254,7 +254,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         const lowercasedSearchTerm = searchTerm.toLowerCase();
         return stationeryItems.filter(item => {
             // Safely access properties and convert to string before toLowerCase()
-            const itemName = item.itemName ? String(item.itemName).toLowerCase() : ''; 
+            const itemName = item.itemName ? String(item.itemName).toLowerCase() : '';
             const price = item.price !== undefined && item.price !== null ? String(item.price).toLowerCase() : '';
             const status = item.status ? String(item.status).toLowerCase() : '';
 
@@ -293,7 +293,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         }
 
         const doc = new window.jspdf.jsPDF('portrait'); // 'portrait' is default, can be 'landscape'
-        
+
         if (typeof doc.autoTable !== 'function') {
             showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
             console.error("PDF generation failed: doc.autoTable is not a function. Ensure jspdf.plugin.autotable.min.js is correctly linked and loaded AFTER jspdf.umd.min.js.");
@@ -306,7 +306,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         const companyMobile = "Mobile Number: 7024136476";
         const companyGST = "GST NO: 23EAVPP3772F1Z8";
         const companyLogoUrl = companyLogo; // Use the imported logo directly
-        
+
         // Function to generate the main report content (title, line, table, save)
         // This function now accepts the dynamic startYPositionForTable as an argument
         const generateReportBody = (startYPositionForTable) => {
@@ -315,7 +315,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30); // Dark gray for title
             // Adjust Y position for the report title to be below company info
-            doc.text("Stationery Item List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
+            doc.text("Stationery Item List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' });
 
             // Add a line separator below the main title
             doc.setLineWidth(0.5);
@@ -332,8 +332,8 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
             filteredItems.forEach((item, index) => {
                 // Ensure item.price is a valid number before formatting
                 const formattedPrice = typeof item.price === 'number' && !isNaN(item.price)
-                                        ? `Rs ${item.price.toFixed(2)}` 
-                                        : 'N/A'; 
+                                        ? `Rs ${item.price.toFixed(2)}`
+                                        : 'N/A';
 
                 // Explicitly convert all data points to string and trim any leading/trailing whitespace
                 const itemData = [
@@ -400,16 +400,16 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
             const imgWidth = 25; // Changed: Reduced logo width
             const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
 
-            
+
             // Add the logo at the top-left
-            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
-            
+            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight);
+
             // Add company name and details next to logo
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
             doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
-            
+
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
@@ -429,14 +429,14 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
             doc.text(companyName, 14, 20); // Company Name
-            
+
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
             doc.text(companyAddress, 14, 27); // Address
             doc.text(companyMobile, 14, 32); // Mobile
             doc.text(companyGST, 14, 37); // GST No.
-            
+
             const calculatedStartY = 45; // Adjust startY since no logo
             generateReportBody(calculatedStartY); // Pass the calculated Y position
         };
@@ -496,8 +496,9 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                     ) : filteredItems.length === 0 ? (
                         <p className="no-data-message text-center">No stationery items found matching your criteria. Start by adding one!</p>
                     ) : (
-                        <div className="table-scroll-wrapper"> {/* RENAMED from table-container to table-scroll-wrapper */}
-                            <table className="app-table"> {/* RENAMED from data-table to app-table */}
+                        <div className="table-scroll-wrapper">
+                            <table className="app-table">
+                               
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>
@@ -567,12 +568,11 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                     )}
                 </div>
 
-                {/* Stationery Item Creation/Update Form */}
-                {/* This is the second child, so it will appear on the right with flex-direction: row */}
+               
                 <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
                         <h3 className="form-title">{editingItemId ? 'Edit Stationery Item' : 'Add New Stationery Item'}</h3>
-                        
+
                         <div className="form-group">
                             <label htmlFor="itemName">Item's Name:</label>
                             <input
