@@ -167,58 +167,69 @@ const SidebarStockManagerDashboard = ({
 
     return (
         <aside
-  className={`sticky top-[60px] left-0 bg-[#2c3e50] text-gray-200 transition-all duration-300 ease-in-out z-30 ${
-    isSidebarCollapsed ? 'w-20' : 'w-64'
-  } ${isMobile ? 'mobile-sidebar' : ''} overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-transparent`}
+  className={`sticky top-[60px] left-0 bg-[#2c3e50] text-gray-200 transition-all duration-300 ease-in-out z-30
+    ${isSidebarCollapsed ? 'w-50' : 'w-64'}
+    ${isMobile ? 'mobile-sidebar' : ''}
+    overflow-y-auto overflow-x-scroll scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-transparent`}
   style={{ maxHeight: 'calc(100vh - 60px)' }}
 >
+  <div className="flex items-center justify-between p-4 border-b border-gray-600">
+    {!isSidebarCollapsed && !isMobile && (
+      <div className="flex flex-col overflow-hidden whitespace-nowrap">
+        <h3 className="text-xl font-semibold text-white">Stock Manager</h3>
+        <p className="text-sm text-gray-400">Welcome, {userData.name || userData.email}!</p>
+      </div>
+    )}
+    <button
+      className="p-2 text-white transition-colors duration-200 hover:text-gray-400 focus:outline-none"
+      onClick={() => setIsSidebarCollapsed(prev => !prev)}
+    >
+      {isSidebarCollapsed ? <FaBars className="text-xl" /> : <FaTimes className="text-xl" />}
+    </button>
+  </div>
 
-            <div className="flex items-center justify-between p-4 border-b border-gray-600">
-                {!isSidebarCollapsed && !isMobile && (
-                    <div className="flex flex-col overflow-hidden whitespace-nowrap">
-                        <h3 className="text-xl font-semibold text-white">Stock Manager</h3>
-                        <p className="text-sm text-gray-400">Welcome, {userData.name || userData.email}!</p>
-                    </div>
-                )}
-                <button
-                    className="p-2 text-white transition-colors duration-200 hover:text-gray-400 focus:outline-none"
-                    onClick={() => setIsSidebarCollapsed(prev => !prev)}
-                >
-                    {isSidebarCollapsed ? <FaBars className="text-xl" /> : <FaTimes className="text-xl" />}
-                </button>
+  <nav className="flex-grow p-4">
+    <ul className="space-y-1">
+      <li>
+        <button
+          className={`flex items-left w-full px-4 py-3 text-sm rounded-lg transition-colors duration-200
+            ${activeView === 'dashboard' ? 'bg-[#34495e] text-white' : 'hover:bg-gray-700'}`}
+          onClick={() => handleOptionClick('dashboard')}
+        >
+          <FaChartBar className="text-lg min-w-[1.5rem] mr-3" />
+          {!isSidebarCollapsed && !isMobile && <span className="truncate">Dashboard Summary</span>}
+        </button>
+      </li>
+
+      {sections.map(({ title, icon: Icon, ref, toggle, show, items }) => (
+        <li key={title} className="relative" ref={ref}>
+          <button
+            className={`flex items-flex-start justify-between w-full px-4 py-3 text-sm rounded-lg transition-colors duration-200
+              ${show ? 'bg-[#34495e] text-white' : 'hover:bg-gray-700'}`}
+            onClick={toggle}
+          >
+            <div className="flex items-center">
+              <Icon className="text-lg min-w-[1.5rem] mr-3" />
+              {!isSidebarCollapsed && !isMobile && <span className="truncate">{title}</span>}
             </div>
+            {!isSidebarCollapsed && !isMobile && (
+              <FaChevronDown
+                className={`transform transition-transform duration-200 ${show ? 'rotate-180' : ''}`}
+              />
+            )}
+          </button>
+          {show && renderDropdown(items)}
+        </li>
+      ))}
+    </ul>
+  </nav>
+</aside>
 
-            <nav className="flex-grow p-4">
-                <ul className="space-y-1">
-                    <li>
-                        <button
-                            className={`flex items-center w-full px-4 py-3 text-sm rounded-lg transition-colors duration-200 ${activeView === 'dashboard' ? 'bg-[#34495e] text-white' : 'hover:bg-gray-700'}`}
-                            onClick={() => handleOptionClick('dashboard')}
-                        >
-                            <FaChartBar className="text-lg min-w-[1.5rem] mr-3" />
-                            {!isSidebarCollapsed && !isMobile && <span className="truncate">Dashboard Summary</span>}
-                        </button>
-                    </li>
-
-                    {sections.map(({ title, icon: Icon, ref, toggle, show, items }) => (
-                        <li key={title} className="relative" ref={ref}>
-                            <button
-                                className={`flex items-center justify-between w-full px-4 py-3 text-sm rounded-lg transition-colors duration-200 ${show ? 'bg-[#34495e] text-white' : 'hover:bg-gray-700'}`}
-                                onClick={toggle}
-                            >
-                                <div className="flex items-center">
-                                    <Icon className="text-lg min-w-[1.5rem] mr-3" />
-                                    {!isSidebarCollapsed && !isMobile && <span className="truncate">{title}</span>}
-                                </div>
-                                {!isSidebarCollapsed && !isMobile && <FaChevronDown className={`transform transition-transform duration-200 ${show ? 'rotate-180' : ''}`} />}
-                            </button>
-                            {show && renderDropdown(items)}
-                        </li>
-                    ))}
-                </ul>
-            </nav>
-        </aside>
     );
+   
+
+
+
 };
 
 export default SidebarStockManagerDashboard;

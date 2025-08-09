@@ -42,7 +42,15 @@
 .sidebar.collapsed {
     width: 80px;
 }
-
+.p-4 {
+    padding: 2.0rem !important;
+}
+.w-12 {
+    width: 5rem;
+}
+.h-12 {
+    height: 4rem;
+}
 /* Sidebar Header */
 .sidebar-header {
     display: flex;
@@ -177,47 +185,122 @@
     max-width: 100%;
 }
 
-/* ================== Responsiveness (Mobile & Tablet) ================== */
-/* ================== Responsiveness (Mobile & Tablet) ================== */
-@media (max-width: 768px) {
+/* ================== Small Mobile (<=480px) ================== */
+@media (max-width: 480px) {
     .sidebar {
-        /* 👇️ मोबाइल पर साइडबार की चौड़ाई 180px कर दी गई है ताकि आइकॉन साफ़ दिखें */
-        width: 180px;
+        /* Sidebar narrower for small mobile */
+        width: 150px;
         position: fixed;
-        /* 👇️ टॉप को 60px पर सेट किया गया है ताकि हेडर के नीचे कोई गैप न हो */
-        top: 60px;
+        top: 0; /* Sticks to top */
         transform: translateX(0);
         box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
-        height: calc(100vh - 60px);
+        height: 100vh;
     }
-    
-    /* जब साइडबार कोलैप्स होगा, तब भी यह 80px रहेगा */
+
+    /* Collapsed sidebar stays minimal */
     .sidebar.collapsed {
-        width: 80px;
+        width: 70px;
+    }
+
+    /* Stack dashboard vertically for small screens */
+    .dashboard-container {
+        flex-direction: column;
     }
 
     .main-content-wrapper {
-        /* 👇️ मार्जिन साइडबार की चौड़ाई के हिसाब से 180px एडजस्ट होगा */
-        margin-left: 180px;
-        /* 👇️ padding-top को हेडर की ऊंचाई के बराबर 60px रखा गया है */
+        margin-left: 150px;
         padding-top: 60px;
         padding-left: 0;
         padding-right: 0;
     }
 
-    /* जब साइडबार कोलैप्स होगा तो कंटेंट का मार्जिन 80px हो जाएगा */
+    /* Adjust when sidebar is collapsed */
     .main-content-wrapper.sidebar-collapsed {
-        margin-left: 80px;
+        margin-left: 70px;
+    }
+}
+
+/* ================== Large Mobile (<=768px) ================== */
+@media (max-width: 768px) {
+    .sidebar {
+        /* Slightly wider sidebar for large mobile */
+        width: 180px;
+        position: fixed;
+        top: 0;
+        transform: translateX(0);
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+        height: 100vh;
     }
 
+    .sidebar.collapsed {
+        width: 80px;
+    }
 
-
-
-
-    /* main function dont delete*/
-    @media (max-width: 900px) {
+    /* Horizontal dashboard layout */
     .dashboard-container {
         flex-direction: row;
     }
+
+    .main-content-wrapper {
+        margin-left: 180px;
+        padding-top: 60px;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .main-content-wrapper.sidebar-collapsed {
+        margin-left: 80px;
+    }
 }
+
+/* ================== Tablet (<=1024px) ================== */
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 200px; /* Wider for tablet */
+        position: fixed;
+        top: 60px; /* Below header */
+        transform: translateX(0);
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+        height: calc(100vh - 60px);
+    }
+
+    .sidebar.collapsed {
+        width: 90px;
+    }
+
+    .main-content-wrapper {
+        margin-left: 20px;
+        padding-top: 60px;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .main-content-wrapper.sidebar-collapsed {
+        margin-left: 90px;
+    }
+
+    /* Keep dashboard items in row for tablet */
+    .dashboard-container {
+        flex-direction: row;
+    }
+    .main-content,
+  .dashboard-container {
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+   
+@media (max-width: 1024px) {
+  .sidebar {
+    display: none !important;
+  }
+
+  .main-content {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+}
+
+
+    
 }

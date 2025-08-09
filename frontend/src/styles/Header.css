@@ -298,6 +298,7 @@
   .hamburger-icon {
     display: flex;
   }
+  
 
   .desktop-only {
     display: none !important;
@@ -419,3 +420,110 @@
     transform: translateY(-7px) rotate(-45deg);
   }
 }
+
+
+/* Show hamburger menu on tablets and mobiles (<= 1024px) */
+@media (max-width: 1024px) {
+  .hamburger-icon {
+    display: flex;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-only {
+    display: block;
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .nav-links-container {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: var(--color-primary-light);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--color-primary-darker);
+    border-radius: var(--border-radius-base);
+    z-index: 1000;
+    padding: 1rem 1.2rem;
+    min-width: 200px;
+  }
+
+  .nav-links-container.open {
+    display: flex;
+  }
+
+  .main-nav {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .main-nav a {
+    padding: 0.8rem 0.5rem;
+    width: 100%;
+    border-bottom: 1px solid var(--color-primary-darker);
+    font-size: 1rem;
+    text-align: left;
+    display: flex;
+    align-items: center;
+  }
+
+  .main-nav a:last-child {
+    border-bottom: none;
+  }
+
+  .main-nav a::after {
+    display: none;
+  }
+
+  .profile-mobile-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-primary-darker);
+  }
+
+  .mobile-user-label {
+    font-weight: bold;
+    color: var(--text-primary-dark);
+    padding: 0 0.5rem;
+  }
+
+  .mobile-nav-button {
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 1rem;
+    color: var(--text-primary-dark);
+    padding: 0.5rem 0.2rem;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+  }
+
+  .mobile-nav-button:hover {
+    background-color: var(--color-primary-medium);
+    color: var(--color-green-dark);
+  }
+
+  .mobile-nav-button svg {
+    margin-right: 0.5rem;
+    color: var(--text-secondary-dark);
+    vertical-align: middle;
+  }
+
+  .mobile-nav-button:hover svg {
+    color: var(--color-green);
+  }
+}
+
+
