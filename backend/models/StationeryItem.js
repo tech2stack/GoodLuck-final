@@ -9,6 +9,12 @@ const stationeryItemSchema = new mongoose.Schema({
         trim: true,
         maxlength: [200, 'Stationery item name cannot exceed 200 characters']
     },
+    // NEW: Add a category field to store the item's category
+    category: {
+        type: String,
+        required: [true, 'Category is required for the stationery item'],
+        enum: ['Notebooks', 'Covers', 'Plastic Items', 'Bags', 'Other Stationery'] // Restrict to these specific values
+    },
     price: {
         type: Number,
         required: [true, 'Price is required for the stationery item'],

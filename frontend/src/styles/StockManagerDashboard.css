@@ -42,9 +42,9 @@
 .sidebar.collapsed {
     width: 80px;
 }
-.p-4 {
+/* .p-4 {
     padding: 2.0rem !important;
-}
+} */
 .w-12 {
     width: 5rem;
 }
@@ -170,8 +170,9 @@
 /* ================== Main Content Area ================== */
 .main-content-wrapper {
     /* अब main content का margin-left हमेशा 80px रहेगा, ताकि गैप इमेज 2 जैसा हो */
-    margin-left: 80px;
-    padding: 30px 2rem 2rem 2rem;
+    /* margin-left: 80px; */
+    width:100%;
+    /* padding: 20px 2rem 2rem 2rem; */
     transition: margin-left 0.3s ease;
 }
 

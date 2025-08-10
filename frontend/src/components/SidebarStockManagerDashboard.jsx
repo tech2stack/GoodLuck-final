@@ -91,7 +91,7 @@ const SidebarStockManagerDashboard = ({
     }, []);
 
     const renderDropdown = (items) => (
-        <div className="mt-1 ml-6 space-y-1 bg-[#3a4e60] rounded-lg w-max min-w-[220px] z-50">
+        <div className="mt-1 space-y-1 bg-[#3a4e60] rounded-lg w-max  z-50">
             {items.map(({ key, icon: Icon, label }) => (
                 <button
                     key={key}

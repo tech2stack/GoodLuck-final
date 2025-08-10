@@ -11,7 +11,7 @@
 .book-catalog-management-container .section-title {
     font-size: 1.8rem; /* Smaller, more appropriate size for section title */
     color: #333333;
-    margin-bottom: 25px; /* Space below the title */
+    /* margin-bottom: 25px; Space below the title */
     text-align: center; /* Center the title */
     font-weight: 700;
 }

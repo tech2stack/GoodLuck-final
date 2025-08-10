@@ -84,9 +84,9 @@
     font-size: 1.25rem;
     font-weight: 600;
     color: #1f2937;
-    margin-bottom: 1rem;
+    /* margin-bottom: 1rem; */
     border-bottom: 1px solid #e5e7eb; /* gray-200 */
-    padding-bottom: 0.5rem;
+    /* padding-bottom: 0.5rem; */
 }
 
 /* Form Group Styles */
