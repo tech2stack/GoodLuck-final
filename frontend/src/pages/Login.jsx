@@ -93,7 +93,7 @@ const Login = () => {
     <div className="login-container">
       <div className="login-box">
         <LazyImage src={logo} alt="GoodLuck Logo" className="login-logo" />
-        <h2>Login</h2>
+        <h2 className="erp">SHARK ERP V 0.1</h2>
 
         {message && (
           <div className={`message ${message.includes('successful') ? 'success' : 'error'}`}>

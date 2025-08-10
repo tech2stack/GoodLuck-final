@@ -34,9 +34,11 @@
 
 .login-logo {
   width: 80px;
-  margin-bottom: 20px;
-  filter: drop-shadow(0 0 5px rgba(0,0,0,0.3));
+  margin: 0 auto 20px auto; /* top: 0, right: auto, bottom: 20px, left: auto */
+  display: block;
+  filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.3));
 }
+
 
 .login-box h2 {
   margin-bottom: 20px;
@@ -182,4 +184,19 @@
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 12px;
+}
+
+.erp-header {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center horizontally */
+  gap: 12px; /* Space between logo and text */
+  margin-bottom: 20px;
+}
+
+.erp {
+  color: red;
+  font-size: 22px;
+  font-weight: bolder;
+  margin: 0;
 }
