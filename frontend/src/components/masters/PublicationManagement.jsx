@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../utils/api'; // API utility for backend calls
 import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaTimes, FaSpinner } from 'react-icons/fa'; // Icons for UI
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 
 // Stylesheets (assuming these are already present and styled for consistency)
 import '../../styles/Form.css';
@@ -20,7 +21,9 @@ import companyLogo from '../../assets/glbs-logo.jpg';
 // import 'jspdf-autotable';
 
 
+
 const PublicationManagement = ({ showFlashMessage }) => {
+    const [isOpen, setIsOpen] = useState(false);
     // State for managing list of publications
     const [publications, setPublications] = useState([]);
     // State for managing list of cities for lookup/validation (not for dropdown anymore)
@@ -114,14 +117,14 @@ const PublicationManagement = ({ showFlashMessage }) => {
                     setTimeout(() => {
                         const lastPageIndex = Math.ceil(response.data.data.publications.length / itemsPerPage);
                         if (currentPage !== lastPageIndex) {
-                           setCurrentPage(lastPageIndex);
-                           setTimeout(() => {
+                            setCurrentPage(lastPageIndex);
+                            setTimeout(() => {
                                 if (tableBodyRef.current.lastElementChild) {
                                     tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
                                 } else {
                                     tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
                                 }
-                           }, 50);
+                            }, 50);
                         } else {
                             if (tableBodyRef.current.lastElementChild) {
                                 tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -246,9 +249,9 @@ const PublicationManagement = ({ showFlashMessage }) => {
             } else {
                 // Create new publication
                 // Include temporarily added subtitles (only send their names)
-                const newPublicationData = { 
-                    ...publicationData, 
-                    subtitles: newPublicationSubtitles.map(s => ({ name: s.name })) 
+                const newPublicationData = {
+                    ...publicationData,
+                    subtitles: newPublicationSubtitles.map(s => ({ name: s.name }))
                 };
                 response = await api.post('/publications', newPublicationData);
                 if (response.data.status === 'success') {
@@ -460,12 +463,12 @@ const PublicationManagement = ({ showFlashMessage }) => {
     // --- Search Filtering ---
     const filteredPublications = publications.filter(publicationItem =>
         publicationItem && (
-        publicationItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        publicationItem.personName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (publicationItem.city && publicationItem.city.name && publicationItem.city.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (publicationItem.mobileNumber && publicationItem.mobileNumber.includes(searchTerm)) ||
-        (publicationItem.gstin && publicationItem.gstin.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (Array.isArray(publicationItem.subtitles) && publicationItem.subtitles.some(sub => sub && sub.name && sub.name.toLowerCase().includes(searchTerm.toLowerCase())))
+            publicationItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            publicationItem.personName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (publicationItem.city && publicationItem.city.name && publicationItem.city.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (publicationItem.mobileNumber && publicationItem.mobileNumber.includes(searchTerm)) ||
+            (publicationItem.gstin && publicationItem.gstin.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (Array.isArray(publicationItem.subtitles) && publicationItem.subtitles.some(sub => sub && sub.name && sub.name.toLowerCase().includes(searchTerm.toLowerCase())))
         )
     );
 
@@ -656,7 +659,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
     // --- UI Rendering ---
     return (
         <div className="publication-management-container">
-            <h2 className="section-title">Publication Management</h2>
+            <h2 className="main-section-title">Publication Management</h2>
 
             {localError && (
                 <p className="error-message text-center">{localError}</p>
@@ -664,126 +667,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
 
             {/* Main content layout for two columns */}
             <div className="main-content-layout">
-                {/* Publication List Table - FIRST CHILD */}
-                <div className="table-section">
-                    {/* <h3 className="table-title">Existing Publications</h3> */}
-
-                    {/* Search and PDF Download Section */}
-                    <div className="table-controls">
-                        <div className="search-input-group">
-                            <input
-                                type="text"
-                                placeholder="Search by Name, Person, City, Mobile, GSTIN..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="search-input"
-                            />
-                            <FaSearch className="search-icon" />
-                        </div>
-                        <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredPublications.length === 0}>
-                            <FaFilePdf className="mr-2" /> Download PDF
-                        </button>
-                    </div>
-
-                    {loading && publications.length === 0 ? (
-                        <p className="loading-state">Loading publications...</p>
-                    ) : filteredPublications.length === 0 ? (
-                        <p className="no-data-message">No publications found matching your criteria. Start by adding one!</p>
-                    ) : (
-                        <div className="table-container"> {/* This div is for table overflow, not layout */}
-                            <table className="app-table">
-                                <thead>
-                                    <tr>
-                                        <th>S.No.</th><th>Name</th><th>Sub Title</th><th>Person</th><th>Address</th><th>City</th><th>Phone</th><th>Bank</th><th>Acc No.</th><th>IFSC</th><th>OTHER (GSTIN/Disc)</th><th>Add Date</th><th>Status</th><th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody ref={tableBodyRef}>
-                                    {currentPublications.map((pubItem, index) => (
-                                        <tr key={pubItem._id}>
-                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                            <td>{pubItem.name}</td>
-                                            <td>
-                                                {/* Display Subtitles */}
-                                                <div className="subtitle-list">
-                                                    {pubItem.subtitles && pubItem.subtitles.length > 0 ? (
-                                                        pubItem.subtitles.map(sub => (
-                                                            <span key={sub._id} className="subtitle-tag">
-                                                                {sub.name}
-                                                                <button
-                                                                    className="remove-subtitle-btn"
-                                                                    onClick={() => handleRemoveSubtitle(sub._id, pubItem._id, sub.name)}
-                                                                    title="Remove Subtitle"
-                                                                    disabled={loading}
-                                                                >
-                                                                    <FaTimes />
-                                                                </button>
-                                                            </span>
-                                                        ))
-                                                    ) : (
-                                                        <span>No subtitles</span>
-                                                    )}
-                                                    {/* Removed Add button from here */}
-                                                </div>
-                                            </td>
-                                            <td>{pubItem.personName}</td>
-                                            <td>{pubItem.address}</td>
-                                            <td>{pubItem.city ? pubItem.city.name : 'N/A'}</td>
-                                            <td>{pubItem.mobileNumber}</td>
-                                            <td>{pubItem.bank}</td>
-                                            <td>{pubItem.accountNumber}</td>
-                                            <td>{pubItem.ifsc}</td>
-                                            <td>
-                                                {pubItem.gstin && `GSTIN: ${pubItem.gstin}`}
-                                                {pubItem.gstin && pubItem.discount > 0 && <br />}
-                                                {pubItem.discount > 0 && `DISCOUNT: ${pubItem.discount}%`}
-                                            </td>
-                                            <td>{formatDateWithTime(pubItem.createdAt)}</td>
-                                            <td>
-                                                <span className={`status-badge ${pubItem.status}`}>
-                                                    {pubItem.status.charAt(0).toUpperCase() + pubItem.status.slice(1)}
-                                                </span>
-                                            </td>
-                                            <td className="actions-column">
-                                                <button
-                                                    onClick={() => handleEdit(pubItem)}
-                                                    className="action-icon-button edit-button"
-                                                    title="Edit Publication"
-                                                    disabled={loading}
-                                                >
-                                                    <FaEdit />
-                                                </button>
-                                                <button
-                                                    onClick={() => openConfirmModal(pubItem)}
-                                                    className="action-icon-button delete-button"
-                                                    title="Delete Publication"
-                                                    disabled={loading}
-                                                >
-                                                    {loading && publicationToDeleteId === pubItem._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-
-                            {/* Pagination Controls */}
-                            {totalPages > 1 && (
-                                <div className="pagination-controls">
-                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
-                                        <FaChevronLeft /> Previous
-                                    </button>
-                                    <span>Page {currentPage} of {totalPages}</span>
-                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
-                                        Next <FaChevronRight />
-                                    </button>
-                                </div>
-                            )}
-                            <div className="total-records text-center mt-2">
-                                Total Records: {filteredPublications.length}
-                            </div>
-                        </div>
-                    )}
-                </div>
 
                 {/* Publication Creation/Update Form - SECOND CHILD */}
                 <div className="form-container-card">
@@ -821,7 +704,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                             </div>
                         </div>
 
-                         {/* Display temporarily added subtitles for new publication OR existing for edited one */}
+                        {/* Display temporarily added subtitles for new publication OR existing for edited one */}
                         {(!editingPublicationId && newPublicationSubtitles.length > 0) || (editingPublicationId && selectedPublicationForSubtitle?.subtitles?.length > 0) ? (
                             <div className="form-group">
                                 <label>Subtitles:</label>
@@ -994,7 +877,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                             </div>
                         </div>
 
-                       
+
 
                         <div className="form-group">
                             <label htmlFor="status">Status:</label>
@@ -1028,6 +911,141 @@ const PublicationManagement = ({ showFlashMessage }) => {
                         </div>
                     </form>
                 </div>
+                {/* Publication List Table - FIRST CHILD */}
+                <div className="table-section">
+                    {/* <h3 className="table-title">Existing Publications</h3> */}
+
+                    {/* Search and PDF Download Section */}
+                    <div className="table-controls">
+                        <div className="search-input-group">
+                            <input
+                                type="text"
+                                placeholder="Search by Name, Person, City, Mobile, GSTIN..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="search-input"
+                            />
+                            <FaSearch className="search-icon" />
+                        </div>
+                        <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredPublications.length === 0}>
+                            <FaFilePdf className="mr-2" /> Download PDF
+                        </button>
+                    </div>
+
+                    {loading && publications.length === 0 ? (
+                        <p className="loading-state">Loading publications...</p>
+                    ) : filteredPublications.length === 0 ? (
+                        <p className="no-data-message">No publications found matching your criteria. Start by adding one!</p>
+                    ) : (
+                        <div className="table-container"> {/* This div is for table overflow, not layout */}
+                            <table className="app-table">
+                                <thead>
+                                    <tr>
+                                        <th>S.No.</th><th>Name</th><th>Sub Title</th><th>Person</th><th>Address</th><th>City</th><th>Phone</th><th>Bank</th><th>Acc No.</th><th>IFSC</th><th>OTHER (GSTIN/Disc)</th><th>Add Date</th><th>Status</th><th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody ref={tableBodyRef}>
+                                    {currentPublications.map((pubItem, index) => (
+                                        <tr key={pubItem._id}>
+                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td>{pubItem.name}</td>
+                                            <td>
+
+                                                {/* Display Subtitles */}
+                                                <div className="subtitle-list">
+                                                    <button
+                                                        className="toggle-subtitles-btn"
+                                                        onClick={() => setIsOpen(prev => !prev)}
+                                                    >
+                                                        {isOpen ? "Hide Subtitles" : "Show Subtitles"}
+                                                        {isOpen ? <FaChevronUp /> : <FaChevronDown />}
+                                                    </button>
+
+                                                    {isOpen && (
+                                                        <div className="subtitle-dropdown">
+                                                            {pubItem.subtitles && pubItem.subtitles.length > 0 ? (
+                                                                pubItem.subtitles.map(sub => (
+                                                                    <span key={sub._id} className="subtitle-tag">
+                                                                        {sub.name}
+                                                                        <button
+                                                                            className="remove-subtitle-btn"
+                                                                            onClick={() => handleRemoveSubtitle(sub._id, pubItem._id, sub.name)}
+                                                                            title="Remove Subtitle"
+                                                                            disabled={loading}
+                                                                        >
+                                                                            <FaTimes />
+                                                                        </button>
+                                                                    </span>
+                                                                ))
+                                                            ) : (
+                                                                <span>No subtitles</span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                            </td>
+                                            <td>{pubItem.personName}</td>
+                                            <td>{pubItem.address}</td>
+                                            <td>{pubItem.city ? pubItem.city.name : 'N/A'}</td>
+                                            <td>{pubItem.mobileNumber}</td>
+                                            <td>{pubItem.bank}</td>
+                                            <td>{pubItem.accountNumber}</td>
+                                            <td>{pubItem.ifsc}</td>
+                                            <td>
+                                                {pubItem.gstin && `GSTIN: ${pubItem.gstin}`}
+                                                {pubItem.gstin && pubItem.discount > 0 && <br />}
+                                                {pubItem.discount > 0 && `DISCOUNT: ${pubItem.discount}%`}
+                                            </td>
+                                            <td>{formatDateWithTime(pubItem.createdAt)}</td>
+                                            <td>
+                                                <span className={`status-badge ${pubItem.status}`}>
+                                                    {pubItem.status.charAt(0).toUpperCase() + pubItem.status.slice(1)}
+                                                </span>
+                                            </td>
+                                            <td className="actions-column">
+                                                <button
+                                                    onClick={() => handleEdit(pubItem)}
+                                                    className="action-icon-button edit-button"
+                                                    title="Edit Publication"
+                                                    disabled={loading}
+                                                >
+                                                    <FaEdit />
+                                                </button>
+                                                <button
+                                                    onClick={() => openConfirmModal(pubItem)}
+                                                    className="action-icon-button delete-button"
+                                                    title="Delete Publication"
+                                                    disabled={loading}
+                                                >
+                                                    {loading && publicationToDeleteId === pubItem._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="pagination-controls">
+                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
+                                        <FaChevronLeft /> Previous
+                                    </button>
+                                    <span>Page {currentPage} of {totalPages}</span>
+                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn btn-page">
+                                        Next <FaChevronRight />
+                                    </button>
+                                </div>
+                            )}
+                            <div className="total-records text-center mt-2">
+                                Total Records: {filteredPublications.length}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+
             </div> {/* End of main-content-layout */}
 
             {/* Confirmation Modal for Publication Deletion */}

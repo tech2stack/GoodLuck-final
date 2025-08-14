@@ -390,6 +390,80 @@ const CityManagement = ({ showFlashMessage }) => {
             )}
 
             <div className="main-content-layout">
+                                <div className="form-container-card">
+                    <form onSubmit={handleSubmit} className="app-form">
+                        <h3 className="form-title">{editingCityId ? 'Edit City' : 'Add City'}</h3>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="name">City Name:</label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    placeholder="e.g., Bhopal"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="zone">Zone:</label>
+                                <select
+                                    id="zone"
+                                    name="zone"
+                                    value={formData.zone}
+                                    onChange={handleChange}
+                                    required
+                                    disabled={loading || zones.length === 0}
+                                    className="form-select"
+                                >
+                                    {zones.length > 0 ? (
+                                        zones.map(zone => (
+                                            <option key={zone._id} value={zone._id}>{zone.name}</option>
+                                        ))
+                                    ) : (
+                                        <option value="" disabled>No active zones found</option>
+                                    )}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="status">Status:</label>
+                            <select
+                                id="status"
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                disabled={loading}
+                                className="form-select"
+                                
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div className="form-actions">
+                            <button type="submit" className="btn btn-primary" disabled={loading || zones.length === 0}>
+                                {loading ? (editingCityId ? 'Updating...' : 'Adding...') : (editingCityId ? 'Update City' : 'Add City')}
+                                <FaPlusCircle className="icon ml-2" />
+                            </button>
+                            {editingCityId && (
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={handleCancelEdit}
+                                    disabled={loading}
+                                >
+                                    <FaTimesCircle className="icon mr-2" /> Cancel Edit
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                </div>
                 <div className="table-container">
                     <h3 className="table-title">Existing Cities</h3>
 
@@ -482,79 +556,7 @@ const CityManagement = ({ showFlashMessage }) => {
                     )}
                 </div>
 
-                <div className="form-container-card">
-                    <form onSubmit={handleSubmit} className="app-form">
-                        <h3 className="form-title">{editingCityId ? 'Edit City' : 'Add City'}</h3>
 
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="name">City Name:</label>
-                                <input
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    placeholder="e.g., Bhopal"
-                                    required
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="zone">Zone:</label>
-                                <select
-                                    id="zone"
-                                    name="zone"
-                                    value={formData.zone}
-                                    onChange={handleChange}
-                                    required
-                                    disabled={loading || zones.length === 0}
-                                    className="form-select"
-                                >
-                                    {zones.length > 0 ? (
-                                        zones.map(zone => (
-                                            <option key={zone._id} value={zone._id}>{zone.name}</option>
-                                        ))
-                                    ) : (
-                                        <option value="" disabled>No active zones found</option>
-                                    )}
-                                </select>
-                            </div>
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="status">Status:</label>
-                            <select
-                                id="status"
-                                name="status"
-                                value={formData.status}
-                                onChange={handleChange}
-                                disabled={loading}
-                                className="form-select"
-                            >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                        </div>
-
-                        <div className="form-actions">
-                            <button type="submit" className="btn btn-primary" disabled={loading || zones.length === 0}>
-                                {loading ? (editingCityId ? 'Updating...' : 'Adding...') : (editingCityId ? 'Update City' : 'Add City')}
-                                <FaPlusCircle className="icon ml-2" />
-                            </button>
-                            {editingCityId && (
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    onClick={handleCancelEdit}
-                                    disabled={loading}
-                                >
-                                    <FaTimesCircle className="icon mr-2" /> Cancel Edit
-                                </button>
-                            )}
-                        </div>
-                    </form>
-                </div>
             </div>
 
             {showConfirmModal && (

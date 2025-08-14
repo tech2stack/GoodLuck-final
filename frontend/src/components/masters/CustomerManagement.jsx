@@ -714,7 +714,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
     // --- UI Rendering ---
     return (
         <div className="customer-management-container">
-            <h2 className="page-section-title">Customer Management</h2> 
+            <h2 className="main-section-title">Customer Management</h2> 
 
             {localError && (
                 <p className="error-message text-center">
@@ -724,153 +724,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
            
             <div className="main-content-layout">
-                {/* Customer List Table - FIRST CHILD */}
-                <div className="table-container"> 
-                    <h3 className="table-title">Existing Customers</h3>
 
-                    {/* Search and Filter Section */}
-                    <div className="table-controls">
-                        <div className="search-input-group">
-                            <input
-                                type="text"
-                                placeholder="Search by Name, Mobile, Email, GST, Aadhar, PAN..."
-                                value={searchTerm}
-                                onChange={(e) => {
-                                    setSearchTerm(e.target.value);
-                                    setCurrentPage(1); // Reset to first page on search
-                                }}
-                                className="search-input"
-                                disabled={loading}
-                            />
-                            <FaSearch className="search-icon" />
-                        </div>
-
-                        <div className="filter-group">
-                            <label htmlFor="branchFilter" className="sr-only">Filter by Branch:</label>
-                            <select
-                                id="branchFilter"
-                                value={selectedBranchFilter}
-                                onChange={(e) => {
-                                    setSelectedBranchFilter(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="filter-select"
-                                disabled={loading || branches.length === 0}
-                            >
-                                <option value="">All Branches</option>
-                                {branches.map(branch => (
-                                    <option key={branch._id} value={branch._id}>
-                                        {branch.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <button onClick={downloadPdf} className="download-pdf-btn" disabled={loading || customers.length === 0}>
-                            <FaFilePdf className="icon mr-2" /> Download PDF
-                        </button>
-                    </div>
-
-                    {loading && customers.length === 0 ? (
-                        <p className="loading-state text-center">
-                            <FaSpinner className="icon animate-spin mr-2" /> Loading customers... 
-                        </p>
-                    ) : customers.length === 0 ? (
-                        <p className="no-data-message text-center">No customers found matching your criteria. Start by adding one!</p>
-                    ) : (
-                        <div className="table-scroll-wrapper"> 
-                            <table className="app-table"> 
-                                <thead>
-                                    <tr>
-                                        <th>S.No.</th>
-                                        <th>Customer Name (Code)</th>
-                                        <th>Branch</th>
-                                        <th>City</th>
-                                        <th>Contact Person</th>
-                                        <th>Mobile</th>
-                                        <th>Email</th>
-                                        <th>Documents</th>
-                                        <th>Address</th>
-                                        <th>Logo</th>
-                                        <th>Add Date</th>
-                                        <th>Status</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody ref={tableBodyRef}>
-                                    {currentItems.map((customer, index) => (
-                                        <tr key={customer._id}>
-                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                            <td>{`${customer.customerName} ${customer.schoolCode ? `(${customer.schoolCode})` : ''}`}</td>
-                                            <td>{customer.branch?.name || 'N/A'}</td>
-                                            <td>{customer.city?.name || 'N/A'}</td>
-                                            <td>{customer.contactPerson}</td>
-                                            <td>{customer.mobileNumber}</td>
-                                            <td>{customer.email || 'N/A'}</td>
-                                            <td>{getDocumentsString(customer)}</td>
-                                            <td>{getAddressString(customer)}</td>
-                                            <td>
-                                                {customer.image ? (
-                                                    <img
-                                                        src={customer.image.startsWith('/customer-logos/') ? `${BACKEND_BASE_URL}/uploads${customer.image}` : customer.image}
-                                                        alt="Customer Logo"
-                                                        className="customer-logo-thumbnail"
-                                                        onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/50x50/e0e0e0/ffffff?text=No+Logo'; }}
-                                                    />
-                                                ) : (
-                                                    'No Logo'
-                                                )}
-                                            </td>
-                                            <td>{formatDateWithTime(customer.createdAt)}</td>
-                                            <td>
-                                                <span className={`status-badge ${customer.status}`}>
-                                                    {customer.status.charAt(0).toUpperCase() + customer.status.slice(1)}
-                                                </span>
-                                            </td>
-                                            <td className="actions-column">
-                                                <button
-                                                    onClick={() => handleEdit(customer)}
-                                                    className="action-icon-button edit-button"
-                                                    title="Edit Customer"
-                                                    disabled={loading}
-                                                >
-                                                    <FaEdit className="icon" /> {/* Added icon class */}
-                                                </button>
-                                                <button
-                                                    onClick={() => openConfirmModal(customer)}
-                                                    className="action-icon-button delete-button"
-                                                    title="Delete Customer"
-                                                    disabled={loading}
-                                                >
-                                                    {loading && customerToDeleteId === customer._id ? <FaSpinner className="icon animate-spin" /> : <FaTrashAlt className="icon" />} {/* Added icon class */}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-
-                            {/* Pagination Controls */}
-                            {totalPages > 1 && (
-                                <div className="pagination-controls">
-                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn-page"> {/* Renamed class */}
-                                        <FaChevronLeft className="icon mr-2" /> Previous {/* Renamed class */}
-                                    </button>
-                                    <span>Page {currentPage} of {totalPages}</span>
-                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn-page"> {/* Renamed class */}
-                                        Next <FaChevronRight className="icon ml-2" /> {/* Renamed class */}
-                                    </button>
-                                </div>
-                            )}
-                            <div className="total-records text-center mt-2">
-                                Total Records: {customers.length}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-               
-                <div className="form-container-card">
+                                <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
                         <h3 className="form-title">{editingCustomerId ? 'Edit Customer' : 'Add New Customer'}</h3>
 
@@ -1135,6 +990,153 @@ const CustomerManagement = ({ showFlashMessage }) => {
                         </div>
                     </form>
                 </div>
+                {/* Customer List Table - FIRST CHILD */}
+                <div className="table-container"> 
+                    <h3 className="table-title">Existing Customers</h3>
+
+                    {/* Search and Filter Section */}
+                    <div className="table-controls">
+                        <div className="search-input-group">
+                            <input
+                                type="text"
+                                placeholder="Search by Name, Mobile, Email, GST, Aadhar, PAN..."
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1); // Reset to first page on search
+                                }}
+                                className="search-input"
+                                disabled={loading}
+                            />
+                            <FaSearch className="search-icon" />
+                        </div>
+
+                        <div className="filter-group">
+                            {/* <label htmlFor="branchFilter" className="sr-only" >Filter by Branch:</label> */}
+                            <select
+                                id="branchFilter"
+                                value={selectedBranchFilter}
+                                onChange={(e) => {
+                                    setSelectedBranchFilter(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="search-input"
+                                disabled={loading || branches.length === 0}
+                            >
+                                <option value="">All Branches </option>
+                                {branches.map(branch => (
+                                    <option key={branch._id} value={branch._id}>
+                                        {branch.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <button onClick={downloadPdf} className="download-pdf-btn" disabled={loading || customers.length === 0}>
+                            <FaFilePdf className="icon mr-2" /> Download PDF
+                        </button>
+                    </div>
+
+                    {loading && customers.length === 0 ? (
+                        <p className="loading-state text-center">
+                            <FaSpinner className="icon animate-spin mr-2" /> Loading customers... 
+                        </p>
+                    ) : customers.length === 0 ? (
+                        <p className="no-data-message text-center">No customers found matching your criteria. Start by adding one!</p>
+                    ) : (
+                        <div className="table-scroll-wrapper"> 
+                            <table className="app-table"> 
+                                <thead>
+                                    <tr>
+                                        <th>S.No.</th>
+                                        <th>Customer Name (Code)</th>
+                                        <th>Branch</th>
+                                        <th>City</th>
+                                        <th>Contact Person</th>
+                                        <th>Mobile</th>
+                                        <th>Email</th>
+                                        <th>Documents</th>
+                                        <th>Address</th>
+                                        <th>Logo</th>
+                                        <th>Add Date</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody ref={tableBodyRef}>
+                                    {currentItems.map((customer, index) => (
+                                        <tr key={customer._id}>
+                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td>{`${customer.customerName} ${customer.schoolCode ? `(${customer.schoolCode})` : ''}`}</td>
+                                            <td>{customer.branch?.name || 'N/A'}</td>
+                                            <td>{customer.city?.name || 'N/A'}</td>
+                                            <td>{customer.contactPerson}</td>
+                                            <td>{customer.mobileNumber}</td>
+                                            <td>{customer.email || 'N/A'}</td>
+                                            <td>{getDocumentsString(customer)}</td>
+                                            <td>{getAddressString(customer)}</td>
+                                            <td>
+                                                {customer.image ? (
+                                                    <img
+                                                        src={customer.image.startsWith('/customer-logos/') ? `${BACKEND_BASE_URL}/uploads${customer.image}` : customer.image}
+                                                        alt="Customer Logo"
+                                                        className="customer-logo-thumbnail"
+                                                        onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/50x50/e0e0e0/ffffff?text=No+Logo'; }}
+                                                    />
+                                                ) : (
+                                                    'No Logo'
+                                                )}
+                                            </td>
+                                            <td>{formatDateWithTime(customer.createdAt)}</td>
+                                            <td>
+                                                <span className={`status-badge ${customer.status}`}>
+                                                    {customer.status.charAt(0).toUpperCase() + customer.status.slice(1)}
+                                                </span>
+                                            </td>
+                                            <td className="actions-column">
+                                                <button
+                                                    onClick={() => handleEdit(customer)}
+                                                    className="action-icon-button edit-button"
+                                                    title="Edit Customer"
+                                                    disabled={loading}
+                                                >
+                                                    <FaEdit className="icon" /> {/* Added icon class */}
+                                                </button>
+                                                <button
+                                                    onClick={() => openConfirmModal(customer)}
+                                                    className="action-icon-button delete-button"
+                                                    title="Delete Customer"
+                                                    disabled={loading}
+                                                >
+                                                    {loading && customerToDeleteId === customer._id ? <FaSpinner className="icon animate-spin" /> : <FaTrashAlt className="icon" />} {/* Added icon class */}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="pagination-controls">
+                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn-page"> {/* Renamed class */}
+                                        <FaChevronLeft className="icon mr-2" /> Previous {/* Renamed class */}
+                                    </button>
+                                    <span>Page {currentPage} of {totalPages}</span>
+                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn-page"> {/* Renamed class */}
+                                        Next <FaChevronRight className="icon ml-2" /> {/* Renamed class */}
+                                    </button>
+                                </div>
+                            )}
+                            <div className="total-records text-center mt-2">
+                                Total Records: {customers.length}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+               
+
             </div> {/* End of main-content-layout */}
 
             {/* Confirmation Modal */}

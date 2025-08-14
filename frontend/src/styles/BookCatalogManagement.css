@@ -33,7 +33,7 @@
     .form-container-card {
         flex: 0 0 450px; /* Fixed width for the form on desktop */
         max-width: 450px; /* Ensure it doesn't grow beyond this */
-        margin-left: 25px; /* Space between table and form */
+        margin-left: 0; /* Space between table and form */
         margin-right: 0; /* Remove default margin */
     }
 
@@ -200,13 +200,13 @@
 }
 @media (min-width: 992px) { /* For the form's specific max-width, maybe 3 cols is too much */
     .form-grid-3-cols {
-        grid-template-columns: 1fr; /* Keep it single column within the fixed form width */
+        /* grid-template-columns: 1fr; Keep it single column within the fixed form width */
     }
 }
 /* Adjust for very wide screens if needed, or keep it single column within the form */
 @media (min-width: 1200px) {
     .form-grid-3-cols {
-        grid-template-columns: 1fr; /* Still single column within the fixed form width */
+        /* grid-template-columns: 1fr; Still single column within the fixed form width */
     }
 }
 

@@ -379,99 +379,7 @@ const TransportManagement = ({ showFlashMessage }) => {
             )}
 
             <div className="main-content-layout">
-                <div className="table-container">
-                    <h3 className="table-title">Existing Transports</h3>
 
-                    <div className="table-controls">
-                        <div className="search-input-group">
-                            <FaSearch className="search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="search-input"
-                                disabled={loading}
-                            />
-                        </div>
-                        <button onClick={downloadPdf} className="download-pdf-btn" disabled={loading || filteredTransports.length === 0}>
-                            <FaFilePdf className="icon" /> Download PDF
-                        </button>
-                    </div>
-
-                    {loading && transports.length === 0 ? (
-                        <p className="loading-state text-center">
-                            <FaSpinner className="animate-spin mr-2" /> Loading transports...
-                        </p>
-                    ) : filteredTransports.length === 0 ? (
-                        <p className="no-data-message text-center">No transports found matching your criteria. Start by adding one!</p>
-                    ) : (
-                        <>
-                            <table className="app-table">
-                                <thead>
-                                    <tr>
-                                        <th>S.No.</th>
-                                        <th>Transport Name</th>
-                                        <th>Person</th>
-                                        <th>Mobile</th>
-                                        <th>Status</th>
-                                        <th>Add Date</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody ref={tableBodyRef}>
-                                    {currentTransports.map((transport, index) => (
-                                        <tr key={transport._id}>
-                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                            <td>{transport.transportName}</td>
-                                            <td>{transport.person}</td>
-                                            <td>{transport.mobile}</td>
-                                            <td>
-                                                <span className={`status-badge ${transport.status}`}>
-                                                    {transport.status.charAt(0).toUpperCase() + transport.status.slice(1)}
-                                                </span>
-                                            </td>
-                                            <td>{formatDateWithTime(transport.createdAt)}</td>
-                                            <td className="actions-column">
-                                                <button
-                                                    onClick={() => handleEdit(transport)}
-                                                    className="action-icon-button edit-button"
-                                                    title="Edit Transport"
-                                                    disabled={loading}
-                                                >
-                                                    <FaEdit className="icon" />
-                                                </button>
-                                                <button
-                                                    onClick={() => openConfirmModal(transport)}
-                                                    className="action-icon-button delete-button"
-                                                    title="Delete Transport"
-                                                    disabled={loading}
-                                                >
-                                                    {loading && transportToDeleteId === transport._id ? <FaSpinner className="icon animate-spin" /> : <FaTrashAlt className="icon" />}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-
-                            {totalPages > 1 && (
-                                <div className="pagination-controls">
-                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn-page">
-                                        <FaChevronLeft className="icon" /> Previous
-                                    </button>
-                                    <span>Page {currentPage} of {totalPages}</span>
-                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn-page">
-                                        Next <FaChevronRight className="icon" />
-                                    </button>
-                                </div>
-                            )}
-                            <div className="total-records text-center mt-2">
-                                Total Records: {filteredTransports.length}
-                            </div>
-                        </>
-                    )}
-                </div>
 
                 <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
@@ -568,6 +476,100 @@ const TransportManagement = ({ showFlashMessage }) => {
                             )}
                         </div>
                     </form>
+                </div>
+
+                                <div className="table-container">
+                    <h3 className="table-title">Existing Transports</h3>
+
+                    <div className="table-controls">
+                        <div className="search-input-group">
+                            <FaSearch className="search-icon" />
+                            <input
+                                type="text"
+                                placeholder="Search..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="search-input"
+                                disabled={loading}
+                            />
+                        </div>
+                        <button onClick={downloadPdf} className="download-pdf-btn" disabled={loading || filteredTransports.length === 0}>
+                            <FaFilePdf className="icon" /> Download PDF
+                        </button>
+                    </div>
+
+                    {loading && transports.length === 0 ? (
+                        <p className="loading-state text-center">
+                            <FaSpinner className="animate-spin mr-2" /> Loading transports...
+                        </p>
+                    ) : filteredTransports.length === 0 ? (
+                        <p className="no-data-message text-center">No transports found matching your criteria. Start by adding one!</p>
+                    ) : (
+                        <>
+                            <table className="app-table">
+                                <thead>
+                                    <tr>
+                                        <th>S.No.</th>
+                                        <th>Transport Name</th>
+                                        <th>Person</th>
+                                        <th>Mobile</th>
+                                        <th>Status</th>
+                                        <th>Add Date</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody ref={tableBodyRef}>
+                                    {currentTransports.map((transport, index) => (
+                                        <tr key={transport._id}>
+                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td>{transport.transportName}</td>
+                                            <td>{transport.person}</td>
+                                            <td>{transport.mobile}</td>
+                                            <td>
+                                                <span className={`status-badge ${transport.status}`}>
+                                                    {transport.status.charAt(0).toUpperCase() + transport.status.slice(1)}
+                                                </span>
+                                            </td>
+                                            <td>{formatDateWithTime(transport.createdAt)}</td>
+                                            <td className="actions-column">
+                                                <button
+                                                    onClick={() => handleEdit(transport)}
+                                                    className="action-icon-button edit-button"
+                                                    title="Edit Transport"
+                                                    disabled={loading}
+                                                >
+                                                    <FaEdit className="icon" />
+                                                </button>
+                                                <button
+                                                    onClick={() => openConfirmModal(transport)}
+                                                    className="action-icon-button delete-button"
+                                                    title="Delete Transport"
+                                                    disabled={loading}
+                                                >
+                                                    {loading && transportToDeleteId === transport._id ? <FaSpinner className="icon animate-spin" /> : <FaTrashAlt className="icon" />}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {totalPages > 1 && (
+                                <div className="pagination-controls">
+                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn-page">
+                                        <FaChevronLeft className="icon" /> Previous
+                                    </button>
+                                    <span>Page {currentPage} of {totalPages}</span>
+                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn-page">
+                                        Next <FaChevronRight className="icon" />
+                                    </button>
+                                </div>
+                            )}
+                            <div className="total-records text-center mt-2">
+                                Total Records: {filteredTransports.length}
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 

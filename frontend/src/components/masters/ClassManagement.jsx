@@ -364,7 +364,61 @@ const ClassManagement = ({ showFlashMessage }) => {
             )}
 
             <div className="main-content-layout">
-                <div className="table-container">
+
+                <div className="form-container-card">
+                    <form onSubmit={handleSubmit} className="app-form">
+                        <h3 className="form-title">{editingClassId ? 'Edit Class' : 'Add Class'}</h3>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="name">Class Name:</label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    placeholder="e.g., Class 1st, 2nd, 3rd,..."
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="status">Status:</label>
+                                <select
+                                    id="status"
+                                    name="status"
+                                    value={formData.status}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    className="form-select"
+                                >
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="form-actions">
+                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                                {loading ? (editingClassId ? 'Updating...' : 'Adding...') : (editingClassId ? 'Update Class' : 'Add Class')}
+                                <FaPlusCircle className="icon ml-2" />
+                            </button>
+                            {editingClassId && (
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={handleCancelEdit}
+                                    disabled={loading}
+                                >
+                                    <FaTimesCircle className="icon mr-2" /> Cancel Edit
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                </div>
+                                <div className="table-container">
                     <h3 className="table-title">Existing Classes</h3>
 
                     <div className="table-controls">
@@ -454,59 +508,6 @@ const ClassManagement = ({ showFlashMessage }) => {
                     )}
                 </div>
 
-                <div className="form-container-card">
-                    <form onSubmit={handleSubmit} className="app-form">
-                        <h3 className="form-title">{editingClassId ? 'Edit Class' : 'Add Class'}</h3>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="name">Class Name:</label>
-                                <input
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    placeholder="e.g., Class 1, 10th Standard"
-                                    required
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="status">Status:</label>
-                                <select
-                                    id="status"
-                                    name="status"
-                                    value={formData.status}
-                                    onChange={handleChange}
-                                    disabled={loading}
-                                    className="form-select"
-                                >
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="form-actions">
-                            <button type="submit" className="btn btn-primary" disabled={loading}>
-                                {loading ? (editingClassId ? 'Updating...' : 'Adding...') : (editingClassId ? 'Update Class' : 'Add Class')}
-                                <FaPlusCircle className="icon ml-2" />
-                            </button>
-                            {editingClassId && (
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    onClick={handleCancelEdit}
-                                    disabled={loading}
-                                >
-                                    <FaTimesCircle className="icon mr-2" /> Cancel Edit
-                                </button>
-                            )}
-                        </div>
-                    </form>
-                </div>
             </div>
 
             {showConfirmModal && (

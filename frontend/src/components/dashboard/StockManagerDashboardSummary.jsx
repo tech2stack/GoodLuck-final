@@ -64,7 +64,7 @@ const StockManagerDashboardSummary = ({ showFlashMessage }) => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-semibold text-gray-800">Overall Dashboard Summary</h2>
+      <h2 className="main-section-title">Overall Dashboard Summary</h2>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <SummaryCard title="Total Classes" count={counts.classes} icon={FaGraduationCap} color="green" />

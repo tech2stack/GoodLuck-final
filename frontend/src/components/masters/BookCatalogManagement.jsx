@@ -517,7 +517,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             const prices = Object.entries(bookCatalogItem.pricesByClass)
                 .map(([classId, price]) => {
                     const className = classes.find(c => c._id === classId)?.name;
-                    return className ? `Rs${price?.toFixed(2) || '0.00'} - ${className}` : `Rs${price?.toFixed(2) || '0.00'} - Unknown Class`; 
+                    return className ? `${className}/${price?.toFixed(2) || '0.00'}  ` : `Rs${price?.toFixed(2) || '0.00'} - Unknown Class`; 
                 })
                 .join(', ');
             return prices || 'N/A';
@@ -697,7 +697,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     // --- UI Rendering ---
     return (
         <div className="book-catalog-management-container">
-            <h2 className="section-title">Book Catalog Management</h2>
+            <h2 className="main-section-title">Book Catalog Management</h2>
 
             {localError && (
                 <p className="error-message text-center">
@@ -707,7 +707,254 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
             {/* Main content layout for two columns */}
             <div className="main-content-layout">
-                {/* Book Catalog List Table - FIRST CHILD */}
+
+
+                {/* Book Catalog Creation/Update Form - SECOND CHILD */}
+                <div className="form-container-card">
+                    <form onSubmit={handleSubmit} className="app-form">
+                        <h3 className="form-title">{editingBookCatalogId ? 'Edit Book Catalog' : 'Add Book Catalog'}</h3>
+                        
+                                                {/* Book Type and Price Fields */}
+                        <div className="form-group">
+                            {/* <label>Book Type:</label> */}
+                            <div className="radio-group">
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="bookType"
+                                        value="default"
+                                        checked={formData.bookType === 'default'}
+                                        onChange={handleChange}
+                                        disabled={loading}
+                                    /> Default
+                                </label>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="bookType"
+                                        value="common_price"
+                                        checked={formData.bookType === 'common_price'}
+                                        onChange={handleChange}
+                                        disabled={loading}
+                                    /> Common Price
+                                </label>
+                            </div>
+                        </div>
+                        <div className="form-row">
+                           
+                            <div className="form-group">
+                                <label htmlFor="publication">Publication Name:</label>
+                                <select
+                                    id="publication"
+                                    name="publication"
+                                    value={formData.publication}
+                                    onChange={handleChange}
+                                    required
+                                    disabled={loading || publications.length === 0}
+                                    className="form-select"
+                                >
+                                    {publications.length === 0 ? (
+                                        <option value="">Loading Publications...</option>
+                                    ) : (
+                                        <>
+                                            <option value="">-- SELECT PUBLICATION --</option>
+                                            {publications.map(pub => (
+                                                <option key={pub._id} value={pub._id}>
+                                                    {pub.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    )}
+                                </select>
+                            </div>
+                                                        <div className="form-group">
+                                <label htmlFor="subtitle">Sub Title:</label>
+                                <select
+                                    id="subtitle"
+                                    name="subtitle"
+                                    value={formData.subtitle}
+                                    onChange={handleChange}
+                                    disabled={loading || !formData.publication || subtitles.length === 0}
+                                    className="form-select"
+                                >
+                                    {subtitles.length === 0 ? (
+                                        <option value="">-- SELECT -- (No Subtitles for selected Publication)</option>
+                                    ) : (
+                                        <>
+                                            <option value="">-- SELECT --</option>
+                                            {subtitles.map(sub => (
+                                                <option key={sub._id} value={sub._id}>
+                                                    {sub.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    )}
+                                </select>
+                            </div>
+
+                        </div>
+
+                        <div className="form-row">
+
+                            <div className="form-group">
+                                <label htmlFor="language">Elective Language:</label>
+                                <select
+                                    id="language"
+                                    name="language"
+                                    value={formData.language}
+                                    onChange={handleChange}
+                                    disabled={loading || languages.length === 0}
+                                    className="form-select"
+                                >
+                                    {languages.length === 0 ? (
+                                        <option value="">Loading Languages...</option>
+                                    ) : (
+                                        <>
+                                            <option value="">-- SELECT --</option>
+                                            {languages.map(lang => (
+                                                <option key={lang._id} value={lang._id}>
+                                                    {lang.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    )}
+                                </select>
+                            </div>
+                                                         <div className="form-group">
+                                <label htmlFor="bookName">Book Name:</label>
+                                <input
+                                    type="text"
+                                    id="bookName"
+                                    name="bookName"
+                                    value={formData.bookName}
+                                    onChange={handleChange}
+                                    placeholder="e.g., Science Textbook"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+
+
+                        {formData.bookType === 'common_price' && (
+                            <div className="form-group">
+                                <label htmlFor="commonPrice">Common Price (RS):</label>
+                                <input
+                                    type="number"
+                                    id="commonPrice"
+                                    name="commonPrice"
+                                    value={formData.commonPrice}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 150.00"
+                                    min="0"
+                                    // step="0.01"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        )}
+
+                        {formData.bookType === 'default' && (
+                            <div className="prices-by-class-section">
+                                <h4 className="sub-section-title">Prices by Class:</h4>
+                                <div className="form-grid-3-cols"> {/* You might need to define this grid in your CSS */}
+                                    {classes.length === 0 ? (
+                                        <p className="loading-state">Loading classes for prices...</p>
+                                    ) : (
+                                        classes.map(_class => (
+                                            <div className="form-group" key={_class._id}>
+                                                <label htmlFor={`price_${_class._id}`}>{_class.name} Price:</label>
+                                                <input
+                                                    type="number"
+                                                    id={`price_${_class._id}`}
+                                                    name={`price_${_class._id}`}
+                                                    value={formData.pricesByClass[_class._id] || ''}
+                                                    onChange={handleChange}
+                                                    placeholder="e.g., 120.00"
+                                                    min="0"
+                                                    // step="0.01"
+                                                    disabled={loading}
+                                                    className="form-input"
+                                                />
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="discountPercentage">Discount %:</label>
+                                <input
+                                    type="number"
+                                    id="discountPercentage"
+                                    name="discountPercentage"
+                                    value={formData.discountPercentage}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 10"
+                                    min="0"
+                                    max="100"
+                                    // step="0.01"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="gstPercentage">Net Profit %:</label>
+                                <input
+                                    type="number"
+                                    id="gstPercentage"
+                                    name="gstPercentage"
+                                    value={formData.gstPercentage}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 18"
+                                    min="0"
+                                    max="100"
+                                    // step="0.01"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="status">Status:</label>
+                            <select
+                                id="status"
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                disabled={loading}
+                                className="form-select"
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div className="form-actions">
+                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingBookCatalogId ? 'Update Book' : 'Add Book')}
+                            </button>
+                            {editingBookCatalogId && (
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary ml-2"
+                                    onClick={handleCancelEdit} 
+                                    disabled={loading}
+                                >
+                                    Cancel Edit
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                </div>
+
+                                {/* Book Catalog List Table - FIRST CHILD */}
                 <div className="table-section">
                     <h3 className="table-title">Existing Book Catalogs</h3>
 
@@ -812,248 +1059,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                             </div>
                         </div>
                     )}
-                </div>
-
-                {/* Book Catalog Creation/Update Form - SECOND CHILD */}
-                <div className="form-container-card">
-                    <form onSubmit={handleSubmit} className="app-form">
-                        <h3 className="form-title">{editingBookCatalogId ? 'Edit Book Catalog' : 'Add Book Catalog'}</h3>
-                        
-                        <div className="form-row">
-                           
-                            <div className="form-group">
-                                <label htmlFor="publication">Publication:</label>
-                                <select
-                                    id="publication"
-                                    name="publication"
-                                    value={formData.publication}
-                                    onChange={handleChange}
-                                    required
-                                    disabled={loading || publications.length === 0}
-                                    className="form-select"
-                                >
-                                    {publications.length === 0 ? (
-                                        <option value="">Loading Publications...</option>
-                                    ) : (
-                                        <>
-                                            <option value="">-- SELECT PUBLICATION --</option>
-                                            {publications.map(pub => (
-                                                <option key={pub._id} value={pub._id}>
-                                                    {pub.name}
-                                                </option>
-                                            ))}
-                                        </>
-                                    )}
-                                </select>
-                            </div>
-                             <div className="form-group">
-                                <label htmlFor="bookName">Book Name:</label>
-                                <input
-                                    type="text"
-                                    id="bookName"
-                                    name="bookName"
-                                    value={formData.bookName}
-                                    onChange={handleChange}
-                                    placeholder="e.g., Science Textbook"
-                                    required
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="subtitle">Sub Title:</label>
-                                <select
-                                    id="subtitle"
-                                    name="subtitle"
-                                    value={formData.subtitle}
-                                    onChange={handleChange}
-                                    disabled={loading || !formData.publication || subtitles.length === 0}
-                                    className="form-select"
-                                >
-                                    {subtitles.length === 0 ? (
-                                        <option value="">-- SELECT -- (No Subtitles for selected Publication)</option>
-                                    ) : (
-                                        <>
-                                            <option value="">-- SELECT --</option>
-                                            {subtitles.map(sub => (
-                                                <option key={sub._id} value={sub._id}>
-                                                    {sub.name}
-                                                </option>
-                                            ))}
-                                        </>
-                                    )}
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="language">Elective Language:</label>
-                                <select
-                                    id="language"
-                                    name="language"
-                                    value={formData.language}
-                                    onChange={handleChange}
-                                    disabled={loading || languages.length === 0}
-                                    className="form-select"
-                                >
-                                    {languages.length === 0 ? (
-                                        <option value="">Loading Languages...</option>
-                                    ) : (
-                                        <>
-                                            <option value="">-- SELECT --</option>
-                                            {languages.map(lang => (
-                                                <option key={lang._id} value={lang._id}>
-                                                    {lang.name}
-                                                </option>
-                                            ))}
-                                        </>
-                                    )}
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Book Type and Price Fields */}
-                        <div className="form-group">
-                            <label>Book Type:</label>
-                            <div className="radio-group">
-                                <label>
-                                    <input
-                                        type="radio"
-                                        name="bookType"
-                                        value="default"
-                                        checked={formData.bookType === 'default'}
-                                        onChange={handleChange}
-                                        disabled={loading}
-                                    /> Default
-                                </label>
-                                <label>
-                                    <input
-                                        type="radio"
-                                        name="bookType"
-                                        value="common_price"
-                                        checked={formData.bookType === 'common_price'}
-                                        onChange={handleChange}
-                                        disabled={loading}
-                                    /> Common Price
-                                </label>
-                            </div>
-                        </div>
-
-                        {formData.bookType === 'common_price' && (
-                            <div className="form-group">
-                                <label htmlFor="commonPrice">Common Price (RS):</label>
-                                <input
-                                    type="number"
-                                    id="commonPrice"
-                                    name="commonPrice"
-                                    value={formData.commonPrice}
-                                    onChange={handleChange}
-                                    placeholder="e.g., 150.00"
-                                    min="0"
-                                    step="0.01"
-                                    required
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                        )}
-
-                        {formData.bookType === 'default' && (
-                            <div className="prices-by-class-section">
-                                <h4 className="sub-section-title">Prices by Class:</h4>
-                                <div className="form-grid-3-cols"> {/* You might need to define this grid in your CSS */}
-                                    {classes.length === 0 ? (
-                                        <p className="loading-state">Loading classes for prices...</p>
-                                    ) : (
-                                        classes.map(_class => (
-                                            <div className="form-group" key={_class._id}>
-                                                <label htmlFor={`price_${_class._id}`}>{_class.name} Price:</label>
-                                                <input
-                                                    type="number"
-                                                    id={`price_${_class._id}`}
-                                                    name={`price_${_class._id}`}
-                                                    value={formData.pricesByClass[_class._id] || ''}
-                                                    onChange={handleChange}
-                                                    placeholder="e.g., 120.00"
-                                                    min="0"
-                                                    step="0.01"
-                                                    disabled={loading}
-                                                    className="form-input"
-                                                />
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="discountPercentage">Discount %:</label>
-                                <input
-                                    type="number"
-                                    id="discountPercentage"
-                                    name="discountPercentage"
-                                    value={formData.discountPercentage}
-                                    onChange={handleChange}
-                                    placeholder="e.g., 10"
-                                    min="0"
-                                    max="100"
-                                    step="0.01"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="gstPercentage">Net Profit %:</label>
-                                <input
-                                    type="number"
-                                    id="gstPercentage"
-                                    name="gstPercentage"
-                                    value={formData.gstPercentage}
-                                    onChange={handleChange}
-                                    placeholder="e.g., 18"
-                                    min="0"
-                                    max="100"
-                                    step="0.01"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="status">Status:</label>
-                            <select
-                                id="status"
-                                name="status"
-                                value={formData.status}
-                                onChange={handleChange}
-                                disabled={loading}
-                                className="form-select"
-                            >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                        </div>
-
-                        <div className="form-actions">
-                            <button type="submit" className="btn btn-primary" disabled={loading}>
-                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingBookCatalogId ? 'Update Book' : 'Add Book')}
-                            </button>
-                            {editingBookCatalogId && (
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary ml-2"
-                                    onClick={handleCancelEdit} 
-                                    disabled={loading}
-                                >
-                                    Cancel Edit
-                                </button>
-                            )}
-                        </div>
-                    </form>
                 </div>
             </div> {/* End of main-content-layout */}
 

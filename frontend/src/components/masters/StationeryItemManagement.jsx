@@ -456,7 +456,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
     // --- UI Rendering ---
     return (
         <div className="stationery-item-management-container">
-            <h2 className="section-title">Stationery Item Management</h2>
+            <h2 className="main-section-title">Stationery Item Management</h2>
 
             {localError && (
                 <p className="error-message text-center">
@@ -465,25 +465,11 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
             )}
 
             <div className="main-content-layout">
-                <div className="table-container">
-                    <h3 className="table-title">Existing Stationery Items</h3>
 
-                    {/* Filter and controls section, now with improved alignment */}
-                    <div className="table-controls">
-                        <div className="form-group">
-                            <input
-                                type="text"
-                                placeholder="Search by Item Name, Price..."
-                                value={searchTerm}
-                                onChange={(e) => {
-                                    setSearchTerm(e.target.value);
-                                    setCurrentPage(1); // Reset to first page on search
-                                }}
-                                className="search-input"
-                                disabled={loading}
-                            />
-                            <FaSearch className="search-icon" />
-                        </div>
+
+                <div className="form-container-card">
+                    <form onSubmit={handleSubmit} className="app-form">
+                        <h3 className="form-title">{editingItemId ? 'Edit Stationery Item' : 'Add New Stationery Item'}</h3>
                          {/* Category Filter Dropdown, with a cleaner design that aligns with the search input */}
                          <div className="form-group">
                             <select
@@ -501,8 +487,93 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                                     <option key={cat} value={cat}>{cat}</option>
                                 ))}
                             </select>
-                            <FaList className="search-icon" />
+                            {/* <FaList className="search-icon" /> */}
                         </div>
+                        <div className="form-group">
+                            <label htmlFor="itemName">Item's Name:</label>
+                            <input
+                                type="text"
+                                id="itemName"
+                                name="itemName"
+                                value={formData.itemName}
+                                onChange={handleChange}
+                                placeholder="e.g., Pencil, Notebook, School Bag"
+                                required
+                                disabled={loading}
+                                className="form-input"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="price">Price (Rs):</label>
+                            <input
+                                type="number"
+                                id="price"
+                                name="price"
+                                value={formData.price}
+                                onChange={handleChange}
+                                placeholder="e.g., 10.00, 500.00"
+                                min="0"
+                                step="0.01"
+                                required
+                                disabled={loading}
+                                className="form-input"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="status">Status:</label>
+                            <select
+                                id="status"
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                disabled={loading}
+                                className="form-select"
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div className="form-actions">
+                            <button type="submit" className="btn btn-primary" disabled={loading || !selectedCategory}>
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingItemId ? 'Update Item' : 'Add Item')}
+                            </button>
+                            {editingItemId && (
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary ml-2"
+                                    onClick={handleCancelEdit}
+                                    disabled={loading}
+                                >
+                                    Cancel Edit
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                </div>
+
+                                <div className="table-container">
+                    <h3 className="table-title">Existing Stationery Items</h3>
+
+                    {/* Filter and controls section, now with improved alignment */}
+                    <div className="table-controls">
+                        <div className="form-group">
+                            <input
+                                type="text"
+                                placeholder="Search by Item Name, Price..."
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1); // Reset to first page on search
+                                }}
+                                className="search-input"
+                                disabled={loading}
+                            />
+                            {/* <FaSearch className="search-icon" /> */}
+                        </div>
+
                         <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredItems.length === 0}>
                             <FaFilePdf className="btn-icon-mr" /> Download PDF
                         </button>
@@ -585,75 +656,6 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                             </div>
                         </div>
                     )}
-                </div>
-
-                <div className="form-container-card">
-                    <form onSubmit={handleSubmit} className="app-form">
-                        <h3 className="form-title">{editingItemId ? 'Edit Stationery Item' : 'Add New Stationery Item'}</h3>
-
-                        <div className="form-group">
-                            <label htmlFor="itemName">Item's Name:</label>
-                            <input
-                                type="text"
-                                id="itemName"
-                                name="itemName"
-                                value={formData.itemName}
-                                onChange={handleChange}
-                                placeholder="e.g., Pencil, Notebook, School Bag"
-                                required
-                                disabled={loading}
-                                className="form-input"
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="price">Price (Rs):</label>
-                            <input
-                                type="number"
-                                id="price"
-                                name="price"
-                                value={formData.price}
-                                onChange={handleChange}
-                                placeholder="e.g., 10.00, 500.00"
-                                min="0"
-                                step="0.01"
-                                required
-                                disabled={loading}
-                                className="form-input"
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="status">Status:</label>
-                            <select
-                                id="status"
-                                name="status"
-                                value={formData.status}
-                                onChange={handleChange}
-                                disabled={loading}
-                                className="form-select"
-                            >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                        </div>
-
-                        <div className="form-actions">
-                            <button type="submit" className="btn btn-primary" disabled={loading || !selectedCategory}>
-                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingItemId ? 'Update Item' : 'Add Item')}
-                            </button>
-                            {editingItemId && (
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary ml-2"
-                                    onClick={handleCancelEdit}
-                                    disabled={loading}
-                                >
-                                    Cancel Edit
-                                </button>
-                            )}
-                        </div>
-                    </form>
                 </div>
             </div>
 

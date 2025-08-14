@@ -361,6 +361,57 @@ const ZoneManagement = ({ showFlashMessage }) => {
             )}
 
             <div className="main-content-layout">
+                                <div className="form-container-card">
+                    <form onSubmit={handleSubmit} className="app-form">
+                        <h3 className="form-title">{editingZoneId ? 'Edit Zone' : 'Add Zone'}</h3>
+                        
+                        <div className="form-group">
+                            <label htmlFor="name">Zone Name:</label>
+                            <input
+                                type="text"
+                                id="name"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                placeholder="e.g., North Zone, South Zone"
+                                required
+                                disabled={loading}
+                                className="form-input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="status">Status:</label>
+                            <select
+                                id="status"
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                disabled={loading}
+                                className="form-select"
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        
+                        <div className="form-actions">
+                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                                {loading ? (editingZoneId ? 'Updating...' : 'Adding...') : (editingZoneId ? 'Update Zone' : 'Add Zone')}
+                                <FaPlusCircle className="icon ml-2" />
+                            </button>
+                            {editingZoneId && (
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={handleCancelEdit}
+                                    disabled={loading}
+                                >
+                                    <FaTimesCircle className="icon mr-2" /> Cancel Edit
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                </div>
                 <div className="table-container">
                     <h3 className="table-title">Existing Zones</h3>
 
@@ -451,57 +502,7 @@ const ZoneManagement = ({ showFlashMessage }) => {
                     )}
                 </div>
 
-                <div className="form-container-card">
-                    <form onSubmit={handleSubmit} className="app-form">
-                        <h3 className="form-title">{editingZoneId ? 'Edit Zone' : 'Add Zone'}</h3>
-                        
-                        <div className="form-group">
-                            <label htmlFor="name">Zone Name:</label>
-                            <input
-                                type="text"
-                                id="name"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                placeholder="e.g., North Zone, South Zone"
-                                required
-                                disabled={loading}
-                                className="form-input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="status">Status:</label>
-                            <select
-                                id="status"
-                                name="status"
-                                value={formData.status}
-                                onChange={handleChange}
-                                disabled={loading}
-                                className="form-select"
-                            >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                        </div>
-                        
-                        <div className="form-actions">
-                            <button type="submit" className="btn btn-primary" disabled={loading}>
-                                {loading ? (editingZoneId ? 'Updating...' : 'Adding...') : (editingZoneId ? 'Update Zone' : 'Add Zone')}
-                                <FaPlusCircle className="icon ml-2" />
-                            </button>
-                            {editingZoneId && (
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    onClick={handleCancelEdit}
-                                    disabled={loading}
-                                >
-                                    <FaTimesCircle className="icon mr-2" /> Cancel Edit
-                                </button>
-                            )}
-                        </div>
-                    </form>
-                </div>
+
             </div>
 
             {showConfirmModal && (

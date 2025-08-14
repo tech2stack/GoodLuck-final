@@ -40,7 +40,7 @@
 /* Styles for the subtitle tags within the table (already existing, just ensure they are fine) */
 .subtitle-list {
     display: flex;
-    flex-wrap: wrap;
+    /* flex-wrap: wrap; */
     gap: 5px; /* Spacing between tags */
     align-items: center; /* Align items vertically */
 }
@@ -55,6 +55,7 @@
     align-items: center;
     gap: 5px;
     white-space: nowrap; /* Prevent tag from breaking */
+    margin-bottom: 2px;
 }
 
 .remove-subtitle-btn {

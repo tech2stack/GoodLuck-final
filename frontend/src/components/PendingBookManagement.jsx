@@ -419,7 +419,7 @@ export default function PendingBookManagement({ showFlashMessage }) {
 
     return (
         <div className="pending-book-management-container">
-            <h2 className="section-title">Pending Book Management</h2>
+            <h2 className="main-section-title">Pending Book Management</h2>
             {localError && (
                 <p className="error-message">
                     <FaTimesCircle className="error-icon" /> {localError}
@@ -483,7 +483,7 @@ export default function PendingBookManagement({ showFlashMessage }) {
 
                 <div className="books-display-section section-container table-section">
                     <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-200">
-                        <h3 className="section-header table-title">Book List (All Classes)</h3>
+                        <h3 className="section-header">Book List (All Classes)</h3>
                         <button
                             onClick={downloadPdf}
                             className="btn btn-info download-pdf-btn flex-shrink-0 ml-auto"

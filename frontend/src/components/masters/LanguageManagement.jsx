@@ -404,7 +404,64 @@ const LanguageManagement = ({ showFlashMessage }) => {
             )}
 
             <div className="main-content-layout">
-                <div className="table-container"> {/* Use table-container for the entire table wrapper */}
+
+
+                {/* Language Creation/Update Form - SECOND CHILD */}
+                <div className="form-container-card"> {/* This class should be defined in Form.css */}
+                    <form onSubmit={handleSubmit} className="app-form"> {/* Use app-form as defined in Form.css */}
+                        <h3 className="form-title">{editingLanguageId ? 'Edit Language' : 'Add Language'}</h3>
+                        
+                        <div className="form-row"> {/* Use form-row for multi-column layout */}
+                            <div className="form-group"> {/* Use form-group */}
+                                <label htmlFor="name">Language Name:</label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    placeholder="e.g., English, Hindi"
+                                    required
+                                    disabled={loading}
+                                    className="form-input" // Corrected: All attributes must be within the same opening tag
+                                />
+                            </div>
+                            <div className="form-group"> {/* Use form-group */}
+                                <label htmlFor="status">Status:</label>
+                                <select
+                                    id="status"
+                                    name="status"
+                                    value={formData.status}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    className="form-select" /* Use form-select */
+                                >
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="form-actions"> {/* Use form-actions */}
+                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                                {loading ? (editingLanguageId ? 'Updating...' : 'Adding...') : (editingLanguageId ? 'Update Language' : 'Add Language')}
+                                <FaPlusCircle className="icon ml-2" /> {/* Use 'icon' class and ml-2 */}
+                            </button>
+                            {editingLanguageId && (
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={handleCancelEdit}
+                                    disabled={loading}
+                                >
+                                    <FaTimesCircle className="icon mr-2" /> Cancel Edit {/* Added FaTimesCircle icon and mr-2 */}
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                </div>
+
+                                <div className="table-container"> {/* Use table-container for the entire table wrapper */}
                     <h3 className="table-title">Existing Languages</h3> {/* Specific title for table */}
 
                     <div className="table-controls">
@@ -493,61 +550,6 @@ const LanguageManagement = ({ showFlashMessage }) => {
                             </div>
                         </>
                     )}
-                </div>
-
-                {/* Language Creation/Update Form - SECOND CHILD */}
-                <div className="form-container-card"> {/* This class should be defined in Form.css */}
-                    <form onSubmit={handleSubmit} className="app-form"> {/* Use app-form as defined in Form.css */}
-                        <h3 className="form-title">{editingLanguageId ? 'Edit Language' : 'Add Language'}</h3>
-                        
-                        <div className="form-row"> {/* Use form-row for multi-column layout */}
-                            <div className="form-group"> {/* Use form-group */}
-                                <label htmlFor="name">Language Name:</label>
-                                <input
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    placeholder="e.g., English, Hindi"
-                                    required
-                                    disabled={loading}
-                                    className="form-input" // Corrected: All attributes must be within the same opening tag
-                                />
-                            </div>
-                            <div className="form-group"> {/* Use form-group */}
-                                <label htmlFor="status">Status:</label>
-                                <select
-                                    id="status"
-                                    name="status"
-                                    value={formData.status}
-                                    onChange={handleChange}
-                                    disabled={loading}
-                                    className="form-select" /* Use form-select */
-                                >
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="form-actions"> {/* Use form-actions */}
-                            <button type="submit" className="btn btn-primary" disabled={loading}>
-                                {loading ? (editingLanguageId ? 'Updating...' : 'Adding...') : (editingLanguageId ? 'Update Language' : 'Add Language')}
-                                <FaPlusCircle className="icon ml-2" /> {/* Use 'icon' class and ml-2 */}
-                            </button>
-                            {editingLanguageId && (
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    onClick={handleCancelEdit}
-                                    disabled={loading}
-                                >
-                                    <FaTimesCircle className="icon mr-2" /> Cancel Edit {/* Added FaTimesCircle icon and mr-2 */}
-                                </button>
-                            )}
-                        </div>
-                    </form>
                 </div>
             </div> {/* End of main-content-layout */}
 

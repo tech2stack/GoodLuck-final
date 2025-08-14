@@ -1325,7 +1325,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             <table className="app-table">
                                 <thead className="table-header-group">
                                     <tr>
-                                        <th className="table-header-cell">#</th>
+                                        <th className="table-header-cell">No.</th>
                                         <th className="table-header-cell">Sub Title</th>
                                         <th className="table-header-cell">Book</th>
                                         <th className="table-header-cell">QTY</th>
@@ -1389,7 +1389,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 <table className="app-table">
                                     <thead className="table-header-group">
                                         <tr>
-                                            <th className="table-header-cell">#</th>
+                                            <th className="table-header-cell">No.</th>
                                             <th className="table-header-cell">Item</th>
                                             <th className="table-header-cell">QTY</th>
                                             <th className="table-header-cell">Price</th>

@@ -14,9 +14,9 @@
 
 /* Main Section Title (e.g., "Class Management", "Zone Management") */
 .main-section-title {
-    font-size: 2rem;
+    font-size: 1.4rem;
     color: #333;
-    margin-bottom: 25px;
+    margin-bottom:8px;
     text-align: center;
     font-weight: 700;
     position: relative;
