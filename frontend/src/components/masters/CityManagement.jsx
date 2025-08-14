@@ -1,67 +1,38 @@
 // src/components/masters/CityManagement.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import api from '../../utils/api'; // API utility for backend calls
-import FlashMessage from '../FlashMessage'; // Assuming FlashMessage is directly under src/components
-import { FaEdit, FaTrashAlt, FaPlusCircle } from 'react-icons/fa'; // Icons for UI (FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight are now handled by TableSection)
+import api from '../../utils/api';
+import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaSpinner, FaTimesCircle } from 'react-icons/fa';
 
-// Import new common components
-import PageLayout from '../common/PageLayout';
-import TableSection from '../common/TableSection';
-import FormSection from '../common/FormSection';
-import ConfirmationModal from '../common/ConfirmationModal';
-
-// Stylesheets (generic ones for elements, specific for layout overrides)
+// Stylesheets
 import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
-import '../../styles/CommonLayout.css'; // Import the common layout styles
-// import '../../styles/CityManagement.css'; // Component-specific layout overrides
 
-// Import the logo image directly (assuming it's in src/assets)
 import companyLogo from '../../assets/glbs-logo.jpg'; 
 
-// NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
-// If you are using npm, you'd do: npm install jspdf jspdf-autotable
-// Then import them here:
-// import { jsPDF } from 'jspdf';
-// import 'jspdf-autotable';
-
-
 const CityManagement = ({ showFlashMessage }) => {
-    // State for managing list of cities
     const [cities, setCities] = useState([]);
-    // State for managing list of zones for the dropdown
     const [zones, setZones] = useState([]);
-    // State for form inputs (for creating new or editing existing city)
     const [formData, setFormData] = useState({
         name: '',
-        zone: '', // Will store Zone ID
-        status: 'active', // Default status
+        zone: '',
+        status: 'active',
     });
-    // State for loading indicators
     const [loading, setLoading] = useState(false);
-    // State for managing local errors (e.g., form validation)
     const [localError, setLocalError] = useState(null);
-    // State to track if we are in edit mode and which city is being edited
     const [editingCityId, setEditingCityId] = useState(null);
 
-    // States for confirmation modal
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [cityToDeleteId, setCityToDeleteId] = useState(null);
     const [cityToDeleteName, setCityToDeleteName] = useState('');
 
-    // Ref for scrolling to the new item in the table (if needed)
     const tableBodyRef = useRef(null);
 
-    // States for Search
     const [searchTerm, setSearchTerm] = useState('');
 
-    // States for Pagination
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10; // Show 10 entries per page
+    const itemsPerPage = 10;
 
-
-    // --- Helper function for date formatting ---
     const formatDateWithTime = (dateString) => {
         const options = {
             year: 'numeric',
@@ -69,18 +40,17 @@ const CityManagement = ({ showFlashMessage }) => {
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-            hour12: true // For AM/PM format
+            hour12: true
         };
         const date = new Date(dateString);
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
 
-    // --- Fetch Cities ---
     const fetchCities = useCallback(async (scrollToNew = false) => {
         setLoading(true);
         setLocalError(null);
         try {
-            const response = await api.get('/cities'); // API endpoint to get all cities
+            const response = await api.get('/cities');
             if (response.data.status === 'success') {
                 setCities(response.data.data.cities);
                 const totalPages = Math.ceil(response.data.data.cities.length / itemsPerPage);
@@ -120,46 +90,38 @@ const CityManagement = ({ showFlashMessage }) => {
         } finally {
             setLoading(false);
         }
-    }, [currentPage]);
+    }, [currentPage, itemsPerPage]);
 
-    // --- Fetch Zones for Dropdown ---
     const fetchZonesForDropdown = useCallback(async () => {
         try {
-            const response = await api.get('/zones'); // API endpoint to get all zones
+            const response = await api.get('/zones');
             if (response.data.status === 'success') {
-                setZones(response.data.data.zones);
-                // If creating a new city and no zone is pre-selected, set the first one as default
-                if (!editingCityId && response.data.data.zones.length > 0) {
-                    setFormData(prev => ({ ...prev, zone: response.data.data.zones[0]._id }));
+                const activeZones = response.data.data.zones.filter(zone => zone.status === 'active');
+                setZones(activeZones);
+                if (!editingCityId && activeZones.length > 0) {
+                    setFormData(prev => ({ ...prev, zone: activeZones[0]._id }));
                 }
-            } else {
-                console.error('Failed to fetch zones for dropdown:', response.data.message);
-                showFlashMessage('Failed to load zones for dropdown.', 'error');
             }
         } catch (err) {
             console.error('Error fetching zones for dropdown:', err);
-            showFlashMessage('Network error fetching zones for dropdown.', 'error');
+            setLocalError('Failed to load zones for dropdown.');
         }
-    }, [editingCityId, showFlashMessage]); // Include editingCityId in dependencies
+    }, [editingCityId]);
 
-    // Fetch cities and zones on component mount
     useEffect(() => {
         fetchCities();
-        fetchZonesForDropdown();
-    }, [fetchCities, fetchZonesForDropdown]);
+    }, [fetchCities]);
 
-    // Debugging useEffect for PDF libraries (similar to ClassManagement)
     useEffect(() => {
-        console.log("PDF Libraries Check (CityManagement):");
-        console.log("window.jspdf (global object):", typeof window.jspdf);
-        console.log("window.jspdf.jsPDF (constructor):", typeof window.jspdf?.jsPDF);
-    }, []);
+        fetchZonesForDropdown();
+    }, [fetchZonesForDropdown]);
 
-
-    // --- Form Handling ---
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
     };
 
     const handleSubmit = async (e) => {
@@ -167,10 +129,9 @@ const CityManagement = ({ showFlashMessage }) => {
         setLoading(true);
         setLocalError(null);
 
-        // Basic validation for zone selection
-        if (!formData.zone) {
-            setLocalError('Please select a Zone.');
-            showFlashMessage('Please select a Zone.', 'error');
+        if (!formData.name.trim() || !formData.zone) {
+            setLocalError('City name and zone are required.');
+            showFlashMessage('City name and zone are required.', 'error');
             setLoading(false);
             return;
         }
@@ -178,7 +139,6 @@ const CityManagement = ({ showFlashMessage }) => {
         try {
             let response;
             if (editingCityId) {
-                // Update existing city
                 response = await api.patch(`/cities/${editingCityId}`, formData);
                 if (response.data.status === 'success') {
                     showFlashMessage('City updated successfully!', 'success');
@@ -186,7 +146,6 @@ const CityManagement = ({ showFlashMessage }) => {
                     throw new Error(response.data.message || 'Failed to update city.');
                 }
             } else {
-                // Create new city
                 response = await api.post('/cities', formData);
                 if (response.data.status === 'success') {
                     showFlashMessage('City created successfully!', 'success');
@@ -194,12 +153,16 @@ const CityManagement = ({ showFlashMessage }) => {
                     throw new Error(response.data.message || 'Failed to create city.');
                 }
             }
-            setFormData({ name: '', zone: zones.length > 0 ? zones[0]._id : '', status: 'active' }); // Reset zone to first available
+            setFormData({
+                name: '',
+                zone: zones[0]?._id || '',
+                status: 'active',
+            });
             setEditingCityId(null);
-            fetchCities(true); // Re-fetch and indicate to scroll
+            fetchCities(true);
         } catch (err) {
             console.error('Error saving city:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to save city. Please check your input and ensure city name is unique.';
+            const errorMessage = err.response?.data?.message || 'Failed to save city. Please check your input and ensure the city name is unique within its zone.';
             setLocalError(errorMessage);
             showFlashMessage(errorMessage, 'error');
         } finally {
@@ -207,9 +170,12 @@ const CityManagement = ({ showFlashMessage }) => {
         }
     };
 
-    // --- Edit and Delete Operations ---
     const handleEdit = (cityItem) => {
-        setFormData({ name: cityItem.name, zone: cityItem.zone._id, status: cityItem.status }); // Set zone ID for dropdown
+        setFormData({
+            name: cityItem.name,
+            zone: cityItem.zone._id,
+            status: cityItem.status,
+        });
         setEditingCityId(cityItem._id);
         setLocalError(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -250,19 +216,21 @@ const CityManagement = ({ showFlashMessage }) => {
         }
     };
 
-    // --- Search Filtering ---
-    const filteredCities = cities.filter(cityItem =>
-        cityItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (cityItem.zone && cityItem.zone.name.toLowerCase().includes(searchTerm.toLowerCase())) // Search by zone name too, safely
+    const handleCancelEdit = () => {
+        setFormData({ name: '', zone: zones[0]?._id || '', status: 'active' });
+        setEditingCityId(null);
+        setLocalError(null);
+    };
+
+    const filteredCities = cities.filter(city =>
+        city.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (city.zone && city.zone.name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    // --- Pagination Logic ---
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentCities = filteredCities.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(filteredCities.length / itemsPerPage);
-
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     const goToNextPage = () => {
         if (currentPage < totalPages) {
@@ -276,326 +244,334 @@ const CityManagement = ({ showFlashMessage }) => {
         }
     };
 
-    // --- PDF Download Functionality ---
     const downloadPdf = () => {
         if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF !== 'function') {
-            showFlashMessage('PDF generation libraries not fully loaded or accessible. Check console for details.', 'error');
-            console.error("PDF generation failed: window.jspdf or window.jspdf.jsPDF is not available/callable. Ensure CDNs are correctly linked in public/index.html");
+            showFlashMessage('PDF generation failed: Core libraries are not loaded. Please check your script links.', 'error');
+            console.error("PDF generation failed: window.jspdf is not available. Ensure CDNs for jsPDF are correctly linked in your HTML file.");
             return;
         }
 
         const doc = new window.jspdf.jsPDF();
-        
         if (typeof doc.autoTable !== 'function') {
-            showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
-            console.error("PDF generation failed: doc.autoTable is not a function. Ensure jspdf.plugin.autotable.min.js is correctly linked and loaded AFTER jspdf.umd.min.js.");
+            showFlashMessage('PDF generation failed: The table plugin is not loaded. Please check your script links.', 'error');
+            console.error("PDF generation failed: doc.autoTable is not a function. Ensure jspdf.plugin.autotable.min.js is linked AFTER jspdf.umd.min.js.");
             return;
         }
 
-        // Define company details for PDF header
         const companyName = "GOOD LUCK BOOK STORE";
         const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
         const companyMobile = "Mobile Number: 7024136476";
         const companyGST = "GST NO: 23EAVPP3772F1Z8";
-        const companyLogoUrl = companyLogo; // Use the imported logo directly
-        
-        // Function to generate the main report content (title, line, table, save)
-        // This function now accepts the dynamic startYPositionForTable as an argument
+        const companyLogoUrl = companyLogo;
+
         const generateReportBody = (startYPositionForTable) => {
-            // Add a professional report title (centered, below company info)
             doc.setFontSize(18);
             doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30); // Dark gray for title
-            // Adjust Y position for the report title to be below company info
-            doc.text("City List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
+            doc.setTextColor(30, 30, 30);
+            doc.text("City List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' });
 
-            // Add a line separator below the main title
             doc.setLineWidth(0.5);
-            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15); // Line spanning almost full width
+            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15);
 
-            // Update startYPositionForTable for autoTable
             const tableStartY = startYPositionForTable + 20;
 
-
-            // Generate table data
-            const tableColumn = ["S.No.", "City Name", "Zone", "Add Date", "Status"];
+            const tableColumn = ["S.No.", "City Name", "Zone", "Status", "Add Date"];
             const tableRows = filteredCities.map((cityItem, index) => [
-                // S.No. is always index + 1 for the filtered data for PDF
-                index + 1, 
+                index + 1,
                 cityItem.name,
-                cityItem.zone ? cityItem.zone.name : 'N/A', // Display zone name
-                formatDateWithTime(cityItem.createdAt),
-                cityItem.status.charAt(0).toUpperCase() + cityItem.status.slice(1)
+                cityItem.zone ? cityItem.zone.name : 'N/A',
+                cityItem.status.charAt(0).toUpperCase() + cityItem.status.slice(1),
+                formatDateWithTime(cityItem.createdAt)
             ]);
 
-            // Add the table to the document with professional styling
             doc.autoTable({
                 head: [tableColumn],
                 body: tableRows,
-                startY: tableStartY, // Use our dynamic start position
-                theme: 'plain', // Changed to 'plain' for a cleaner look like the reference PDF
+                startY: tableStartY,
+                theme: 'plain',
                 styles: {
                     font: 'helvetica',
                     fontSize: 10,
                     cellPadding: 3,
-                    textColor: [51, 51, 51], // Default text color for body
+                    textColor: [51, 51, 51],
                     valign: 'middle',
                     halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [240, 240, 240], // Light gray header
-                    textColor: [51, 51, 51], // Dark text for header
+                    fillColor: [240, 240, 240],
+                    textColor: [51, 51, 51],
                     fontStyle: 'bold',
-                    halign: 'center', // Center align header text
-                    valign: 'middle', // Vertically align header text
-                    lineWidth: 0.1, // Add a thin border to header cells
-                    lineColor: [200, 200, 200] // Light gray border
+                    halign: 'center',
+                    valign: 'middle',
+                    lineWidth: 0.1,
+                    lineColor: [200, 200, 200]
                 },
                 bodyStyles: {
-                    lineWidth: 0.1, // Add a thin border to body cells
-                    lineColor: [200, 200, 200] // Light gray border
+                    lineWidth: 0.1,
+                    lineColor: [200, 200, 200]
                 },
                 columnStyles: {
-                    0: { cellWidth: 15, halign: 'center' }, // S.No. column: narrow and centered
-                    1: { cellWidth: 'auto', halign: 'left' }, // City Name column: auto width, left-aligned
-                    2: { cellWidth: 'auto', halign: 'left' }, // Zone column: auto width, left-aligned
-                    3: { halign: 'center' }, // Add Date column: centered
-                    4: { halign: 'center' } // Status column: centered
+                    0: { cellWidth: 15, halign: 'center' },
+                    1: { cellWidth: 'auto', halign: 'left' },
+                    2: { halign: 'center' },
+                    3: { halign: 'center' },
+                    4: { halign: 'center' }
                 },
-                margin: { top: 10, right: 14, bottom: 10, left: 14 }, // Consistent margins
+                margin: { top: 10, right: 14, bottom: 10, left: 14 },
                 didDrawPage: function (data) {
-                    // Add footer on each page
                     doc.setFontSize(10);
-                    doc.setTextColor(100); // Gray color for footer text
+                    doc.setTextColor(100);
                     const pageCount = doc.internal.getNumberOfPages();
                     doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
                 }
             });
-
-            // Save the PDF
-            // The toLocaleDateString('en-CA') gives YYYY-MM-DD, then replace hyphens with underscores for filename
-            doc.save(`City_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`); 
+            doc.save(`City_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
             showFlashMessage('City list downloaded as PDF!', 'success');
         };
 
-        // 5. **Handle Logo Loading Asynchronously:**
         const img = new Image();
-        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
+        img.crossOrigin = 'Anonymous';
         img.onload = () => {
-            const logoX = 14; // Left margin for logo
-            const logoY = 10; // Top margin for logo
-            const imgWidth = 25; // Changed: Reduced logo width
-            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+            const logoX = 14;
+            const logoY = 10;
+            const imgWidth = 25;
+            const imgHeight = (img.height * imgWidth) / img.width;
 
-            
-            // Add the logo at the top-left
-            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
-            
-            // Add company name and details next to logo
+            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight);
+
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
-            doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
-            
+            doc.text(companyName, logoX + imgWidth + 5, logoY + 5);
+
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
-            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12); // Address
-            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17); // Mobile
-            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22); // GST No.
+            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12);
+            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17);
+            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22);
 
-            // Calculate startYPositionForTable based on logo and company info block
-            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10); // Ensure enough space
-            generateReportBody(calculatedStartY); // Pass the calculated Y position
+            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10);
+            generateReportBody(calculatedStartY);
         };
 
         img.onerror = () => {
             console.warn("Logo image could not be loaded. Generating PDF without logo.");
-            // If logo fails, add only company info block
             doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
-            doc.text(companyName, 14, 20); // Company Name
-            
+            doc.text(companyName, 14, 20);
+
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
-            doc.text(companyAddress, 14, 27); // Address
-            doc.text(companyMobile, 14, 32); // Mobile
-            doc.text(companyGST, 14, 37); // GST No.
-            
-            const calculatedStartY = 45; // Adjust startY since no logo
-            generateReportBody(calculatedStartY); // Pass the calculated Y position
+            doc.text(companyAddress, 14, 27);
+            doc.text(companyMobile, 14, 32);
+            doc.text(companyGST, 14, 37);
+
+            const calculatedStartY = 45;
+            generateReportBody(calculatedStartY);
         };
 
-        img.src = companyLogoUrl; // This will now use the imported image data
+        img.src = companyLogoUrl;
 
-        // Add generation date/time to the top right (this part can run immediately)
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100); // Gray color for date text
+        doc.setTextColor(100, 100, 100);
         doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
     };
 
-    // --- UI Rendering ---
     return (
-        <PageLayout title="City Management" errorMessage={localError}>
-            {/* Table Section - Left Side */}
-            <TableSection
-                sectionTitle="Existing Cities"
-                searchTerm={searchTerm}
-                onSearchChange={(e) => setSearchTerm(e.target.value)}
-                onDownloadPdf={downloadPdf}
-                loading={loading}
-                data={filteredCities}
-                renderTableContent={() => (
-                    <>
-                        <thead>
-                            <tr>
-                                <th>S.No.</th>
-                                <th>City Name</th>
-                                <th>Zone</th>
-                                <th>Add Date</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody ref={tableBodyRef}>
-                            {currentCities.map((cityItem, index) => (
-                                <tr key={cityItem._id}>
-                                    <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                    <td>{cityItem.name}</td>
-                                    <td>{cityItem.zone ? cityItem.zone.name : 'N/A'}</td>
-                                    <td>{formatDateWithTime(cityItem.createdAt)}</td>
-                                    <td>
-                                        <span className={`status-badge ${cityItem.status}`}>
-                                            {cityItem.status.charAt(0).toUpperCase() + cityItem.status.slice(1)}
-                                        </span>
-                                    </td>
-                                    <td className="actions-column">
-                                        <button
-                                            onClick={() => handleEdit(cityItem)}
-                                            className="action-icon-button edit-button"
-                                            title="Edit City"
-                                        >
-                                            <FaEdit />
-                                        </button>
-                                        <button
-                                            onClick={() => openConfirmModal(cityItem)}
-                                            className="action-icon-button delete-button"
-                                            title="Delete City"
-                                        >
-                                            <FaTrashAlt />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </>
-                )}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                goToPrevPage={goToPrevPage}
-                goToNextPage={goToNextPage}
-                itemsPerPage={itemsPerPage}
-                tableBodyRef={tableBodyRef}
-            />
+        <div className="city-management-container">
+            <h2 className="main-section-title">City Management</h2>
 
-            {/* Form Section - Right Side */}
-            <FormSection
-                sectionTitle={editingCityId ? 'Edit City' : 'Create New City'}
-                onSubmit={handleSubmit}
-            >
-                <div className="form-group">
-                    <label htmlFor="name" className="form-label">City Name:</label>
-                    <input
-                        type="text"
-                        id="name"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="e.g., Indore, Bhopal"
-                        required
-                        disabled={loading}
-                        className="form-input"
-                    />
-                </div>
+            {localError && (
+                <p className="error-message text-center">{localError}</p>
+            )}
 
-                <div className="form-group">
-                    <label htmlFor="zone" className="form-label">Zone:</label>
-                    <select
-                        id="zone"
-                        name="zone"
-                        value={formData.zone}
-                        onChange={handleChange}
-                        required
-                        disabled={loading || zones.length === 0}
-                        className="form-select"
-                    >
-                        {zones.length === 0 ? (
-                            <option value="">Loading Zones...</option>
-                        ) : (
-                            <>
-                                <option value="">Select a Zone</option>
-                                {zones.map(zone => (
-                                    <option key={zone._id} value={zone._id}>
-                                        {zone.name}
-                                    </option>
-                                ))}
-                            </>
-                        )}
-                    </select>
-                </div>
+            <div className="main-content-layout">
+                <div className="table-container">
+                    <h3 className="table-title">Existing Cities</h3>
 
-                <div className="form-group">
-                    <label htmlFor="status" className="form-label">Status:</label>
-                    <select
-                        id="status"
-                        name="status"
-                        value={formData.status}
-                        onChange={handleChange}
-                        disabled={loading}
-                        className="form-select"
-                    >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                    </select>
-                </div>
-
-                <div className="form-actions">
-                    <button type="submit" className="btn btn-primary" disabled={loading}>
-                        {loading ? (editingCityId ? 'Updating...' : 'Creating...') : (editingCityId ? 'Update City' : 'Create City')}
-                        <FaPlusCircle className="ml-2" />
-                    </button>
-                    {editingCityId && (
-                        <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={() => {
-                                setEditingCityId(null);
-                                setFormData({ name: '', zone: zones.length > 0 ? zones[0]._id : '', status: 'active' });
-                                setLocalError(null);
-                            }}
-                            disabled={loading}
-                        >
-                            Cancel Edit
+                    <div className="table-controls">
+                        <div className="search-input-group">
+                            <FaSearch className="search-icon" />
+                            <input
+                                type="text"
+                                placeholder="Search by City or Zone..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="search-input"
+                                disabled={loading}
+                            />
+                        </div>
+                        <button onClick={downloadPdf} className="download-pdf-btn" disabled={loading || filteredCities.length === 0}>
+                            <FaFilePdf className="icon" /> Download PDF
                         </button>
+                    </div>
+
+                    {loading && cities.length === 0 ? (
+                        <p className="loading-state text-center">
+                            <FaSpinner className="animate-spin mr-2" /> Loading cities...
+                        </p>
+                    ) : filteredCities.length === 0 ? (
+                        <p className="no-data-message text-center">No cities found matching your criteria. Start by adding one!</p>
+                    ) : (
+                        <>
+                            <table className="app-table">
+                                <thead>
+                                    <tr>
+                                        <th>S.No.</th>
+                                        <th>City Name</th>
+                                        <th>Zone</th>
+                                        <th>Status</th>
+                                        <th>Add Date</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody ref={tableBodyRef}>
+                                    {currentCities.map((cityItem, index) => (
+                                        <tr key={cityItem._id}>
+                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td>{cityItem.name}</td>
+                                            <td>{cityItem.zone?.name || 'N/A'}</td>
+                                            <td>
+                                                <span className={`status-badge ${cityItem.status}`}>
+                                                    {cityItem.status.charAt(0).toUpperCase() + cityItem.status.slice(1)}
+                                                </span>
+                                            </td>
+                                            <td>{formatDateWithTime(cityItem.createdAt)}</td>
+                                            <td className="actions-column">
+                                                <button
+                                                    onClick={() => handleEdit(cityItem)}
+                                                    className="action-icon-button edit-button"
+                                                    title="Edit City"
+                                                    disabled={loading}
+                                                >
+                                                    <FaEdit className="icon" />
+                                                </button>
+                                                <button
+                                                    onClick={() => openConfirmModal(cityItem)}
+                                                    className="action-icon-button delete-button"
+                                                    title="Delete City"
+                                                    disabled={loading}
+                                                >
+                                                    {loading && cityToDeleteId === cityItem._id ? <FaSpinner className="icon animate-spin" /> : <FaTrashAlt className="icon" />}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {totalPages > 1 && (
+                                <div className="pagination-controls">
+                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn-page">
+                                        <FaChevronLeft className="icon" /> Previous
+                                    </button>
+                                    <span>Page {currentPage} of {totalPages}</span>
+                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn-page">
+                                        Next <FaChevronRight className="icon" />
+                                    </button>
+                                </div>
+                            )}
+                            <div className="total-records text-center mt-2">
+                                Total Records: {filteredCities.length}
+                            </div>
+                        </>
                     )}
                 </div>
-            </FormSection>
 
-            {/* Confirmation Modal */}
-            <ConfirmationModal
-                show={showConfirmModal}
-                title="Confirm Deletion"
-                message={`Are you sure you want to delete city: ${cityToDeleteName}?`}
-                onConfirm={confirmDelete}
-                onCancel={closeConfirmModal}
-                confirmText="Delete"
-                cancelText="Cancel"
-                loading={loading}
-            />
-        </PageLayout>
+                <div className="form-container-card">
+                    <form onSubmit={handleSubmit} className="app-form">
+                        <h3 className="form-title">{editingCityId ? 'Edit City' : 'Add City'}</h3>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="name">City Name:</label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    placeholder="e.g., Bhopal"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="zone">Zone:</label>
+                                <select
+                                    id="zone"
+                                    name="zone"
+                                    value={formData.zone}
+                                    onChange={handleChange}
+                                    required
+                                    disabled={loading || zones.length === 0}
+                                    className="form-select"
+                                >
+                                    {zones.length > 0 ? (
+                                        zones.map(zone => (
+                                            <option key={zone._id} value={zone._id}>{zone.name}</option>
+                                        ))
+                                    ) : (
+                                        <option value="" disabled>No active zones found</option>
+                                    )}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="status">Status:</label>
+                            <select
+                                id="status"
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                disabled={loading}
+                                className="form-select"
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div className="form-actions">
+                            <button type="submit" className="btn btn-primary" disabled={loading || zones.length === 0}>
+                                {loading ? (editingCityId ? 'Updating...' : 'Adding...') : (editingCityId ? 'Update City' : 'Add City')}
+                                <FaPlusCircle className="icon ml-2" />
+                            </button>
+                            {editingCityId && (
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={handleCancelEdit}
+                                    disabled={loading}
+                                >
+                                    <FaTimesCircle className="icon mr-2" /> Cancel Edit
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {showConfirmModal && (
+                <div className="modal-backdrop">
+                    <div className="modal-content">
+                        <h3>Confirm Deletion</h3>
+                        <p>Are you sure you want to delete city: <strong>{cityToDeleteName}</strong>?</p>
+                        <div className="modal-actions">
+                            <button onClick={confirmDelete} className="btn btn-danger" disabled={loading}>
+                                {loading && cityToDeleteId ? <FaSpinner className="icon animate-spin" /> : 'Delete'}
+                            </button>
+                            <button onClick={closeConfirmModal} className="btn btn-secondary" disabled={loading}>Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 

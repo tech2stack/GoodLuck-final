@@ -44,17 +44,16 @@ exports.createOrUpdatePendingBook = catchAsync(async (req, res, next) => {
 
     if (status === 'clear') {
         updateData.clearedDate = Date.now();
-        updateData.pendingDate = null; // Clear pendingDate if status is 'clear'
-        setOnInsertData.clearedDate = Date.now(); // Set clearedDate on insert if default is 'clear'
-        setOnInsertData.pendingDate = null; // Ensure pendingDate is null on insert if default is 'clear'
+        updateData.pendingDate = null;
+        setOnInsertData.clearedDate = Date.now();
+        setOnInsertData.pendingDate = null;
     } else if (status === 'pending') {
-        updateData.pendingDate = Date.now(); // Set pendingDate when status changes to 'pending'
-        updateData.clearedDate = null; // Clear cleared date if status reverts to 'pending'
-        setOnInsertData.pendingDate = Date.now(); // Set pendingDate on insert if default is 'pending'
-        setOnInsertData.clearedDate = null; // Ensure clearedDate is null on insert if default is 'pending'
+        updateData.pendingDate = Date.now();
+        updateData.clearedDate = null;
+        setOnInsertData.pendingDate = Date.now();
+        setOnInsertData.clearedDate = null;
     }
-    
-    // Ensure status is also set on insert
+
     setOnInsertData.status = status;
     setOnInsertData.customer = customerId;
     setOnInsertData.book = bookId;
@@ -65,12 +64,12 @@ exports.createOrUpdatePendingBook = catchAsync(async (req, res, next) => {
 
     const pendingBook = await PendingBook.findOneAndUpdate(
         query,
-        { $set: updateData, $setOnInsert: setOnInsertData }, // Use $setOnInsert for new document specific fields
+        { $set: updateData, $setOnInsert: setOnInsertData },
         {
             new: true,
             upsert: true,
             runValidators: true,
-            setDefaultsOnInsert: true // Ensure defaults from schema are applied on upsert
+            setDefaultsOnInsert: true
         }
     );
 
@@ -96,42 +95,37 @@ exports.getBooksWithPendingStatus = catchAsync(async (req, res, next) => {
 
     const pipeline = [];
 
-    // Stage 1: Initial match on BookCatalog (if needed, e.g., by class, publication, etc.)
-    // For now, we'll fetch all books and then join.
-
-    // Stage 2: Lookup PendingBook entries (LEFT JOIN)
+    // Stage 1: Lookup PendingBook entries (LEFT JOIN)
     pipeline.push({
         $lookup: {
-            from: 'pendingbooks', // The name of the collection in MongoDB (usually lowercase, plural)
-            let: { bookId: '$_id' }, // Variable to use in the pipeline below
+            from: 'pendingbooks',
+            let: { bookId: '$_id' },
             pipeline: [
                 {
                     $match: {
                         $expr: {
                             $and: [
-                                { $eq: ['$book', '$$bookId'] }, // Match book ID
-                                { $eq: ['$customer', new mongoose.Types.ObjectId(customerId)] } // Match customer ID
+                                { $eq: ['$book', '$$bookId'] },
+                                { $eq: ['$customer', new mongoose.Types.ObjectId(customerId)] }
                             ]
                         }
                     }
                 },
-                // If branchId is provided, add an additional match here
                 ...(branchId ? [{ $match: { branch: new mongoose.Types.ObjectId(branchId) } }] : []),
                 {
                     $project: {
                         status: 1,
                         pendingDate: 1,
                         clearedDate: 1,
-                        _id: 1 // Include _id of PendingBook entry
+                        _id: 1
                     }
                 }
             ],
-            as: 'pendingStatus' // Array of matching pending book entries (will be 0 or 1 element)
+            as: 'pendingStatus'
         }
     });
 
     // Stage 3: Unwind the pendingStatus array.
-    // use preserveNullAndEmptyArrays: true to keep books that don't have a pending status
     pipeline.push({
         $unwind: {
             path: '$pendingStatus',
@@ -142,14 +136,14 @@ exports.getBooksWithPendingStatus = catchAsync(async (req, res, next) => {
     // Stage 4: Project the final output fields
     pipeline.push({
         $project: {
-            _id: '$_id', // BookCatalog's _id
-            bookName: '$bookName', // <--- FIX: Directly project BookCatalog's bookName
-            subtitle: '$subtitle', // <--- FIX: Directly project BookCatalog's subtitle
-            
-            pendingBookId: { $ifNull: ['$pendingStatus._id', null] }, // The _id of the PendingBook entry (or null if not found)
-            status: { $ifNull: ['$pendingStatus.status', 'not_set'] }, // Default to 'not_set' if no pending status
-            pendingDate: { $ifNull: ['$pendingStatus.pendingDate', null] }, // Default to null if no pending status
-            clearedDate: { $ifNull: ['$pendingStatus.clearedDate', null] } // Default to null if no pending status
+            _id: '$_id',
+            bookName: '$bookName',
+            subtitle: '$subtitle',
+
+            pendingBookId: { $ifNull: ['$pendingStatus._id', null] },
+            status: { $ifNull: ['$pendingStatus.status', 'clear'] }, // FIX: Changed default status to 'clear'
+            pendingDate: { $ifNull: ['$pendingStatus.pendingDate', null] },
+            clearedDate: { $ifNull: ['$pendingStatus.clearedDate', null] }
         }
     });
 
@@ -166,14 +160,14 @@ exports.getBooksWithPendingStatus = catchAsync(async (req, res, next) => {
     }
 
     // Stage 6: Count total documents before pagination (for total count)
-    const countPipeline = [...pipeline]; // Copy the pipeline up to this point
+    const countPipeline = [...pipeline];
     countPipeline.push({ $count: 'totalCount' });
 
     const totalCountResult = await BookCatalog.aggregate(countPipeline);
     const totalCount = totalCountResult.length > 0 ? totalCountResult[0].totalCount : 0;
 
     // Stage 7: Sorting
-    pipeline.push({ $sort: { bookName: 1 } }); // Sort by book name by default
+    pipeline.push({ $sort: { bookName: 1 } });
 
     // Stage 8: Pagination
     const page = parseInt(req.query.page) || 1;

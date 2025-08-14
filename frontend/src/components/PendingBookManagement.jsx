@@ -3,24 +3,25 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../utils/api';
 import { toast } from 'sonner';
-import { FaSearch, FaSpinner, FaTimesCircle, FaSync, FaChevronLeft, FaChevronRight, FaFilePdf } from 'react-icons/fa'; // Added FaFilePdf
+import { FaSearch, FaSpinner, FaTimesCircle, FaSync, FaChevronLeft, FaChevronRight, FaFilePdf } from 'react-icons/fa';
+import html2canvas from 'html2canvas'; // Import html2canvas for image generation
 
 import '../styles/Form.css';
 import '../styles/Table.css';
-import '../styles/PendingBookManagement.css'; 
-import companyLogo from '../assets/glbs-logo.jpg'; // Import company logo
+import '../styles/PendingBookManagement.css';
+import companyLogo from '../assets/glbs-logo.jpg';
 
 export default function PendingBookManagement({ showFlashMessage }) {
     // --- State for Dropdown Data ---
-    const [branches, setBranches] = useState([]); // All branches
-    const [filteredCustomers, setFilteredCustomers] = useState([]); // Customers filtered by selected branch
+    const [branches, setBranches] = useState([]);
+    const [filteredCustomers, setFilteredCustomers] = useState([]);
 
     // --- State for Filters ---
-    const [selectedBranch, setSelectedBranch] = useState(''); // Selected Branch ID
-    const [selectedSchoolCustomer, setSelectedSchoolCustomer] = useState(''); // Selected School Customer ID
+    const [selectedBranch, setSelectedBranch] = useState('');
+    const [selectedSchoolCustomer, setSelectedSchoolCustomer] = useState('');
 
     // --- State for Books Data ---
-    const [books, setBooks] = useState([]); // Array of books from the selected set
+    const [books, setBooks] = useState([]);
 
     // --- State for Loading and Error ---
     const [loading, setLoading] = useState(false);
@@ -39,7 +40,7 @@ export default function PendingBookManagement({ showFlashMessage }) {
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-            hour12: true // For AM/PM format
+            hour12: true
         };
         const date = new Date(dateString);
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
@@ -49,9 +50,8 @@ export default function PendingBookManagement({ showFlashMessage }) {
     const fetchBranches = useCallback(async () => {
         setLoading(true);
         try {
-            const branchesRes = await api.get('/sets/dropdowns/branches'); // Fetch branches
-            // Use 'name' and 'location' as per your provided branch data structure
-            const validBranches = (branchesRes.data.data.branches || []).filter(b => b && b._id && String(b.name || '').trim() !== ''); 
+            const branchesRes = await api.get('/sets/dropdowns/branches');
+            const validBranches = (branchesRes.data.data.branches || []).filter(b => b && b._id && String(b.name || '').trim() !== '');
             setBranches(validBranches);
         } catch (err) {
             console.error('Error fetching branches:', err);
@@ -65,9 +65,9 @@ export default function PendingBookManagement({ showFlashMessage }) {
     // --- Fetch Customers based on Selected Branch ---
     const fetchCustomersByBranch = useCallback(async (branchId) => {
         if (!branchId) {
-            setFilteredCustomers([]); // Clear customers if no branch is selected
-            setSelectedSchoolCustomer(''); // Clear selected school
-            setBooks([]); // Clear books
+            setFilteredCustomers([]);
+            setSelectedSchoolCustomer('');
+            setBooks([]);
             return;
         }
         setLoading(true);
@@ -77,8 +77,8 @@ export default function PendingBookManagement({ showFlashMessage }) {
             if (response.data.status === 'success') {
                 const validCustomers = (response.data.data.customers || []).filter(c => c && c._id && String(c.customerName || '').trim() !== '');
                 setFilteredCustomers(validCustomers);
-                setSelectedSchoolCustomer(''); // Reset selected school when branch changes
-                setBooks([]); // Clear books
+                setSelectedSchoolCustomer('');
+                setBooks([]);
             } else {
                 setFilteredCustomers([]);
                 setSelectedSchoolCustomer('');
@@ -109,38 +109,36 @@ export default function PendingBookManagement({ showFlashMessage }) {
         setLocalError(null);
         try {
             const queryParams = new URLSearchParams({
-                customerId: selectedSchoolCustomer, 
+                customerId: selectedSchoolCustomer,
             });
 
             const booksResponse = await api.get(`/sets/books-by-school?${queryParams.toString()}`);
-            
+
             if (booksResponse.data.status === 'success') {
                 const fetchedBooks = (booksResponse.data.data.books || []).map(item => ({
                     ...item,
-                    status: item.status || 'active' // Default to 'active'
+                    status: item.status || 'active'
                 }));
-                // Group books by book_id to show unique books, listing associated classes
                 const groupedBooks = {};
                 fetchedBooks.forEach(bookItem => {
-                    const bookId = bookItem.book._id;
-                    if (!groupedBooks[bookId]) {
-                        groupedBooks[bookId] = {
-                            ...bookItem,
-                            classes: [bookItem.class?.name].filter(Boolean), // Start with current class name
-                            setIds: [bookItem.setId] // Keep track of set IDs for status updates
-                        };
-                    } else {
-                        // Add class if not already present
-                        if (bookItem.class?.name && !groupedBooks[bookId].classes.includes(bookItem.class.name)) {
-                            groupedBooks[bookId].classes.push(bookItem.class.name);
-                        }
-                        // Add setId if not already present
-                        if (bookItem.setId && !groupedBooks[bookId].setIds.includes(bookItem.setId)) {
-                            groupedBooks[bookId].setIds.push(bookItem.setId);
+                    if (bookItem && bookItem.book) { // Add null check here
+                        const bookId = bookItem.book._id;
+                        if (!groupedBooks[bookId]) {
+                            groupedBooks[bookId] = {
+                                ...bookItem,
+                                classes: [bookItem.class?.name].filter(Boolean),
+                                setIds: [bookItem.setId]
+                            };
+                        } else {
+                            if (bookItem.class?.name && !groupedBooks[bookId].classes.includes(bookItem.class.name)) {
+                                groupedBooks[bookId].classes.push(bookItem.class.name);
+                            }
+                            if (bookItem.setId && !groupedBooks[bookId].setIds.includes(bookItem.setId)) {
+                                groupedBooks[bookId].setIds.push(bookItem.setId);
+                            }
                         }
                     }
                 });
-                // Convert back to array for rendering
                 setBooks(Object.values(groupedBooks));
                 showFlashMessage('Books loaded successfully!', 'success');
             } else {
@@ -160,7 +158,7 @@ export default function PendingBookManagement({ showFlashMessage }) {
 
     // --- Handle Status Change for a Book (3-state toggle: Active -> Pending -> Clear -> Active) ---
     const handleStatusChange = useCallback(async (bookId, currentStatus, setIds) => {
-        if (!setIds || setIds.length === 0) { 
+        if (!setIds || setIds.length === 0) {
             showFlashMessage('Error: Cannot update book status. Set ID not found for this book.', 'error');
             return;
         }
@@ -173,28 +171,26 @@ export default function PendingBookManagement({ showFlashMessage }) {
         } else if (currentStatus === 'clear') {
             newStatus = 'active';
         } else {
-            newStatus = 'active'; // Fallback for undefined/unknown status
+            newStatus = 'active';
         }
 
         setLoading(true);
         setLocalError(null);
 
         try {
-            // Iterate over all relevant setIds for this book and update status
-            const updatePromises = setIds.map(setId => 
-                api.patch(`/sets/${setId}/item-status`, { 
+            const updatePromises = setIds.map(setId =>
+                api.patch(`/sets/${setId}/item-status`, {
                     itemId: bookId,
-                    itemType: 'book', 
+                    itemType: 'book',
                     status: newStatus
                 })
             );
-            
-            await Promise.all(updatePromises); // Wait for all updates to complete
 
-            // Update local state after successful API calls
+            await Promise.all(updatePromises);
+
             setBooks(prevBooks =>
                 prevBooks.map(bookItem =>
-                    bookItem.book._id === bookId // Match by bookId (since we grouped them)
+                    bookItem.book._id === bookId
                         ? { ...bookItem, status: newStatus }
                         : bookItem
                 )
@@ -213,17 +209,16 @@ export default function PendingBookManagement({ showFlashMessage }) {
 
     // --- Effects ---
     useEffect(() => {
-        fetchBranches(); // Fetch branches on initial mount
+        fetchBranches();
     }, [fetchBranches]);
 
-    // Effect to fetch customers when branch changes
     useEffect(() => {
-        if (selectedBranch) { // Only fetch if a branch is selected
+        if (selectedBranch) {
             fetchCustomersByBranch(selectedBranch);
         } else {
-            setFilteredCustomers([]); // Clear customers if no branch is selected
-            setSelectedSchoolCustomer(''); // Clear selected school
-            setBooks([]); // Clear books
+            setFilteredCustomers([]);
+            setSelectedSchoolCustomer('');
+            setBooks([]);
         }
     }, [selectedBranch, fetchCustomersByBranch]);
 
@@ -246,7 +241,7 @@ export default function PendingBookManagement({ showFlashMessage }) {
 
     const handleItemsPerPageChange = (e) => {
         setItemsPerPage(Number(e.target.value));
-        setCurrentPage(1); // Reset to first page when items per page changes
+        setCurrentPage(1);
     };
 
     const getStringValue = (field) => field ? String(field).trim() : 'N/A';
@@ -259,8 +254,8 @@ export default function PendingBookManagement({ showFlashMessage }) {
             return;
         }
 
-        const doc = new window.jspdf.jsPDF('landscape'); 
-        
+        const doc = new window.jspdf.jsPDF('landscape');
+
         if (typeof doc.autoTable !== 'function') {
             showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
             console.error("PDF generation failed: doc.autoTable is not a function. Ensure jspdf.plugin.autotable.min.js is correctly linked and loaded AFTER jspdf.umd.min.js.");
@@ -270,108 +265,101 @@ export default function PendingBookManagement({ showFlashMessage }) {
         const selectedCustomerName = filteredCustomers.find(c => c._id === selectedSchoolCustomer)?.customerName || 'Unknown School';
         const selectedBranchName = branches.find(b => b._id === selectedBranch)?.name || 'Unknown Branch';
 
-        // Define company details for PDF header
         const companyName = "GOOD LUCK BOOK STORE";
         const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
         const companyMobile = "Mobile Number: 7024136476";
         const companyGST = "GST NO: 23EAVPP3772F1Z8";
 
-        const addHeaderAndSetStartY = (docInstance, reportTitle, img, imgWidth, imgHeight, formatDateFunc) => { // Added formatDateFunc
+        const addHeaderAndSetStartY = (docInstance, reportTitle, img, imgWidth, imgHeight, formatDateFunc) => {
             const HEADER_TOP_MARGIN = 10;
             const LOGO_LEFT_MARGIN = 14;
             const TEXT_OFFSET_FROM_LOGO = 5;
             const COMPANY_NAME_FONT_SIZE = 12;
             const COMPANY_DETAIL_FONT_SIZE = 9;
-            const LINE_HEIGHT_NAME_TO_DETAIL = 7; // Space from company name to first detail
-            const LINE_HEIGHT_DETAILS = 5; // Space between detail lines
+            const LINE_HEIGHT_NAME_TO_DETAIL = 7;
+            const LINE_HEIGHT_DETAILS = 5;
             const REPORT_TITLE_FONT_SIZE = 18;
-            const PADDING_AFTER_HEADER_BLOCK = 10; // Space after company info block
-            const PADDING_AFTER_REPORT_TITLE = 10; // Space after report title line
+            const PADDING_AFTER_HEADER_BLOCK = 10;
+            const PADDING_AFTER_REPORT_TITLE = 10;
 
             let currentY = HEADER_TOP_MARGIN;
             let companyTextStartX = LOGO_LEFT_MARGIN;
-            let companyTextY = currentY; // Initial Y for company text block
+            let companyTextY = currentY;
 
-            // Add the logo at the top-left
-            if (img && imgWidth > 0 && imgHeight > 0) { // Only add if image object is provided (i.e., loaded successfully)
-                docInstance.addImage(img, 'JPEG', LOGO_LEFT_MARGIN, currentY, imgWidth, imgHeight); 
+            if (img && imgWidth > 0 && imgHeight > 0) {
+                docInstance.addImage(img, 'JPEG', LOGO_LEFT_MARGIN, currentY, imgWidth, imgHeight);
                 companyTextStartX = LOGO_LEFT_MARGIN + imgWidth + TEXT_OFFSET_FROM_LOGO;
-                companyTextY = currentY + (imgHeight / 2) - (COMPANY_NAME_FONT_SIZE / 2); // Vertically align company name with logo center
-                if (companyTextY < currentY) companyTextY = currentY; // Ensure it doesn't go above margin
+                companyTextY = currentY + (imgHeight / 2) - (COMPANY_NAME_FONT_SIZE / 2);
+                if (companyTextY < currentY) companyTextY = currentY;
             }
-            
-            // Add generation date/time to the top right
+
             docInstance.setFontSize(10);
             docInstance.setFont('helvetica', 'normal');
-            docInstance.setTextColor(100, 100, 100); // Gray color for date text
+            docInstance.setTextColor(100, 100, 100);
             docInstance.text(`Date: ${formatDateFunc(new Date())}`, docInstance.internal.pageSize.width - LOGO_LEFT_MARGIN, currentY + 10, { align: 'right' });
 
-            // Add company name and details
             docInstance.setFontSize(COMPANY_NAME_FONT_SIZE);
             docInstance.setFont('helvetica', 'bold');
             docInstance.setTextColor(30, 30, 30);
-            docInstance.text(companyName, companyTextStartX, companyTextY); // Company Name
-            
+            docInstance.text(companyName, companyTextStartX, companyTextY);
+
             docInstance.setFontSize(COMPANY_DETAIL_FONT_SIZE);
             docInstance.setFont('helvetica', 'normal');
             docInstance.setTextColor(50, 50, 50);
-            companyTextY += LINE_HEIGHT_NAME_TO_DETAIL; 
-            docInstance.text(companyAddress, companyTextStartX, companyTextY); // Address
-            companyTextY += LINE_HEIGHT_DETAILS; 
-            docInstance.text(companyMobile, companyTextStartX, companyTextY); // Mobile
-            companyTextY += LINE_HEIGHT_DETAILS; 
-            docInstance.text(companyGST, companyTextStartX, companyTextY); // GST No.
+            companyTextY += LINE_HEIGHT_NAME_TO_DETAIL;
+            docInstance.text(companyAddress, companyTextStartX, companyTextY);
+            companyTextY += LINE_HEIGHT_DETAILS;
+            docInstance.text(companyMobile, companyTextStartX, companyTextY);
+            companyTextY += LINE_HEIGHT_DETAILS;
+            docInstance.text(companyGST, companyTextStartX, companyTextY);
 
-            // Calculate max Y used by the header content (either logo bottom or last company text line bottom)
             const maxHeaderYUsed = Math.max(
-                (img ? (currentY + imgHeight) : currentY), // Max Y of logo
-                companyTextY // Max Y of company text block
-            ); 
+                (img ? (currentY + imgHeight) : currentY),
+                companyTextY
+            );
 
-            // Add a professional report title (centered, below company info)
             docInstance.setFontSize(REPORT_TITLE_FONT_SIZE);
             docInstance.setFont('helvetica', 'bold');
-            docInstance.setTextColor(30, 30, 30); // Dark gray for title
-            const reportTitleY = maxHeaderYUsed + PADDING_AFTER_HEADER_BLOCK; 
-            docInstance.text(reportTitle, docInstance.internal.pageSize.width / 2, reportTitleY, { align: 'center' }); 
+            docInstance.setTextColor(30, 30, 30);
+            const reportTitleY = maxHeaderYUsed + PADDING_AFTER_HEADER_BLOCK;
+            docInstance.text(reportTitle, docInstance.internal.pageSize.width / 2, reportTitleY, { align: 'center' });
 
-            // Add a line separator below the main title
             docInstance.setLineWidth(0.5);
-            docInstance.line(LOGO_LEFT_MARGIN, reportTitleY + (PADDING_AFTER_REPORT_TITLE / 2), docInstance.internal.pageSize.width - LOGO_LEFT_MARGIN, reportTitleY + (PADDING_AFTER_REPORT_TITLE / 2)); 
+            docInstance.line(LOGO_LEFT_MARGIN, reportTitleY + (PADDING_AFTER_REPORT_TITLE / 2), docInstance.internal.pageSize.width - LOGO_LEFT_MARGIN, reportTitleY + (PADDING_AFTER_REPORT_TITLE / 2));
 
-            return reportTitleY + PADDING_AFTER_REPORT_TITLE; // Return Y position for table start
+            return reportTitleY + PADDING_AFTER_REPORT_TITLE;
         };
 
         const addTableToDoc = (docInstance, columns, rows, startY) => {
             docInstance.autoTable({
                 head: [columns],
                 body: rows,
-                startY: startY, 
-                theme: 'plain', 
+                startY: startY,
+                theme: 'plain',
                 styles: {
                     font: 'helvetica',
                     fontSize: 9,
                     cellPadding: 3,
-                    textColor: [51, 51, 51], 
+                    textColor: [51, 51, 51],
                     valign: 'middle',
                     halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [240, 240, 240], 
-                    textColor: [51, 51, 51], 
+                    fillColor: [240, 240, 240],
+                    textColor: [51, 51, 51],
                     fontStyle: 'bold',
-                    halign: 'center', 
-                    valign: 'middle', 
-                    lineWidth: 0.1, 
-                    lineColor: [200, 200, 200] 
+                    halign: 'center',
+                    valign: 'middle',
+                    lineWidth: 0.1,
+                    lineColor: [200, 200, 200]
                 },
                 bodyStyles: {
-                    lineWidth: 0.1, 
-                    lineColor: [200, 200, 200] 
+                    lineWidth: 0.1,
+                    lineColor: [200, 200, 200]
                 },
                 columnStyles: {
-                    0: { cellWidth: 15, halign: 'center' }, // S.No.
-                    4: { halign: 'center' } // Status
+                    0: { cellWidth: 15, halign: 'center' },
+                    4: { halign: 'center' }
                 },
                 margin: { top: 10, right: 14, bottom: 10, left: 14 },
                 didDrawPage: function (data) {
@@ -380,10 +368,9 @@ export default function PendingBookManagement({ showFlashMessage }) {
                     docInstance.text(str, data.settings.margin.left, docInstance.internal.pageSize.height - 10);
                 }
             });
-            return docInstance.autoTable.previous.finalY + 10; // Return Y position after table + some margin
+            return docInstance.autoTable.previous.finalY + 10;
         };
 
-        // Prepare table data
         const tableColumn = ["S.No.", "Sub Title", "Book Name", "Classes", "Status"];
         const tableRows = [];
 
@@ -397,11 +384,11 @@ export default function PendingBookManagement({ showFlashMessage }) {
             ]);
         });
 
-        // Generate PDF content
+        // Refactored to ensure PDF generation logic runs regardless of logo load status
         const generatePdfContent = (docInstance, img, imgWidth, imgHeight) => {
-            const reportTitle = `Pending Books Report for ${selectedCustomerName} (${selectedBranchName})`; // Include selected branch and school
-            let currentY = addHeaderAndSetStartY(docInstance, reportTitle, img, imgWidth, imgHeight, formatDateWithTime); // Pass formatDateWithTime
-            
+            const reportTitle = `Pending Books Report for ${selectedCustomerName} (${selectedBranchName})`;
+            let currentY = addHeaderAndSetStartY(docInstance, reportTitle, img, imgWidth, imgHeight, formatDateWithTime);
+
             if (books.length === 0) {
                 docInstance.setFontSize(12);
                 docInstance.setTextColor(80, 80, 80);
@@ -415,39 +402,33 @@ export default function PendingBookManagement({ showFlashMessage }) {
             showFlashMessage('Pending Books Report downloaded as PDF!', 'success');
         };
 
-        // Handle Logo Loading Asynchronously and then generate content
         const img = new Image();
-        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
-         img.onload = () => {
-            const logoX = 14; // Left margin for logo
-            const logoY = 10; // Top margin for logo
-            const imgWidth = 25; // Changed: Reduced logo width
-            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
-
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+            const imgWidth = 25;
+            const imgHeight = (img.height * imgWidth) / img.width;
+            generatePdfContent(doc, img, imgWidth, imgHeight); // Call generation logic here
         };
-
         img.onerror = () => {
             console.warn("Logo image could not be loaded. Generating PDF without logo.");
-            generatePdfContent(doc, null, 0, 0); // Pass null for img to indicate no logo
+            generatePdfContent(doc, null, 0, 0); // Call generation logic here, with no logo
         };
-
-        img.src = companyLogo; 
+        img.src = companyLogo;
     };
 
 
     return (
         <div className="pending-book-management-container">
-            <h2 className="section-title">Pending Book Management</h2> {/* Added main title */}
+            <h2 className="section-title">Pending Book Management</h2>
             {localError && (
                 <p className="error-message">
                     <FaTimesCircle className="error-icon" /> {localError}
                 </p>
             )}
 
-            <div className="main-content-layout"> {/* New wrapper for two-column layout */}
-                {/* Filters Section - FIRST CHILD */}
-                <div className="filters-section section-container form-container-card"> {/* Added form-container-card for styling */}
-                    <h3 className="section-header form-title">Filter Books</h3> {/* Changed to h3 and form-title for consistency */}
+            <div className="main-content-layout">
+                <div className="filters-section section-container form-container-card">
+                    <h3 className="section-header form-title">Filter Books</h3>
                     <div className="form-group">
                         <label htmlFor="branch-select" className="form-label">Branch:</label>
                         <select
@@ -455,8 +436,8 @@ export default function PendingBookManagement({ showFlashMessage }) {
                             value={selectedBranch}
                             onChange={(e) => {
                                 setSelectedBranch(e.target.value);
-                                setSelectedSchoolCustomer(''); // Clear selected school when branch changes
-                                setBooks([]); // Clear books
+                                setSelectedSchoolCustomer('');
+                                setBooks([]);
                             }}
                             disabled={loading}
                             className="form-select"
@@ -464,7 +445,7 @@ export default function PendingBookManagement({ showFlashMessage }) {
                             <option value="">-- Select Branch --</option>
                             {(branches || []).map(branch => (
                                 <option key={branch._id} value={branch._id}>
-                                    {branch.name} {branch.location ? `(${branch.location})` : ''} {/* Use branch.name and branch.location */}
+                                    {branch.name} {branch.location ? `(${branch.location})` : ''}
                                 </option>
                             ))}
                         </select>
@@ -476,23 +457,23 @@ export default function PendingBookManagement({ showFlashMessage }) {
                             value={selectedSchoolCustomer}
                             onChange={(e) => {
                                 setSelectedSchoolCustomer(e.target.value);
-                                setBooks([]); // Clear books
+                                setBooks([]);
                             }}
-                            disabled={loading || !selectedBranch} // Disable until a branch is selected
+                            disabled={loading || !selectedBranch}
                             className="form-select"
                         >
                             <option value="">-- Select School --</option>
-                            {(filteredCustomers || []).map(customer => ( // Use filteredCustomers here
+                            {(filteredCustomers || []).map(customer => (
                                 <option key={customer._id} value={customer._id}>
                                     {customer.customerName} {customer.schoolCode ? `(${customer.schoolCode})` : ''}
                                 </option>
                             ))}
                         </select>
                     </div>
-                    <div className="form-actions"> {/* Use form-actions for button consistency */}
+                    <div className="form-actions">
                         <button
                             onClick={fetchBooks}
-                            disabled={loading || !selectedSchoolCustomer} 
+                            disabled={loading || !selectedSchoolCustomer}
                             className="btn btn-primary"
                         >
                             {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : <FaSearch className="btn-icon-mr" />} Show Books
@@ -500,19 +481,18 @@ export default function PendingBookManagement({ showFlashMessage }) {
                     </div>
                 </div>
 
-                {/* Books Display Section - SECOND CHILD */}
-                <div className="books-display-section section-container table-section"> {/* Added table-section for styling */}
+                <div className="books-display-section section-container table-section">
                     <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-200">
-                        <h3 className="section-header table-title">Book List (All Classes)</h3> {/* Changed to h3 and table-title for consistency */}
-                        <button 
-                            onClick={downloadPdf} 
-                            className="btn btn-info download-pdf-btn flex-shrink-0 ml-auto" // Added flex-shrink-0 and ml-auto
+                        <h3 className="section-header table-title">Book List (All Classes)</h3>
+                        <button
+                            onClick={downloadPdf}
+                            className="btn btn-info download-pdf-btn flex-shrink-0 ml-auto"
                             disabled={loading || books.length === 0 || !selectedSchoolCustomer}
                         >
                             <FaFilePdf className="mr-2" /> Download PDF
                         </button>
                     </div>
-                    
+
                     {loading && books.length === 0 && (
                         <p className="loading-state"><FaSpinner className="animate-spin mr-2" /> Loading books...</p>
                     )}
@@ -520,31 +500,31 @@ export default function PendingBookManagement({ showFlashMessage }) {
                         <p className="no-data-message">No books found for this school.</p>
                     )}
                     {books.length > 0 && (
-                        <div className="table-container"> {/* This div is for table overflow, not layout */}
+                        <div className="table-container">
                             <table className="app-table">
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>
                                         <th>Sub Title</th>
                                         <th>Book Name</th>
-                                        <th>Classes</th> {/* Changed to Classes (plural) */}
+                                        <th>Classes</th>
                                         <th>Status</th>
                                         <th className="table-cell-center">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {paginatedBooks.map((bookItem, index) => (
-                                        <tr key={bookItem.book._id}> {/* Key based on unique book ID */}
+                                        <tr key={bookItem.book._id}>
                                             <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                             <td>{getStringValue(bookItem.book?.subtitle?.name || bookItem.book?.subtitle)}</td>
                                             <td>{getStringValue(bookItem.book?.bookName)}</td>
-                                            <td>{bookItem.classes.length > 0 ? bookItem.classes.join(', ') : 'N/A'}</td> {/* Display all classes */}
+                                            <td>{bookItem.classes.length > 0 ? bookItem.classes.join(', ') : 'N/A'}</td>
                                             <td className={`status-cell status-${bookItem.status}`}>
                                                 {bookItem.status.toUpperCase()}
                                             </td>
-                                            <td className="actions-column"> {/* Changed to actions-column for consistency */}
+                                            <td className="actions-column">
                                                 <button
-                                                    onClick={() => handleStatusChange(bookItem.book._id, bookItem.status, bookItem.setIds)} 
+                                                    onClick={() => handleStatusChange(bookItem.book._id, bookItem.status, bookItem.setIds)}
                                                     className={`btn-status-action btn-status-${bookItem.status}`}
                                                     title={`Change to ${bookItem.status === 'active' ? 'Pending' : bookItem.status === 'pending' ? 'Clear' : 'Active'}`}
                                                     disabled={loading}
@@ -557,7 +537,6 @@ export default function PendingBookManagement({ showFlashMessage }) {
                                 </tbody>
                             </table>
 
-                            {/* Pagination Controls */}
                             <div className="pagination-controls">
                                 <div className="items-per-page">
                                     <label htmlFor="items-per-page">Page Size:</label>
@@ -592,7 +571,7 @@ export default function PendingBookManagement({ showFlashMessage }) {
                         </div>
                     )}
                 </div>
-            </div> {/* End of main-content-layout */}
+            </div>
         </div>
     );
 }

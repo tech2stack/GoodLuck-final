@@ -12,13 +12,12 @@ const router = express.Router();
 
 // Route to get all books with their pending status for a specific customer/branch
 // This is now the primary GET route for the table data
-router.get('/', pendingBookController.getBooksWithPendingStatus);
+router.get('/books-by-school', pendingBookController.getBooksWithPendingStatus); // FIX: Corrected route path
 
 // Route to create or update a pending book entry's status
-router.patch('/status', pendingBookController.createOrUpdatePendingBook); // <--- NEW ROUTE: For updating status
+router.patch('/update-status', pendingBookController.createOrUpdatePendingBook); // FIX: Corrected route path
 
 // Route for deleting a pending book entry by ID (if needed)
-// Note: This is for deleting the PendingBook entry itself, not changing status.
 router.delete('/:id', pendingBookController.deletePendingBook);
 
 

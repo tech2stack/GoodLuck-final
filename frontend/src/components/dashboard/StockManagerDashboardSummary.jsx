@@ -1,79 +1,59 @@
 // src/components/dashboard/StockManagerDashboardSummary.jsx
-import React, { useState, useEffect, useCallback } from 'react';
-import api from '../../utils/api';
+import React from 'react';
+import useDataFetching from '../../hooks/useDataFetching'; // NEW: Import the custom hook
 import SummaryCard from '../common/SummaryCard';
 import {
   FaGraduationCap, FaGlobeAsia, FaCity, FaBook,
-  FaLanguage, FaBookOpen, FaPencilRuler, FaUserCheck, FaTruck
+  FaLanguage, FaBookOpen, FaPencilRuler, FaUserCheck, FaTruck, FaSpinner
 } from 'react-icons/fa';
 
 const StockManagerDashboardSummary = ({ showFlashMessage }) => {
-  const [counts, setCounts] = useState({
-    classes: 0,
-    zones: 0,
-    cities: 0,
-    publications: 0,
-    languages: 0,
-    bookCatalogs: 0,
-    stationeryItems: 0,
-    customers: 0,
-    transports: 0
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // NEW: Use the custom hook for each individual summary endpoint
+  const { data: classesData, loading: loadingClasses, error: errorClasses } = useDataFetching('/summary/classes');
+  const { data: zonesData, loading: loadingZones, error: errorZones } = useDataFetching('/summary/zones');
+  const { data: citiesData, loading: loadingCities, error: errorCities } = useDataFetching('/summary/cities');
+  const { data: publicationsData, loading: loadingPublications, error: errorPublications } = useDataFetching('/summary/publications');
+  const { data: languagesData, loading: loadingLanguages, error: errorLanguages } = useDataFetching('/summary/languages');
+  const { data: bookCatalogsData, loading: loadingBookCatalogs, error: errorBookCatalogs } = useDataFetching('/summary/book-catalogs');
+  const { data: stationeryItemsData, loading: loadingStationeryItems, error: errorStationeryItems } = useDataFetching('/summary/stationery-items');
+  const { data: customersData, loading: loadingCustomers, error: errorCustomers } = useDataFetching('/summary/customers');
+  const { data: transportsData, loading: loadingTransports, error: errorTransports } = useDataFetching('/summary/transports');
 
-  const fetchCounts = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const responses = await Promise.all([
-        api.get('/summary/classes'),
-        api.get('/summary/zones'),
-        api.get('/summary/cities'),
-        api.get('/summary/publications'),
-        api.get('/summary/languages'),
-        api.get('/summary/book-catalogs'),
-        api.get('/summary/stationery-items'),
-        api.get('/summary/customers'),
-        api.get('/summary/transports')
-      ]);
+  // Combine loading and error states from all hooks
+  const loading = loadingClasses || loadingZones || loadingCities || loadingPublications || loadingLanguages || loadingBookCatalogs || loadingStationeryItems || loadingCustomers || loadingTransports;
+  const error = errorClasses || errorZones || errorCities || errorPublications || errorLanguages || errorBookCatalogs || errorStationeryItems || errorCustomers || errorTransports;
 
-      setCounts({
-        classes: responses[0].data.data.count,
-        zones: responses[1].data.data.count,
-        cities: responses[2].data.data.count,
-        publications: responses[3].data.data.count,
-        languages: responses[4].data.data.count,
-        bookCatalogs: responses[5].data.data.count,
-        stationeryItems: responses[6].data.data.count,
-        customers: responses[7].data.data.count || 0,
-        transports: responses[8].data.data.count || 0,
-      });
-    } catch (err) {
-      console.error('Error fetching dashboard summary:', err);
-      setError(err.response?.data?.message || 'Failed to load dashboard summary.');
-      showFlashMessage(err.response?.data?.message || 'Failed to load dashboard summary.', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [showFlashMessage]);
-
-  useEffect(() => { fetchCounts(); }, [fetchCounts]);
+  // Extract counts from the fetched data, providing default values
+  const counts = {
+    classes: classesData?.data?.count || 0,
+    zones: zonesData?.data?.count || 0,
+    cities: citiesData?.data?.count || 0,
+    publications: publicationsData?.data?.count || 0,
+    languages: languagesData?.data?.count || 0,
+    bookCatalogs: bookCatalogsData?.data?.count || 0,
+    stationeryItems: stationeryItemsData?.data?.count || 0,
+    customers: customersData?.data?.count || 0,
+    transports: transportsData?.data?.count || 0,
+  };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+        <FaSpinner className="animate-spin rounded-full h-12 w-12 text-green-500" />
       </div>
     );
   }
 
+  // Display a single error message if any of the fetches failed
   if (error) {
+    // Determine the specific error message, or use a general one
+    const errorMessage = error.message || 'Failed to load dashboard summary.';
+    showFlashMessage(errorMessage, 'error'); // Show flash message for a better user experience
     return (
-      <div className="bg-red-50 p-4 rounded-lg">
-        <p className="text-red-600 mb-3">Error: {error}</p>
+      <div className="bg-red-50 p-4 rounded-lg text-center">
+        <p className="text-red-600 mb-3">Error: {errorMessage}</p>
         <button
-          onClick={fetchCounts}
+          onClick={() => window.location.reload()}
           className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
         >
           Retry

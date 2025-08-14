@@ -1,44 +1,90 @@
 // src/api/api.js
+
 import axios from 'axios';
 
-// ✅ Automatically use local or deployed backend URL
-// This variable should be just the base domain/port, e.g., 'http://localhost:5000'
+// Backend URL ko automatically use karein
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
-// Create an Axios instance
+// Client-side cache store
+const apiCache = {};
+// Cache ka samay (expiry time): 10 minutes
+const CACHE_EXPIRY_TIME = 600000;
+
+// Axios instance banayein
 const api = axios.create({
-    // The baseURL for the instance now correctly includes /api/v1
-    baseURL: `${API_BASE_URL}/api/v1`, 
-    withCredentials: true,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+    baseURL: `${API_BASE_URL}/api/v1`, 
+    withCredentials: true,
+    headers: {
+        'Content-Type': 'application/json',
+    },
 });
 
-// 🔐 Request Interceptor: Attach JWT if available
+// Request Interceptor: Authorization token attach karein
 api.interceptors.request.use(
-    config => {
-        const token = localStorage.getItem('jwtToken');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    error => Promise.reject(error)
+    config => {
+        const token = localStorage.getItem('jwtToken');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    error => Promise.reject(error)
 );
 
-// ❗ Response Interceptor: Handle common errors
+// 🔥 NEW & FIXED: Response Interceptor mein cache clear karne ka logic
 api.interceptors.response.use(
-    response => response,
-    error => {
-        if (error.response && error.response.status === 401) {
-            console.warn("Unauthorized — possibly invalid/expired token");
-            // Optionally: logout user or redirect
-            // localStorage.removeItem('jwtToken');
-            // window.location.href = '/login';
-        }
-        return Promise.reject(error);
-    }
+    response => {
+        // Agar request successful hai aur POST, PATCH ya DELETE method use hua hai
+        const method = response.config.method;
+        if (method === 'post' || method === 'patch' || method === 'delete') {
+            // `classes` se related cache clear karein.
+            // Dynamic URLs ke liye, humesha base path clear karein.
+            api.clearCache('/classes'); 
+        }
+        return response;
+    },
+    error => {
+        if (error.response && error.response.status === 401) {
+            console.warn("Unauthorized — possibly invalid/expired token");
+        }
+        return Promise.reject(error);
+    }
 );
+
+// Cache ko URL ke adhar par clear karein
+api.clearCache = (url) => {
+    for (const key in apiCache) {
+        const parsedKey = JSON.parse(key);
+        if (parsedKey.url === url) {
+            delete apiCache[key];
+            console.log(`Cache cleared for URL: ${url}`);
+        }
+    }
+};
+
+// Original get method ko ek variable mein store karein
+const originalGet = api.get;
+
+// Custom get() method, jismein caching logic hai
+api.get = async (url, config = {}) => {
+    const cacheKey = JSON.stringify({ url, params: config.params });
+    const cachedEntry = apiCache[cacheKey];
+
+    if (cachedEntry && (Date.now() - cachedEntry.timestamp < CACHE_EXPIRY_TIME)) {
+        console.log(`Cache se data use kiya: ${url}`);
+        return Promise.resolve({ data: cachedEntry.data });
+    }
+
+    try {
+        const response = await originalGet(url, config);
+        apiCache[cacheKey] = {
+            data: response.data,
+            timestamp: Date.now()
+        };
+        return response;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
 
 export default api;
