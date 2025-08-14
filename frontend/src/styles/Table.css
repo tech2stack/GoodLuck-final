@@ -13,11 +13,11 @@
 
 .app-table th,
 .app-table td {
-    padding: 4px 8px;
+    padding: 6px 10px;
     text-align: left;
     border: 1px solid black;
     vertical-align: middle;
-    white-space: nowrap; /* Keep content on one line */
+    white-space: nowrap;
 }
 
 .app-table thead th {
@@ -25,12 +25,12 @@
     color: white;
     font-weight: bold;
     text-align: center;
-    padding: 6px 8px;
-    font-size: 0.9em;
+    padding: 8px 10px;
+    font-size: 0.95em;
 }
 
 .app-table tbody td {
-    font-size: 0.8em;
+    font-size: 0.85em;
 }
 
 .app-table tbody tr:nth-child(even) {
@@ -106,10 +106,6 @@
 
 .action-icon-button.delete-button:hover .icon {
     color: #b02a37;
-}
-
-.action-icon-button .icon {
-    display: block;
 }
 
 /* ------------------------------
@@ -244,7 +240,6 @@
         max-width: 95%;
         min-width: unset;
     }
-
     .app-table th,
     .app-table td {
         font-size: 0.75em;
@@ -253,46 +248,17 @@
 }
 
 @media (max-width: 768px) {
-    .app-table,
-    .app-table thead,
-    .app-table tbody,
-    .app-table th,
-    .app-table td,
-    .app-table tr {
-        display: block;
+    .table-container {
+        max-width: 100%;
+        overflow-x: auto; /* horizontal scroll for small screens */
+    }
+    .app-table {
+        display: table;
         width: 100%;
     }
-
-    .app-table thead {
-        display: none;
-    }
-
-    .app-table tbody tr {
-        margin-bottom: 10px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        background-color: #fff;
-        padding: 8px;
-    }
-
-    .app-table tbody td {
-        display: flex;
-        justify-content: space-between;
-        padding: 6px 8px;
-        border-bottom: 1px solid #eee;
-        white-space: normal; /* allow wrapping in mobile */
-    }
-
-    .app-table tbody td:last-child {
-        border-bottom: none;
-    }
-
-    .app-table tbody td::before {
-        content: attr(data-label);
-        font-weight: bold;
-        color: #555;
-        flex-basis: 40%;
-        text-align: left;
+    .app-table th,
+    .app-table td {
+        font-size: 0.7em;
+        padding: 3px 5px;
     }
 }
-    
