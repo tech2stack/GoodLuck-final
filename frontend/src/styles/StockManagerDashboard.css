@@ -10,47 +10,29 @@
     background-color: #f4f7f9;
 }
 
-/* Assuming there's a fixed header component that is 60px tall */
-.header-placeholder {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 60px;
-    background-color: #333;
-    z-index: 2000;
-}
-
 /* ================== Sidebar Styles ================== */
 .sidebar {
     position: fixed;
-    /* साइडबार का top हमेशा 60px पर फिक्स रहेगा ताकि यह हेडर के ठीक नीचे से शुरू हो */
-    top: 60px;
+    top: 60;
     left: 0;
     width: 250px;
-    height: calc(100vh - 60px); /* Makes sidebar full height below the header */
-    background-color: #ffffff;
+    height: 100vh;
+    background-color: #2c3e50; /* Changed to match the image */
     color: #4b5563; /* Tailwind gray-600 */
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease; /* Changed transition property */
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     z-index: 1500;
+    overflow-y: auto;
+    transform: translateX(-100%); /* Hides the sidebar by default */
 }
 
-/* Collapsed state for sidebar */
-.sidebar.collapsed {
-    width: 80px;
+/* Un-collapsed state for sidebar */
+.sidebar.open {
+    transform: translateX(0);
 }
-/* .p-4 {
-    padding: 2.0rem !important;
-} */
-.w-12 {
-    width: 5rem;
-}
-.h-12 {
-    height: 4rem;
-}
+
 /* Sidebar Header */
 .sidebar-header {
     display: flex;
@@ -66,25 +48,6 @@
     flex-direction: row;
     overflow: hidden;
     white-space: nowrap;
-}
-
-.sidebar.collapsed .user-greeting {
-    display: none;
-}
-
-.sidebar-toggle {
-    background: none;
-    border: none;
-    color: #4b5563;
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-    padding: 0;
-}
-
-.sidebar.collapsed .sidebar-toggle {
-    justify-content: center;
-    width: 100%;
 }
 
 /* Navigation List */
@@ -140,18 +103,10 @@
     transition: opacity 0.2s ease;
 }
 
-.sidebar.collapsed .text {
-    display: none;
-}
-
 /* Dropdown Arrow */
 .dropdown-arrow {
     margin-left: auto;
     transition: transform 0.2s ease;
-}
-
-.sidebar.collapsed .dropdown-arrow {
-    display: none;
 }
 
 /* Dropdown Menu */
@@ -169,155 +124,13 @@
 
 /* ================== Main Content Area ================== */
 .main-content-wrapper {
-    /* अब main content का margin-left हमेशा 80px रहेगा, ताकि गैप इमेज 2 जैसा हो */
-    /* margin-left: 80px; */
-    width:100%;
-    /* padding: 20px 2rem 2rem 2rem; */
-    transition: margin-left 0.3s ease;
+    /* मेन कंटेंट का मार्जिन साइडबार के ऊपर नहीं आएगा */
+    margin-left: 0;
+    transition: margin-left 0.3s ease, width 0.3s ease;
 }
 
-/* यह क्लास अब ज़रूरी नहीं है क्योंकि मार्जिन ऊपर फिक्स हो गया है */
-/* .main-content-wrapper.sidebar-collapsed {
-    margin-left: 80px;
-    padding-left: 1.5rem;
-} */
-
-.dashboard-main-content {
-    max-width: 100%;
-}
-
-/* ================== Small Mobile (<=480px) ================== */
-@media (max-width: 480px) {
-    .sidebar {
-        /* Sidebar narrower for small mobile */
-        width: 150px;
-        position: fixed;
-        top: 0; /* Sticks to top */
-        transform: translateX(0);
-        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
-        height: 100vh;
-    }
-
-    /* Collapsed sidebar stays minimal */
-    .sidebar.collapsed {
-        width: 70px;
-    }
-
-    /* Stack dashboard vertically for small screens */
-    .dashboard-container {
-        flex-direction: column;
-    }
-
-    .main-content-wrapper {
-        margin-left: 150px;
-        padding-top: 60px;
-        padding-left: 0;
-        padding-right: 0;
-    }
-
-    /* Adjust when sidebar is collapsed */
-    .main-content-wrapper.sidebar-collapsed {
-        margin-left: 70px;
-    }
-}
-
-/* ================== Large Mobile (<=768px) ================== */
-@media (max-width: 768px) {
-    .sidebar {
-        /* Slightly wider sidebar for large mobile */
-        width: 180px;
-        position: fixed;
-        top: 0;
-        transform: translateX(0);
-        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
-        height: 100vh;
-    }
-
-    .sidebar.collapsed {
-        width: 80px;
-    }
-
-    /* Horizontal dashboard layout */
-    .dashboard-container {
-        flex-direction: row;
-    }
-
-    .main-content-wrapper {
-        margin-left: 180px;
-        padding-top: 60px;
-        padding-left: 0;
-        padding-right: 0;
-    }
-
-    .main-content-wrapper.sidebar-collapsed {
-        margin-left: 80px;
-    }
-}
-
-/* ================== Tablet (<=1024px) ================== */
-@media (max-width: 1024px) {
-    .sidebar {
-        width: 200px; /* Wider for tablet */
-        position: fixed;
-        top: 60px; /* Below header */
-        transform: translateX(0);
-        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
-        height: calc(100vh - 60px);
-    }
-
-    .sidebar.collapsed {
-        width: 90px;
-    }
-
-    .main-content-wrapper {
-        margin-left: 20px;
-        padding-top: 60px;
-        padding-left: 0;
-        padding-right: 0;
-    }
-
-    .main-content-wrapper.sidebar-collapsed {
-        margin-left: 90px;
-    }
-
-    /* Keep dashboard items in row for tablet */
-    .dashboard-container {
-        flex-direction: row;
-    }
-    .main-content,
-  .dashboard-container {
-    margin: 0 !important;
-    padding: 0 !important;
-    gap: 0 !important;
-  }
-   
-@media (max-width: 1024px) {
-  .sidebar {
-    display: none !important;
-  }
-
-  .main-content {
-    width: 100% !important;
-    margin-left: 0 !important;
-  }
-}
-
-
-    
-}
-
-@media (max-width: 768px) {
-  .spacer {
-    display: none; /* Tablet par .spacer ko hide karega */
-  }
-}
-
-/*
-  Media query for Mobile phones (max-width: 480px)
-  Aap apne project ki zaroorat ke hisaab se width adjust kar sakte hain.
-*/
-@media (max-width: 480px) {
-  .spacer {
-    display: none; /* Mobile par bhi .spacer ko hide karega */
-  }
+.main-content-wrapper.sidebar-open {
+    /* जब साइडबार खुला हो तो कंटेंट को दाएं तरफ पुश करे */
+    margin-left: 250px;
+    width: calc(100% - 250px);
 }
