@@ -635,7 +635,7 @@
     }
     .radio-group {
         grid-column: span 1;
-        flex-direction: column;
+        /* flex-direction: column; */
         align-items: flex-start;
     }
     .modal-actions {

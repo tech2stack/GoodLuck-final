@@ -65,21 +65,31 @@
     margin: 0 auto; /* Center the form itself */
 }
 
-/* Form Title */
+/* Form Mini Heading */
 .form-container-card .form-title {
-    font-size: 1.4rem; /* Smaller, more compact title for the form */
-    color: #444444;
-    margin-bottom: 20px; /* Space below form title */
+    display: inline-block; /* Makes it wrap only around the text */
+    font-size: 1.2rem; /* Smaller size */
+    color: #2c3e50;
     font-weight: 600;
-    text-align: center;
+    padding: 4px 10px; /* Small padding */
+    width: 100%;
+    border-left: 4px solid #3498db; /* Slim accent line */
+    border-right: 4px solid #3498db;
+    background: #e5efff; /* Soft background */
+    border-radius: 4px;
+    
+    letter-spacing: 0.5px;
+    margin-bottom: 15px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05); /* Very light shadow */
 }
+
 
 /* Form rows for multi-column layout */
 .form-row {
     display: grid;
     grid-template-columns: 1fr; /* Default to single column on small screens */
     gap: 10px; /* Reduced gap between form groups for compactness */
-    margin-bottom: 10px; /* Reduced space below each row for compactness */
+    /* margin-bottom: 10px; Reduced space below each row for compactness */
 }
 
 @media (min-width: 600px) { /* Two columns for tablets and larger */
@@ -599,8 +609,8 @@
         margin-bottom: 15px;
     }
     .table-controls {
-        flex-direction: column; /* Stack search and download vertically on mobile */
-        align-items: stretch;
+        /* flex-direction: column; Stack search and download vertically on mobile */
+        /* align-items: stretch; */
         gap: 8px;
         margin-bottom: 10px;
     }

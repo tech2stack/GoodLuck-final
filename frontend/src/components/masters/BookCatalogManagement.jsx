@@ -8,7 +8,7 @@ import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
 // Import the new BookCatalogManagement specific styles
-import '../../styles/BookCatalogManagement.css'; 
+import '../../styles/BookCatalogManagement.css';
 
 // NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
 // If you are using npm, you'd do: npm install jspdf jspdf-autotable
@@ -46,7 +46,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     // State for loading indicators
     const [loading, setLoading] = useState(false);
     // State for managing local errors (e.g., form validation)
-    const [localError, setLocalError] = useState(null); 
+    const [localError, setLocalError] = useState(null);
     // State to track if we are in edit mode and which book catalog is being edited
     const [editingBookCatalogId, setEditingBookCatalogId] = useState(null);
 
@@ -54,7 +54,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [bookCatalogToDeleteId, setBookCatalogToDeleteId] = useState(null);
     const [bookCatalogToDeleteName, setBookCatalogToDeleteName] = useState('');
-    const [bookToDelete, setBookToDelete] = useState(null); 
+    const [bookToDelete, setBookToDelete] = useState(null);
 
     // Ref for scrolling to the new item in the table (if needed)
     const tableBodyRef = useRef(null);
@@ -173,26 +173,26 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             const response = await api.get(`/book-catalogs`); // Fetch all book catalogs
             if (response.data.status === 'success') {
                 setBookCatalogs(response.data.data.bookCatalogs);
-                
+
                 const totalPagesCalculated = Math.ceil(response.data.data.bookCatalogs.length / itemsPerPage);
                 if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
                     setCurrentPage(totalPagesCalculated);
                 } else if (response.data.data.bookCatalogs.length === 0) {
                     setCurrentPage(1);
                 }
-                
+
                 if (scrollToNew && tableBodyRef.current) {
                     setTimeout(() => {
                         const lastPageIndex = Math.ceil(response.data.data.bookCatalogs.length / itemsPerPage);
                         if (currentPage !== lastPageIndex) {
-                           setCurrentPage(lastPageIndex);
-                           setTimeout(() => {
-                               if (tableBodyRef.current.lastElementChild) {
-                                   tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                               } else {
-                                   tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                               }
-                           }, 50);
+                            setCurrentPage(lastPageIndex);
+                            setTimeout(() => {
+                                if (tableBodyRef.current.lastElementChild) {
+                                    tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                                } else {
+                                    tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
+                                }
+                            }, 50);
                         } else {
                             if (tableBodyRef.current.lastElementChild) {
                                 tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -207,13 +207,13 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             }
         } catch (err) {
             console.error('Error fetching book catalogs:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to load book catalogs due to network error.'; 
+            const errorMessage = err.response?.data?.message || 'Failed to load book catalogs due to network error.';
             setLocalError(errorMessage);
             showFlashMessage(errorMessage, 'error');
         } finally {
             setLoading(false);
         }
-    }, [currentPage, itemsPerPage, showFlashMessage]); 
+    }, [currentPage, itemsPerPage, showFlashMessage]);
 
     // Initial data fetch on component mount
     useEffect(() => {
@@ -413,12 +413,12 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
         // Explicitly fetch subtitles for the selected publication, passing the current subtitle ID
         fetchSubtitles(bookCatalogItem.publication?._id, bookCatalogItem.subtitle?._id);
-        
+
         console.log('Set formData for editing. Publication:', bookCatalogItem.publication?._id, 'Subtitle:', bookCatalogItem.subtitle?._id); // DEBUG LOG
     };
 
     const handleDeleteClick = (bookCatalogItem) => {
-        setBookToDelete(bookCatalogItem); 
+        setBookToDelete(bookCatalogItem);
         setShowConfirmModal(true);
     };
 
@@ -426,18 +426,18 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         setShowConfirmModal(false);
         setBookCatalogToDeleteId(null);
         setBookCatalogToDeleteName('');
-        setBookToDelete(null); 
+        setBookToDelete(null);
     };
 
     const confirmDelete = async () => {
-        if (!bookToDelete) return; 
+        if (!bookToDelete) return;
 
         setLoading(true);
         setLocalError(null);
         closeConfirmModal();
 
         try {
-            const response = await api.delete(`/book-catalogs/${bookToDelete._id}`); 
+            const response = await api.delete(`/book-catalogs/${bookToDelete._id}`);
             if (response.status === 204) {
                 showFlashMessage('Book Catalog deleted successfully!', 'success');
                 fetchBookCatalogs();
@@ -454,32 +454,32 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         }
     };
 
-    const cancelDelete = () => { 
+    const cancelDelete = () => {
         setShowConfirmModal(false);
-        setBookToDelete(null); 
+        setBookToDelete(null);
         showFlashMessage('Deletion cancelled.', 'info');
     };
 
     const handleCancelEdit = () => {
-        setFormData({ 
-            bookName: '', publication: publications[0]?._id || '', subtitle: '', 
-            language: languages[0]?._id || '', bookType: 'default', commonPrice: 0, 
-            pricesByClass: {}, discountPercentage: 0, gstPercentage: 0, status: 'active' 
+        setFormData({
+            bookName: '', publication: publications[0]?._id || '', subtitle: '',
+            language: languages[0]?._id || '', bookType: 'default', commonPrice: 0,
+            pricesByClass: {}, discountPercentage: 0, gstPercentage: 0, status: 'active'
         });
         setEditingBookCatalogId(null);
         setLocalError(null);
     };
 
     // Filtered and paginated data
-    const filteredBookCatalogs = useMemo(() => { 
+    const filteredBookCatalogs = useMemo(() => {
         const lowerCaseSearchTerm = searchTerm.toLowerCase();
         return bookCatalogs.filter(bookCatalogItem => {
             // Defensive checks for undefined properties before calling toLowerCase()
-            const bookName = bookCatalogItem.bookName || ''; 
+            const bookName = bookCatalogItem.bookName || '';
             const publicationName = bookCatalogItem.publication?.name || '';
             const languageName = bookCatalogItem.language?.name || '';
             const subtitleName = bookCatalogItem.subtitle?.name || '';
-            
+
             return (
                 bookName.toLowerCase().includes(lowerCaseSearchTerm) ||
                 publicationName.toLowerCase().includes(lowerCaseSearchTerm) ||
@@ -487,7 +487,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 subtitleName.toLowerCase().includes(lowerCaseSearchTerm)
             );
         });
-    }, [bookCatalogs, searchTerm]); 
+    }, [bookCatalogs, searchTerm]);
 
     const totalRecords = filteredBookCatalogs.length;
     const totalPages = Math.ceil(totalRecords / itemsPerPage);
@@ -498,7 +498,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         return filteredBookCatalogs.slice(startIndex, endIndex);
     }, [filteredBookCatalogs, currentPage, itemsPerPage]);
 
-    const handlePageChange = (page) => { 
+    const handlePageChange = (page) => {
         if (page > 0 && page <= totalPages) {
             setCurrentPage(page);
         }
@@ -512,12 +512,12 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     // --- Format Price for Table Display ---
     const formatPriceDisplay = (bookCatalogItem) => {
         if (bookCatalogItem.bookType === 'common_price') {
-            return `Rs${bookCatalogItem.commonPrice?.toFixed(2) || '0.00'}`; 
+            return `Rs${bookCatalogItem.commonPrice?.toFixed(2) || '0.00'}`;
         } else if (bookCatalogItem.bookType === 'default' && bookCatalogItem.pricesByClass) {
             const prices = Object.entries(bookCatalogItem.pricesByClass)
                 .map(([classId, price]) => {
                     const className = classes.find(c => c._id === classId)?.name;
-                    return className ? `${className}/${price?.toFixed(2) || '0.00'}  ` : `Rs${price?.toFixed(2) || '0.00'} - Unknown Class`; 
+                    return className ? `${className}/${price?.toFixed(2) || '0.00'}  ` : `Rs${price?.toFixed(2) || '0.00'} - Unknown Class`;
                 })
                 .join(', ');
             return prices || 'N/A';
@@ -533,9 +533,9 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             return;
         }
 
-         const doc = new window.jspdf.jsPDF('portrait', 'mm', 'a4');
+        const doc = new window.jspdf.jsPDF('portrait', 'mm', 'a4');
 
-        
+
         if (typeof doc.autoTable !== 'function') {
             showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
             console.error("PDF generation failed: doc.autoTable is not a function. Ensure jspdf.plugin.autotable.min.js is correctly linked and loaded AFTER jspdf.umd.min.js.");
@@ -548,7 +548,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         const companyMobile = "Mobile Number: 7024136476";
         const companyGST = "GST NO: 23EAVPP3772F1Z8";
         const companyLogoUrl = companyLogo; // Use the imported logo directly
-        
+
         // Function to generate the main report content (title, line, table, save)
         // This function now accepts the dynamic startYPositionForTable as an argument
         const generateReportBody = (startYPositionForTable) => {
@@ -557,7 +557,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30); // Dark gray for title
             // Adjust Y position for the report title to be below company info
-            doc.text("Book Catalog List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' }); 
+            doc.text("Book Catalog List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' });
 
             // Add a line separator below the main title
             doc.setLineWidth(0.5);
@@ -582,7 +582,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 formatPriceDisplay(bookItem), // Formatted price
                 `${bookItem.discountPercentage?.toFixed(2) || '0.00'}%`, // Add fallback for discount, format to 2 decimal places
                 `${bookItem.gstPercentage?.toFixed(2) || '0.00'}%`, // Add fallback for GST, format to 2 decimal places
-                bookItem.createdAt ? formatDateWithTime(bookItem.createdAt) : 'N/A', 
+                bookItem.createdAt ? formatDateWithTime(bookItem.createdAt) : 'N/A',
                 (bookItem.status?.charAt(0).toUpperCase() + bookItem.status?.slice(1)) || 'N/A'
             ]);
 
@@ -632,7 +632,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
             // Save the PDF
             // The toLocaleDateString('en-CA') gives YYYY-MM-DD, then replace hyphens with underscores for filename
-            doc.save(`Book_Catalog_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`); 
+            doc.save(`Book_Catalog_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
             showFlashMessage('Book Catalog list downloaded as PDF!', 'success');
         };
 
@@ -644,16 +644,16 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             const logoY = 10; // Top margin for logo
             const imgWidth = 25; // Changed: Reduced logo width
             const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
-            
+
             // Add the logo at the top-left
-            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight); 
-            
+            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight);
+
             // Add company name and details next to logo
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
             doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
-            
+
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
@@ -673,14 +673,14 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
             doc.text(companyName, 14, 20); // Company Name
-            
+
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
             doc.text(companyAddress, 14, 27); // Address
             doc.text(companyMobile, 14, 32); // Mobile
             doc.text(companyGST, 14, 37); // GST No.
-            
+
             const calculatedStartY = 45; // Adjust startY since no logo
             generateReportBody(calculatedStartY); // Pass the calculated Y position
         };
@@ -713,8 +713,8 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
                         <h3 className="form-title">{editingBookCatalogId ? 'Edit Book Catalog' : 'Add Book Catalog'}</h3>
-                        
-                                                {/* Book Type and Price Fields */}
+
+                        {/* Book Type and Price Fields */}
                         <div className="form-group">
                             {/* <label>Book Type:</label> */}
                             <div className="radio-group">
@@ -741,7 +741,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                             </div>
                         </div>
                         <div className="form-row">
-                           
+
                             <div className="form-group">
                                 <label htmlFor="publication">Publication Name:</label>
                                 <select
@@ -767,7 +767,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                     )}
                                 </select>
                             </div>
-                                                        <div className="form-group">
+                            <div className="form-group">
                                 <label htmlFor="subtitle">Sub Title:</label>
                                 <select
                                     id="subtitle"
@@ -820,7 +820,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                     )}
                                 </select>
                             </div>
-                                                         <div className="form-group">
+                            <div className="form-group">
                                 <label htmlFor="bookName">Book Name:</label>
                                 <input
                                     type="text"
@@ -944,7 +944,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 <button
                                     type="button"
                                     className="btn btn-secondary ml-2"
-                                    onClick={handleCancelEdit} 
+                                    onClick={handleCancelEdit}
                                     disabled={loading}
                                 >
                                     Cancel Edit
@@ -954,7 +954,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                     </form>
                 </div>
 
-                                {/* Book Catalog List Table - FIRST CHILD */}
+                {/* Book Catalog List Table - FIRST CHILD */}
                 <div className="table-section">
                     <h3 className="table-title">Existing Book Catalogs</h3>
 
@@ -989,7 +989,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                             <table className="app-table">
                                 <thead>
                                     <tr>
-                                        <th>S.No.</th>
+                                        {/* <th>S.No.</th>
                                         <th>Book Name</th>
                                         <th>Publication</th>
                                         <th>Subtitle</th>
@@ -999,6 +999,17 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                         <th>GST %</th>
                                         <th>Add Date</th>
                                         <th>Status</th>
+                                        <th>Action</th> */}
+                                        <th>S.No.</th>
+                                        <th>Publication</th>
+                                        <th>Subtitle</th>
+                                        <th>Book Name</th>
+                                        <th>Price</th>
+                                        <th>Language</th>
+                                        {/* <th>ISBN No.</th> */}
+                                        <th>Discount %</th>
+                                        <th>Add Date</th>
+                                        <th>Status</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
@@ -1006,13 +1017,14 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                     {paginatedItems.map((book, index) => ( // Changed to paginatedItems
                                         <tr key={book._id}>
                                             <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                            <td>{book.bookName}</td>
                                             <td>{book.publication?.name || 'N/A'}</td>
                                             <td>{book.subtitle?.name || 'N/A'}</td>
-                                            <td>{book.language?.name || 'N/A'}</td> 
+                                            <td>{book.bookName}</td>
                                             <td>{formatPriceDisplay(book)}</td>
+                                            <td>{book.language?.name || 'N/A'}</td>
+                                            
                                             <td>{book.discountPercentage?.toFixed(2) || '0.00'}%</td>
-                                            <td>{book.gstPercentage?.toFixed(2) || '0.00'}%</td>
+                                            {/* <td>{book.gstPercentage?.toFixed(2) || '0.00'}%</td> */}
                                             <td>{formatDateWithTime(book.createdAt)}</td>
                                             <td>
                                                 <span className={`status-badge ${book.status}`}>

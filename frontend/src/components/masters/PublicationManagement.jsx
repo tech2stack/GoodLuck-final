@@ -671,7 +671,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 {/* Publication Creation/Update Form - SECOND CHILD */}
                 <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
-                        <h3 className="form-title">{editingPublicationId ? 'Edit Publication' : 'Add Publication'}</h3>
+                        <h3 className="form-title">{editingPublicationId ? 'Edit Publication' : 'Publication Details'}</h3>
 
                         <div className="form-row"> {/* Use form-row for multi-column layout */}
                             <div className="form-group">
@@ -758,6 +758,20 @@ const PublicationManagement = ({ showFlashMessage }) => {
 
                         <div className="form-row">
                             <div className="form-group">
+                                <label htmlFor="mobileNumber">Mobile Number:</label>
+                                <input
+                                    type="text"
+                                    id="mobileNumber"
+                                    name="mobileNumber"
+                                    value={formData.mobileNumber}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 9876543210"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
                                 <label htmlFor="city">City:</label>
                                 {/* City input is now a direct text input */}
                                 <input
@@ -773,24 +787,37 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="mobileNumber">Mobile Number:</label>
+                                <label htmlFor="address">Address:</label>
+                                <textarea
+                                    id="address"
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleChange}
+                                    placeholder="Full Address"
+                                    required
+                                    disabled={loading}
+                                    className="form-textarea"
+                                ></textarea>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="gstin">GSTIN:</label>
                                 <input
                                     type="text"
-                                    id="mobileNumber"
-                                    name="mobileNumber"
-                                    value={formData.mobileNumber}
+                                    id="gstin"
+                                    name="gstin"
+                                    value={formData.gstin}
                                     onChange={handleChange}
-                                    placeholder="e.g., 9876543210"
-                                    required
+                                    placeholder="e.g., 22AAAAA0000A1Z5"
                                     disabled={loading}
                                     className="form-input"
                                 />
                             </div>
-                        </div>
 
+                        </div>
+                        <h3 className="form-title">{editingPublicationId ? 'Edit Bank Details' : 'Bank Details'}</h3>
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="bank">Bank:</label>
+                                <label htmlFor="bank">Bank Name:</label>
                                 <input
                                     type="text"
                                     id="bank"
@@ -803,7 +830,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="accountNumber">Acc Number:</label>
+                                <label htmlFor="accountNumber">Account Number:</label>
                                 <input
                                     type="text"
                                     id="accountNumber"
@@ -831,21 +858,9 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-                            <div className="form-group">
-                                <label htmlFor="gstin">GSTIN:</label>
-                                <input
-                                    type="text"
-                                    id="gstin"
-                                    name="gstin"
-                                    value={formData.gstin}
-                                    onChange={handleChange}
-                                    placeholder="e.g., 22AAAAA0000A1Z5"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                        </div>
 
+                        </div>
+                        <h3 className="form-title">{editingPublicationId ? 'Edit Discount Details' : 'Discount Details'}</h3>
                         <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="discount">Discount (%):</label>
@@ -862,19 +877,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-                            <div className="form-group">
-                                <label htmlFor="address">Address:</label>
-                                <textarea
-                                    id="address"
-                                    name="address"
-                                    value={formData.address}
-                                    onChange={handleChange}
-                                    placeholder="Full Address"
-                                    required
-                                    disabled={loading}
-                                    className="form-textarea"
-                                ></textarea>
-                            </div>
+
                         </div>
 
 
@@ -941,7 +944,8 @@ const PublicationManagement = ({ showFlashMessage }) => {
                             <table className="app-table">
                                 <thead>
                                     <tr>
-                                        <th>S.No.</th><th>Name</th><th>Sub Title</th><th>Person</th><th>Address</th><th>City</th><th>Phone</th><th>Bank</th><th>Acc No.</th><th>IFSC</th><th>OTHER (GSTIN/Disc)</th><th>Add Date</th><th>Status</th><th>Action</th>
+                                        {/* <th>S.No.</th><th>Name</th><th>Sub Title</th><th>Person</th><th>Address</th><th>City</th><th>Phone</th><th>Bank</th><th>Acc No.</th><th>IFSC</th><th>OTHER (GSTIN/Disc)</th><th>Add Date</th><th>Status</th><th>Action</th> */}
+                                        <th>S.No.</th><th>Publication Name</th><th>Contact Person Name</th><th>Sub Title</th><th>Mobile No</th><th>Address</th><th>City</th><th>GST No.</th><th>Bank</th><th>Acc No.</th><th>IFSC</th><th>Add Date</th><th>Status</th><th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody ref={tableBodyRef}>
@@ -949,6 +953,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                         <tr key={pubItem._id}>
                                             <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                             <td>{pubItem.name}</td>
+                                            <td>{pubItem.personName}</td>
                                             <td>
 
                                                 {/* Display Subtitles */}
@@ -985,18 +990,23 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                                 </div>
 
                                             </td>
-                                            <td>{pubItem.personName}</td>
+
+                                            <td>{pubItem.mobileNumber}</td>
+
                                             <td>{pubItem.address}</td>
                                             <td>{pubItem.city ? pubItem.city.name : 'N/A'}</td>
-                                            <td>{pubItem.mobileNumber}</td>
-                                            <td>{pubItem.bank}</td>
-                                            <td>{pubItem.accountNumber}</td>
-                                            <td>{pubItem.ifsc}</td>
+
+
                                             <td>
                                                 {pubItem.gstin && `GSTIN: ${pubItem.gstin}`}
                                                 {pubItem.gstin && pubItem.discount > 0 && <br />}
                                                 {pubItem.discount > 0 && `DISCOUNT: ${pubItem.discount}%`}
                                             </td>
+
+                                            <td>{pubItem.bank}</td>
+                                            <td>{pubItem.accountNumber}</td>
+                                            <td>{pubItem.ifsc}</td>
+
                                             <td>{formatDateWithTime(pubItem.createdAt)}</td>
                                             <td>
                                                 <span className={`status-badge ${pubItem.status}`}>

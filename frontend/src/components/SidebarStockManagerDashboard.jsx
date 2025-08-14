@@ -205,7 +205,7 @@ const SidebarStockManagerDashboard = ({
                                 onClick={() => handleNavigationClick('dashboard')}
                             >
                                 <FaChartBar className="text-lg min-w-[1.5rem] mr-3" />
-                                <span className="truncate">Dashboard Summary</span>
+                                <span className="truncate">Dashboard </span>
                             </button>
                         </li>
                         {sections.map(({ title, icon: Icon, ref, toggle, show, items }) => (

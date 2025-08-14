@@ -958,6 +958,15 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             )}
                         </div>
 
+
+                        <h3 className="form-title">{editingCustomerId ? 'Edit Bank Details' : 'Add bank Details'}</h3>
+                            
+                            {/* Bank Name , Account No , IFSC Code  */}
+
+                        <h3 className="form-title">{editingCustomerId ? 'Edit Attachments' : 'Add Attachments'}</h3>
+
+                            {/* Bank Cheque Image , Passport Size photo , other document.. */}
+
                         <div className="form-group">
                             <label htmlFor="status">Status:</label>
                             <select
@@ -1061,6 +1070,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                         <th>Add Date</th>
                                         <th>Status</th>
                                         <th>Action</th>
+                                        
                                     </tr>
                                 </thead>
                                 <tbody ref={tableBodyRef}>
