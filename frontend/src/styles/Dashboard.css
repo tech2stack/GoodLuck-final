@@ -6,7 +6,7 @@
 
 /* ================== General Dashboard Layout ================== */
 .dashboard-container {
-    min-height: 100vh;
+    /* min-height: 100vh; */
     background-color: #f4f7f9;
 }
 

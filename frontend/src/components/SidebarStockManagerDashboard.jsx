@@ -23,7 +23,6 @@ import {
     FaMoneyBillAlt,
     FaUndo,
     FaBook as FaBookLedger,
-    FaChartLine,
     FaWarehouse,
     FaReceipt,
     FaHourglass,
@@ -171,7 +170,7 @@ const SidebarStockManagerDashboard = ({
     return (
         <>
             <button
-                className={`hamburger-menu-btn fixed left-4 z-40 p-2 transition-all duration-300 transform rounded-full bg-[#2c3e50] shadow-lg
+                className={`hamburger-menu-btn fixed left-4 z-50 p-2 transition-all duration-300 transform rounded-full bg-[#2c3e50] shadow-lg
                     ${isSidebarCollapsed ? 'left-4' : 'left-[228px]'}`}
                 style={{ top: '112px' }}
                 onClick={() => setIsSidebarCollapsed(prev => !prev)}
@@ -183,12 +182,18 @@ const SidebarStockManagerDashboard = ({
                 )}
             </button>
 
-            <aside
-                className={`absolute left-0 bg-[#2c3e50] text-gray-200 transition-transform duration-300 ease-in-out z-30
-                    ${isSidebarCollapsed ? '-translate-x-full' : 'translate-x-0 w-64'}
-                    overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-transparent`}
-                style={{ top: '96px', bottom: '0px' }} 
-            >
+           <aside
+  style={{
+    position: 'fixed',
+    top: '96px',
+    bottom: 0,
+    left: 0,
+    zIndex: 10, // Higher than footer
+  }}
+  className={`bg-[#2c3e50] text-gray-200 transition-transform duration-300 ease-in-out
+    ${isSidebarCollapsed ? '-translate-x-full' : 'translate-x-0 w-64'}
+    overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-transparent`}
+>
                 <div className="flex items-center justify-between p-4 border-b border-gray-600">
                     <div className="flex flex-col overflow-hidden whitespace-nowrap">
                         <h3 className="text-xl font-semibold text-white">Stock Manager</h3>
