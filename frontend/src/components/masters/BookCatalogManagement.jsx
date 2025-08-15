@@ -1014,7 +1014,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
                 {/* Book Catalog List Table - FIRST CHILD */}
                 <div className="table-section">
-                    <h3 className="table-title">Existing Book Catalogs</h3>
+                    {/* <h3 className="table-title">Existing Book Catalogs</h3>  */}
 
                     <div className="table-controls">
                         <div className="search-input-group">

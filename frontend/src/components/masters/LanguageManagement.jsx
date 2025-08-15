@@ -462,7 +462,7 @@ const LanguageManagement = ({ showFlashMessage }) => {
                 </div>
 
                                 <div className="table-container"> {/* Use table-container for the entire table wrapper */}
-                    <h3 className="table-title">Existing Languages</h3> {/* Specific title for table */}
+                    {/* <h3 className="table-title">Existing Languages</h3> Specific title for table */}
 
                     <div className="table-controls">
                         <div className="search-input-group">

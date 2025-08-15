@@ -220,25 +220,29 @@ const BranchAdminDashboard = ({ showFlashMessage }) => {
     return (
         <div className="min-h-screen bg-gray-100 p-4 font-sans flex flex-col items-center">
             {/* Header section with responsive layout for different screens */}
-            <header className="w-full flex flex-col md:flex-row justify-between items-center mb-6">
-                <div className="flex items-center space-x-2">
-                    <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-                    <button
-                        onClick={() => {
-                            fetchAdminAndBranchInfo();
-                            fetchDashboardMetrics();
-                        }}
-                        className="p-2 rounded-full text-gray-500 hover:bg-gray-200 transition-colors"
-                        title="Data Refresh karein"
-                        disabled={loading}
-                    >
-                        {loading ? <FaSpinner className="animate-spin text-xl" /> : <FaSync className="text-xl" />}
-                    </button>
-                </div>
-                <p className="text-sm text-gray-600 mt-2 md:mt-0">
-                    Welcome, <span className="font-semibold">{adminName}</span> | Branch: <span className="font-semibold">{branchName}</span>
-                </p>
-            </header>
+<header className="w-full flex flex-col md: justify-between items-center mb-6 mt-[20px]">
+    <div className="flex items-center space-x-3">
+        <h1 className="text-3xl font-extrabold text-gray-800 tracking-wide relative">
+            Dashboard
+            <span className="absolute left-0 -bottom-1 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></span>
+        </h1>
+        <button
+            onClick={() => {
+                fetchAdminAndBranchInfo();
+                fetchDashboardMetrics();
+            }}
+            className="p-2 rounded-full text-gray-500 hover:bg-gray-200 transition-colors"
+            title="Data Refresh karein"
+            disabled={loading}
+        >
+            {loading ? <FaSpinner className="animate-spin text-xl" /> : <FaSync className="text-xl" />}
+        </button>
+    </div>
+    <p className="text-sm text-gray-600 mt-2 md:mt-4">
+        Welcome, <span className="font-semibold">{adminName}</span> | Branch: <span className="font-semibold">{branchName}</span>
+    </p>
+</header>
+
 
             {localError && (
                 <p className="flex items-center p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg w-full max-w-4xl">
