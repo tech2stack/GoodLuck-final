@@ -555,7 +555,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                 </div>
 
                                 <div className="table-container">
-                    <h3 className="table-title">Existing Stationery Items</h3>
+                    {/* <h3 className="table-title">Existing Stationery Items</h3> */}
 
                     {/* Filter and controls section, now with improved alignment */}
                     <div className="table-controls">

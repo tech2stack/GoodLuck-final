@@ -465,7 +465,7 @@ const CityManagement = ({ showFlashMessage }) => {
                     </form>
                 </div>
                 <div className="table-container">
-                    <h3 className="table-title">Existing Cities</h3>
+                    {/* <h3 className="table-title">Existing Cities</h3> */}
 
                     <div className="table-controls">
                         <div className="search-input-group">

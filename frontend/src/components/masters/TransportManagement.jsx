@@ -479,7 +479,7 @@ const TransportManagement = ({ showFlashMessage }) => {
                 </div>
 
                                 <div className="table-container">
-                    <h3 className="table-title">Existing Transports</h3>
+                    {/* <h3 className="table-title">Existing Transports</h3> */}
 
                     <div className="table-controls">
                         <div className="search-input-group">

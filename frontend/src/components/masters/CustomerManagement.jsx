@@ -1001,7 +1001,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                 </div>
                 {/* Customer List Table - FIRST CHILD */}
                 <div className="table-container"> 
-                    <h3 className="table-title">Existing Customers</h3>
+                    {/* <h3 className="table-title">Existing Customers</h3> */}
 
                     {/* Search and Filter Section */}
                     <div className="table-controls">
