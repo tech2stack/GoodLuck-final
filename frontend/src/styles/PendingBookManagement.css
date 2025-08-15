@@ -83,7 +83,7 @@
 /* Form Group (for dropdowns) */
 .pending-book-management-container .form-group {
     width: 100%;
-    margin-bottom: 15px;
+    margin-bottom: -125px;
 }
 
 .pending-book-management-container .form-label {
@@ -394,7 +394,7 @@
         margin-bottom: 15px;
     }
     .pending-book-management-container .form-group {
-        margin-bottom: 10px;
+        margin-bottom: -125px;
     }
     .pending-book-management-container .form-label {
         font-size: 0.8rem;
