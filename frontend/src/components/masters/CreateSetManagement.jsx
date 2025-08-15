@@ -1173,18 +1173,24 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             </div>
                         )}
                         <div className="form-grid-2-cols">
-                            <div className="form-group">
-                                <label htmlFor="item-quantity" className="form-label">Order Quantity:</label>
-                                <input
-                                    type="number"
-                                    id="item-quantity"
-                                    value={itemQuantity}
-                                    onChange={(e) => setItemQuantity(String(Math.max(1, Number(e.target.value || 0))))}
-                                    min="1"
-                                    disabled={isAddItemFormDisabled || !selectedItemToAdd || loading}
-                                    className="form-input"
-                                />
-                            </div>
+                           <div className="form-group">
+    <label htmlFor="item-quantity" className="form-label">Order Quantity:</label>
+    <input
+        type="number"
+        id="item-quantity"
+        value={itemQuantity}
+        onChange={(e) => setItemQuantity(e.target.value)} // Let user type freely
+        onBlur={() => {
+            // Auto-correct when field loses focus
+            if (!itemQuantity || Number(itemQuantity) < 1) {
+                setItemQuantity("1");
+            }
+        }}
+        min="1"
+        disabled={isAddItemFormDisabled || !selectedItemToAdd || loading}
+        className="form-input"
+    />
+</div>
                             <div className="form-group">
                                 <label htmlFor="item-price" className="form-label">Price:</label>
                                 <input

@@ -16,11 +16,12 @@
 .main-section-title {
     font-size: 1.4rem;
     color: #333;
-    margin-bottom:8px;
+    margin-bottom:4px;
     text-align: center;
     font-weight: 700;
     position: relative;
     padding-bottom: 8px;
+    margin-top: 10px;
 }
 
 .main-section-title::after {

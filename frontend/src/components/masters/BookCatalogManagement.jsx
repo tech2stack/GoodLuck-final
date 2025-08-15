@@ -893,28 +893,28 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                         classes.map(_class => (
                                             <div className="class-fields-group" key={_class._id}>
                                                 <div className="form-group">
-                                                    <label htmlFor={`price_${_class._id}`}>{_class.name} Price:</label>
+                                                    <label htmlFor={`price_${_class._id}`}>Class {_class.name}:</label>
                                                     <input
                                                         type="number"
                                                         id={`price_${_class._id}`}
                                                         name={`price_${_class._id}`}
                                                         value={formData.pricesByClass[_class._id] || ''}
                                                         onChange={handleChange}
-                                                        placeholder="e.g., 120.00"
+                                                        placeholder="Price : Rs. 100"
                                                         min="0"
                                                         disabled={loading}
                                                         className="form-input"
                                                     />
                                                 </div>
                                                 <div className="form-group">
-                                                    <label htmlFor={`isbn_${_class._id}`}>{_class.name} ISBN:</label>
+                                                    {/* <label htmlFor={`isbn_${_class._id}`}>{_class.name} ISBN:</label>    */}
                                                     <input
                                                         type="text"
                                                         id={`isbn_${_class._id}`}
                                                         name={`isbn_${_class._id}`}
                                                         value={formData.isbnByClass[_class._id] || ''}
                                                         onChange={handleChange}
-                                                        placeholder="e.g., 1234567890"
+                                                        placeholder="ISBN : 123-456-789-0"
                                                         disabled={loading}
                                                         className="form-input"
                                                     />
@@ -999,7 +999,17 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 <div className="table-section">
                     {/* <h3 className="table-title">Existing Book Catalogs</h3>  */}
 
-                    <div className="table-controls">
+
+
+                    {loading && bookCatalogs.length === 0 ? (
+                        <p className="loading-state text-center">
+                            <FaSpinner className="animate-spin mr-2" /> Loading book catalogs...
+                        </p>
+                    ) : filteredBookCatalogs.length === 0 ? (
+                        <p className="no-data-message text-center">No book catalogs found matching your criteria. Start by adding one!</p>
+                    ) : (
+                        <div className="table-container"> {/* This div is for table overflow, not layout */}
+                                            <div className="table-controls">
                         <div className="search-input-group">
                             <input
                                 type="text"
@@ -1018,15 +1028,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                             <FaFilePdf className="btn-icon-mr" /> Download PDF
                         </button>
                     </div>
-
-                    {loading && bookCatalogs.length === 0 ? (
-                        <p className="loading-state text-center">
-                            <FaSpinner className="animate-spin mr-2" /> Loading book catalogs...
-                        </p>
-                    ) : filteredBookCatalogs.length === 0 ? (
-                        <p className="no-data-message text-center">No book catalogs found matching your criteria. Start by adding one!</p>
-                    ) : (
-                        <div className="table-container"> {/* This div is for table overflow, not layout */}
                             <table className="app-table">
                                 <thead>
                                     <tr>

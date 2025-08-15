@@ -164,7 +164,7 @@
 
 /* Form group styles */
 .form-group {
-    margin-bottom: 1rem; /* mb-4 */
+    /* margin-bottom: 1rem; mb-4 */
 }
 
 .form-label {
@@ -202,7 +202,7 @@
 .form-grid-2-cols {
     display: grid;
     grid-template-columns: 1fr; /* grid-cols-1 */
-    gap: 1rem; /* gap-4 */
+    /* gap: 1rem; gap-4 */
     margin-bottom: 1rem; /* mb-4 */
 }
 

@@ -102,7 +102,7 @@
 /* Individual form group styling */
 .form-group {
     width: 100%; /* Ensure form group takes full width of its grid cell */
-    margin-bottom: 15px; /* Space below each form group */
+    /* margin-bottom: 15px; Space below each form group */
 }
 
 .form-label {
@@ -182,7 +182,7 @@
 .prices-by-class-section {
     margin-top: 15px;
     margin-bottom: 15px; /* Added margin-bottom for consistency */
-    padding: 15px;
+    /* padding: 15px; */
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     background-color: #f9f9f9;
@@ -341,7 +341,7 @@
     flex-wrap: wrap; /* Allow controls to wrap */
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px; /* Reduced margin-bottom */
+    /* margin-bottom: 15px; Reduced margin-bottom */
     gap: 10px; /* Reduced space between search and download button */
 }
 

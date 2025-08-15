@@ -91,7 +91,7 @@
 
 /* Form Group Styles */
 .form-group {
-    margin-bottom: 1rem;
+    /* margin-bottom: 1rem; */
 }
 
 .form-input,
@@ -103,7 +103,7 @@
     font-size: 1rem;
     color: #1f2937;
     box-sizing: border-box;
-    margin-bottom: 0.5rem; /* Space between input and select */
+    /* margin-bottom: 0.5rem; Space between input and select */
 }
 
 .form-input:focus,

@@ -110,7 +110,7 @@ const SidebarStockManagerDashboard = ({
 
     const sections = [
         {
-            title: 'Masters',
+            title: 'Create Items',
             icon: FaThLarge,
             ref: masterDropdownRef,
             toggle: toggleMasterDropdown,
@@ -176,9 +176,9 @@ const SidebarStockManagerDashboard = ({
                 onClick={() => setIsSidebarCollapsed(prev => !prev)}
             >
                 {isSidebarCollapsed ? (
-                    <FaArrowRight className="text-xl text-red-500" />
+<FaArrowRight className="text-xl" style={{ color: "#39c240" }} />
                 ) : (
-                    <FaArrowLeft className="text-xl text-red-500" />
+<FaArrowLeft className="text-xl" style={{ color: "#39c240" }} />
                 )}
             </button>
 
@@ -191,7 +191,7 @@ const SidebarStockManagerDashboard = ({
     zIndex: 10, // Higher than footer
   }}
   className={`bg-[#2c3e50] text-gray-200 transition-transform duration-300 ease-in-out
-    ${isSidebarCollapsed ? '-translate-x-full' : 'translate-x-0 w-64'}
+    ${isSidebarCollapsed ? '-translate-x-full' : 'translate-x-0 w-72'}
     overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-transparent`}
 >
                 <div className="flex items-center justify-between p-4 border-b border-gray-600">

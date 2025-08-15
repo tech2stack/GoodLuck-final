@@ -818,9 +818,9 @@ const PublicationManagement = ({ showFlashMessage }) => {
                             >
                                 <FaPlusCircle className="mr-2" /> Add Subtitle
                             </button>
-                            <small className="form-text-muted ml-2">
+                            {/* <small className="form-text-muted ml-2">
                                 Add new subtitles {editingPublicationId ? 'to this publication.' : 'for the new publication.'}
-                            </small>
+                            </small> */}
                         </div>
 
                         <div className="form-row">
@@ -965,7 +965,15 @@ const PublicationManagement = ({ showFlashMessage }) => {
                     {/* <h3 className="table-title">Existing Publications</h3> */}
 
                     {/* Search and PDF Download Section */}
-                    <div className="table-controls">
+
+
+                    {loading && publications.length === 0 ? (
+                        <p className="loading-state">Loading publications...</p>
+                    ) : filteredPublications.length === 0 ? (
+                        <p className="no-data-message">No publications found matching your criteria. Start by adding one!</p>
+                    ) : (
+                        <div className="table-container"> {/* This div is for table overflow, not layout */}
+                                            <div className="table-controls">
                         <div className="search-input-group">
                             <input
                                 type="text"
@@ -980,13 +988,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                             <FaFilePdf className="mr-2" /> Download PDF
                         </button>
                     </div>
-
-                    {loading && publications.length === 0 ? (
-                        <p className="loading-state">Loading publications...</p>
-                    ) : filteredPublications.length === 0 ? (
-                        <p className="no-data-message">No publications found matching your criteria. Start by adding one!</p>
-                    ) : (
-                        <div className="table-container"> {/* This div is for table overflow, not layout */}
                             <table className="app-table">
                                 <thead>
                                     <tr>
@@ -1116,14 +1117,14 @@ const PublicationManagement = ({ showFlashMessage }) => {
                         <h3>{editingSubtitleId ? 'Edit Subtitle' : 'Add Subtitle'}</h3>
                         <form onSubmit={handleAddSubtitle}>
                             <div className="form-group">
-                                <label htmlFor="newSubtitleName">Subtitle Name:</label>
+                                <label htmlFor="newSubtitleName" className="font-bold" >Subtitle Name:</label>
                                 <input
                                     type="text"
                                     id="newSubtitleName"
                                     name="newSubtitleName"
                                     value={newSubtitleName}
                                     onChange={(e) => setNewSubtitleName(e.target.value)}
-                                    placeholder="e.g., Class 10 Edition, Volume 2"
+                                    placeholder="e.g., Astreca , Real Life"
                                     required
                                     disabled={subtitleModalLoading}
                                     className="form-input"
