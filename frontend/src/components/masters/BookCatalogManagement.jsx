@@ -1052,7 +1052,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                         <th>Subtitle</th>
                                         <th>Book Name</th>
                                         <th>Price</th>
-                                        <th>ISBN</th>
+                                        <th>ISBN No.</th>
                                         <th>Language</th>
                                         <th>Discount %</th>
                                         <th>Net Profit %</th>
