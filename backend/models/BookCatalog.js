@@ -77,12 +77,6 @@ const BookCatalogSchema = new mongoose.Schema({
       message: 'At least one ISBN is required for default book type.',
     }
   },
-  discountPercentage: {
-    type: Number,
-    min: [0, 'Discount percentage cannot be negative'],
-    max: [100, 'Discount percentage cannot exceed 100'],
-    default: 0,
-  },
   gstPercentage: {
     type: Number,
     min: [0, 'GST percentage cannot be negative'],

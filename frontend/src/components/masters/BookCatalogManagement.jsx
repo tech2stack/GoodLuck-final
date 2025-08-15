@@ -40,8 +40,8 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         pricesByClass: {}, // Object to store prices per class { 'Class 1': 100, 'Class 2': 120 }
         commonIsbn: '', // New field for Common ISBN
         isbnByClass: {}, // New field for ISBNs per class
-        discountPercentage: 0,
-        gstPercentage: 0,
+        // discountPercentage: 0, // REMOVED
+        // gstPercentage: 0, // REMOVED
         status: 'active',
     });
 
@@ -124,52 +124,37 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         }
     }, [showFlashMessage, editingBookCatalogId]);
 
-    // --- Fetch Subtitles based on selected Publication ---
-    const fetchSubtitles = useCallback(async (publicationId, initialSubtitleId = null) => {
-        console.log('Fetching subtitles for publicationId:', publicationId, 'Initial Subtitle ID:', initialSubtitleId); // DEBUG LOG
-        if (!publicationId) {
-            setSubtitles([]);
-            setFormData(prev => ({ ...prev, subtitle: '' }));
-            console.log('Subtitle cleared because no publicationId.'); // DEBUG LOG
-            return;
-        }
-        try {
-            const response = await api.get(`/publications/${publicationId}/subtitles?status=active&limit=1000`);
-            if (response.data.status === 'success') {
-                const fetchedSubtitles = response.data.data.subtitles;
-                setSubtitles(fetchedSubtitles);
-                console.log('Fetched subtitles:', fetchedSubtitles); // DEBUG LOG
-
-                // Logic to set or clear subtitle based on initialSubtitleId or fetched list
-                if (initialSubtitleId) {
-                    // If an initialSubtitleId was provided (e.g., during edit), try to set it
-                    const subtitleExistsInFetched = fetchedSubtitles.some(sub => sub._id === initialSubtitleId);
-                    if (subtitleExistsInFetched) {
-                        setFormData(prev => ({ ...prev, subtitle: initialSubtitleId }));
-                        console.log('Subtitle set to initialSubtitleId:', initialSubtitleId); // DEBUG LOG
-                    } else {
-                        // If initialSubtitleId is not valid for this publication, clear it
-                        setFormData(prev => ({ ...prev, subtitle: '' }));
-                        console.log('Initial subtitle ID not found in fetched subtitles for this publication. Clearing subtitle.'); // DEBUG LOG
-                    }
-                } else {
-                    // If no initialSubtitleId, set to first available or clear
-                    setFormData(prev => ({ ...prev, subtitle: fetchedSubtitles[0]?._id || '' }));
-                    console.log('Subtitle set to first available or cleared (no initialSubtitleId).'); // DEBUG LOG
-                }
-            } else {
+    // --- Fetch Subtitles based on selected Publication (UPDATED LOGIC) ---
+        const fetchSubtitles = useCallback((publicationId, initialSubtitleId = null) => {
+            console.log('Fetching subtitles for publicationId:', publicationId, 'Initial Subtitle ID:', initialSubtitleId); // DEBUG LOG
+            const selectedPub = publications.find(pub => pub._id === publicationId);
+    
+            if (!selectedPub) {
                 setSubtitles([]);
                 setFormData(prev => ({ ...prev, subtitle: '' }));
-                console.error('Failed to fetch subtitles:', response.data.message);
+                console.log('Subtitle cleared because no publicationId or publication not found.');
+                return;
             }
-        } catch (err) {
-            setSubtitles([]);
-            setFormData(prev => ({ ...prev, subtitle: '' }));
-            console.error('Error fetching subtitles:', err);
-        }
-    }, []); // Removed formData.subtitle from dependencies here. It's now controlled by initialSubtitleId param.
-
-
+    
+            const fetchedSubtitles = selectedPub.subtitles || [];
+            setSubtitles(fetchedSubtitles);
+            console.log('Fetched subtitles from state:', fetchedSubtitles);
+    
+            if (initialSubtitleId) {
+                const subtitleExistsInFetched = fetchedSubtitles.some(sub => sub._id === initialSubtitleId);
+                if (subtitleExistsInFetched) {
+                    setFormData(prev => ({ ...prev, subtitle: initialSubtitleId }));
+                    console.log('Subtitle set to initialSubtitleId:', initialSubtitleId);
+                } else {
+                    setFormData(prev => ({ ...prev, subtitle: '' }));
+                    console.log('Initial subtitle ID not found in fetched subtitles for this publication. Clearing subtitle.');
+                }
+            } else {
+                setFormData(prev => ({ ...prev, subtitle: fetchedSubtitles[0]?._id || '' }));
+                console.log('Subtitle set to first available or cleared (no initialSubtitleId).');
+            }
+    
+        }, [publications]);
     // --- Fetch Book Catalogs ---
     const fetchBookCatalogs = useCallback(async (scrollToNew = false) => {
         setLoading(true);
@@ -399,8 +384,8 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 pricesByClass: {},
                 commonIsbn: '',
                 isbnByClass: {},
-                discountPercentage: 0,
-                gstPercentage: 0,
+                // discountPercentage: 0, // REMOVED
+                // gstPercentage: 0, // REMOVED
                 status: 'active',
             });
             setEditingBookCatalogId(null);
@@ -437,8 +422,8 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             pricesByClass: pricesMap,
             commonIsbn: bookCatalogItem.commonIsbn || '',
             isbnByClass: isbnsMap,
-            discountPercentage: bookCatalogItem.discountPercentage || '', // Use empty string for 0 to avoid NaN warning on empty input
-            gstPercentage: bookCatalogItem.gstPercentage || '', // Use empty string for 0 to avoid NaN warning on empty input
+            // discountPercentage: bookCatalogItem.discountPercentage || '', // Use empty string for 0 to avoid NaN warning on empty input // REMOVED
+            // gstPercentage: bookCatalogItem.gstPercentage || '', // Use empty string for 0 to avoid NaN warning on empty input // REMOVED
             status: bookCatalogItem.status,
         }));
         setEditingBookCatalogId(bookCatalogItem._id);
@@ -498,7 +483,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         setFormData({
             bookName: '', publication: publications[0]?._id || '', subtitle: '',
             language: languages[0]?._id || '', bookType: 'default', commonPrice: 0,
-            pricesByClass: {}, commonIsbn: '', isbnByClass: {}, discountPercentage: 0, gstPercentage: 0, status: 'active'
+            pricesByClass: {}, commonIsbn: '', isbnByClass: {}, status: 'active'
         });
         setEditingBookCatalogId(null);
         setLocalError(null);
@@ -594,7 +579,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             // Generate table data
             const tableColumn = [
                 "S.No.", "Name", "Publisher", "Subtitle", "Language", "Price",
-                "ISBN", "Discount %", "GST %", "Add Date", "Status"
+                "ISBN", "Add Date", "Status"
             ];
             const tableRows = filteredBookCatalogs.map((bookItem, index) => [
                 // S.No. is always index + 1 for the filtered data for PDF
@@ -609,8 +594,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 bookItem.bookType === 'common_price'
                     ? bookItem.commonIsbn || 'N/A'
                     : Object.entries(bookItem.isbnByClass).map(([classId, isbn]) => `${classes.find(c => c._id === classId)?.name || 'Unknown'}: ${isbn || 'N/A'}`).join(', '),
-                `${bookItem.discountPercentage?.toFixed(2) || '0.00'}%`, // Add fallback for discount, format to 2 decimal places
-                `${bookItem.gstPercentage?.toFixed(2) || '0.00'}%`, // Add fallback for GST, format to 2 decimal places
                 bookItem.createdAt ? formatDateWithTime(bookItem.createdAt) : 'N/A',
                 (bookItem.status?.charAt(0).toUpperCase() + bookItem.status?.slice(1)) || 'N/A'
             ]);
@@ -646,8 +629,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                     0: { cellWidth: 15, halign: 'center' }, 1: { cellWidth: 'auto', halign: 'left' },
                     2: { cellWidth: 'auto', halign: 'left' }, 3: { cellWidth: 'auto', halign: 'left' },
                     4: { cellWidth: 'auto', halign: 'left' }, 5: { cellWidth: 'auto', halign: 'right' },
-                    6: { cellWidth: 'auto', halign: 'center' }, 7: { cellWidth: 'auto', halign: 'center' },
-                    8: { halign: 'center' }, 9: { halign: 'center' }
+                    6: { cellWidth: 'auto', halign: 'center' }, 7: { halign: 'center' }
                 },
                 margin: { top: 10, right: 14, bottom: 10, left: 14 },
                 didDrawPage: function (data) {
@@ -944,7 +926,8 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                             </div>
                         )}
 
-                        <div className="form-row">
+                        {/* REMOVED: Discount and GST fields */}
+                        {/* <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="discountPercentage">Discount %:</label>
                                 <input
@@ -977,7 +960,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-                        </div>
+                        </div> */}
 
                         <div className="form-group">
                             <label htmlFor="status">Status:</label>
@@ -1054,8 +1037,9 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                         <th>Price</th>
                                         <th>ISBN No.</th>
                                         <th>Language</th>
-                                        <th>Discount %</th>
-                                        <th>Net Profit %</th>
+                                        {/* REMOVED: Discount % and Net Profit % headers */}
+                                        {/* <th>Discount %</th>
+                                        <th>Net Profit %</th> */}
                                         <th>Add Date</th>
                                         {/* <th>Status</th>\ */}
                                         <th>Action</th>
@@ -1087,8 +1071,9 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                                 }
                                             </td>
                                             <td>{book.language?.name || 'N/A'}</td>
-                                            <td>{book.discountPercentage?.toFixed(2) || '0.00'}%</td>
-                                            <td>{book.gstPercentage?.toFixed(2) || '0.00'}%</td>
+                                            {/* REMOVED: Discount % and Net Profit % cells */}
+                                            {/* <td>{book.discountPercentage?.toFixed(2) || '0.00'}%</td>
+                                            <td>{book.gstPercentage?.toFixed(2) || '0.00'}%</td> */}
                                             <td>{formatDateWithTime(book.createdAt)}</td>
                                             <td className="actions-column">
                                                 <button

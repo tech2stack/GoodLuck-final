@@ -9,7 +9,7 @@ exports.createBookCatalog = catchAsync(async (req, res, next) => {
   const {
     bookName, publication, subtitle, language, bookType,
     commonPrice, pricesByClass, commonIsbn, isbnByClass,
-    discountPercentage, gstPercentage, status
+    gstPercentage, status
   } = req.body;
 
   if (!bookName || !publication || !bookType) {
@@ -48,7 +48,6 @@ exports.createBookCatalog = catchAsync(async (req, res, next) => {
     pricesByClass: bookType === 'default' ? pricesByClass : undefined,
     commonIsbn: bookType === 'common_price' ? commonIsbn : undefined,
     isbnByClass: bookType === 'default' ? isbnByClass : undefined,
-    discountPercentage,
     gstPercentage,
     status,
   });
@@ -88,7 +87,7 @@ exports.updateBookCatalog = catchAsync(async (req, res, next) => {
   const {
     bookName, publication, subtitle, language, bookType,
     commonPrice, pricesByClass, commonIsbn, isbnByClass,
-    discountPercentage, gstPercentage, status
+    gstPercentage, status
   } = req.body;
 
   const currentBook = await BookCatalog.findById(id);
@@ -118,7 +117,6 @@ exports.updateBookCatalog = catchAsync(async (req, res, next) => {
     subtitle: subtitle === '' ? null : subtitle,
     language: language === '' ? null : language,
     bookType,
-    discountPercentage,
     gstPercentage,
     status,
   };
