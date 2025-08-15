@@ -1,11 +1,11 @@
 /* src/styles/BookCatalogManagement.css */
 
-/* General Page Layout Adjustments */
+/* General Page Layout Adjustments
 .book-catalog-management-container {
     padding: 20px; /* Overall padding for the container */
-    max-width: 1400px; /* Increased max-width for more space in two columns */
-    margin: 0 auto; /* Center the container */
-}
+    /* max-width: 1400px; Increased max-width for more space in two columns */
+    /* margin: 0 auto; Center the container */
+/* } */ 
 
 /* Main Page Title */
 .book-catalog-management-container .section-title {
