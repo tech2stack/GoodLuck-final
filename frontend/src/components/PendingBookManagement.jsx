@@ -254,7 +254,7 @@ export default function PendingBookManagement({ showFlashMessage }) {
             return;
         }
 
-        const doc = new window.jspdf.jsPDF('landscape');
+        const doc = new window.jspdf.jsPDF('potrait');
 
         if (typeof doc.autoTable !== 'function') {
             showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');

@@ -58,7 +58,7 @@
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: 10rem; /* gap-4 */
+    gap: 2rem; /* gap-4 */
     font-size: 1.125rem; /* text-lg */
     font-weight: 600; /* font-semibold */
 }
@@ -273,6 +273,7 @@
     width: 100%;
     font-size: 15px;
     font-weight: bold;
+    color: white;
 
 }
 
@@ -287,6 +288,7 @@
     width: 100%;
     font-size: 15px;
     font-weight: bold;
+    color: white;
 }
 
 .btn-purple:hover {
@@ -296,6 +298,7 @@
 .btn-blue {
     background-color: #2563eb; /* bg-blue-600 */
     border-radius: 5px;
+    color: white;
 }
 
 .btn-blue:hover {
