@@ -38,10 +38,10 @@ const PublicationManagement = ({ showFlashMessage }) => {
         accountNumber: '',
         ifsc: '',
         gstin: '',
-        discount: 0, // Default discount
         address: '',
         status: 'active', // Default status
-        // Removed subtitles from here as they will be managed via a separate modal
+        publicationType: 'Private Pub' // NEW: State for the radio buttons
+        // Removed subtitles and discount from here as they will be managed via a separate modal/field
     });
     // State for loading indicators
     const [loading, setLoading] = useState(false);
@@ -59,11 +59,16 @@ const PublicationManagement = ({ showFlashMessage }) => {
     const [showSubtitleModal, setShowSubtitleModal] = useState(false);
     const [selectedPublicationForSubtitle, setSelectedPublicationForSubtitle] = useState(null); // This will hold the full publication object for subtitle ops
     const [newSubtitleName, setNewSubtitleName] = useState('');
+    const [newSubtitleDiscount, setNewSubtitleDiscount] = useState(0); // NEW: State for subtitle discount
     const [subtitleModalLoading, setSubtitleModalLoading] = useState(false);
     const [subtitleModalError, setSubtitleModalError] = useState(null);
 
     // NEW STATE: Temporary subtitles for a new publication being created (before it's saved)
     const [newPublicationSubtitles, setNewPublicationSubtitles] = useState([]);
+
+    // NEW STATE: ID of the subtitle currently being edited
+    const [editingSubtitleId, setEditingSubtitleId] = useState(null);
+
 
     // Ref for scrolling to the new item in the table (if needed)
     const tableBodyRef = useRef(null);
@@ -79,7 +84,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
     const initialFormData = {
         name: '', personName: '', city: '',
         mobileNumber: '', bank: '', accountNumber: '', ifsc: '', gstin: '',
-        discount: 0, address: '', status: 'active',
+        address: '', status: 'active', publicationType: 'Private Pub'
     };
 
     // --- Helper function for date formatting ---
@@ -248,10 +253,10 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 }
             } else {
                 // Create new publication
-                // Include temporarily added subtitles (only send their names)
+                // Include temporarily added subtitles (only send their names and discount)
                 const newPublicationData = {
                     ...publicationData,
-                    subtitles: newPublicationSubtitles.map(s => ({ name: s.name }))
+                    subtitles: newPublicationSubtitles.map(s => ({ name: s.name, discount: s.discount }))
                 };
                 response = await api.post('/publications', newPublicationData);
                 if (response.data.status === 'success') {
@@ -292,9 +297,9 @@ const PublicationManagement = ({ showFlashMessage }) => {
             accountNumber: publicationItem.accountNumber,
             ifsc: publicationItem.ifsc,
             gstin: publicationItem.gstin,
-            discount: publicationItem.discount,
             address: publicationItem.address,
             status: publicationItem.status,
+            publicationType: publicationItem.publicationType // NEW: Set publication type on edit
             // Subtitles are not edited via the main form
         });
         setEditingPublicationId(publicationItem._id);
@@ -344,8 +349,19 @@ const PublicationManagement = ({ showFlashMessage }) => {
     // --- Subtitle Management Functions ---
     // This function will now be called from the main form
     const handleOpenSubtitleModalFromForm = () => {
-        // The button is always available, but we need to manage if we are adding for new or existing
+        // Reset subtitle form fields and states for a fresh start
         setNewSubtitleName('');
+        setNewSubtitleDiscount(0);
+        setEditingSubtitleId(null); // Ensure we are in "add" mode
+        setSubtitleModalError(null);
+        setShowSubtitleModal(true);
+    };
+
+    const handleEditSubtitle = (subtitle, publication) => {
+        setNewSubtitleName(subtitle.name);
+        setNewSubtitleDiscount(subtitle.discount);
+        setEditingSubtitleId(subtitle._id); // Set the ID of the subtitle being edited
+        setSelectedPublicationForSubtitle(publication);
         setSubtitleModalError(null);
         setShowSubtitleModal(true);
     };
@@ -353,6 +369,8 @@ const PublicationManagement = ({ showFlashMessage }) => {
     const closeSubtitleModal = () => {
         setShowSubtitleModal(false);
         setNewSubtitleName('');
+        setNewSubtitleDiscount(0);
+        setEditingSubtitleId(null); // Reset to null after closing
         setSubtitleModalError(null);
     };
 
@@ -367,43 +385,64 @@ const PublicationManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        if (editingPublicationId) {
-            // Logic for adding subtitle to an existing publication
-            if (!selectedPublicationForSubtitle?._id) {
-                setSubtitleModalError('No publication selected to add subtitle.');
-                setSubtitleModalLoading(false);
-                return;
-            }
+        if (editingSubtitleId) {
+            // Logic for UPDATING a subtitle
             try {
-                const response = await api.post(`/publications/${selectedPublicationForSubtitle._id}/subtitles`, { name: newSubtitleName.trim() });
+                const response = await api.patch(`/publications/subtitles/${editingSubtitleId}`, {
+                    name: newSubtitleName.trim(),
+                    discount: newSubtitleDiscount
+                });
                 if (response.data.status === 'success') {
-                    showFlashMessage('Subtitle added successfully!', 'success');
+                    showFlashMessage('Subtitle updated successfully!', 'success');
                     closeSubtitleModal();
                     fetchPublications(); // Re-fetch publications to update the table with new subtitle
-                    // Update selectedPublicationForSubtitle with new subtitles array for immediate feedback
-                    setSelectedPublicationForSubtitle(prev => ({
-                        ...prev,
-                        subtitles: [...(prev?.subtitles || []), response.data.data.subtitle]
-                    }));
                 } else {
-                    throw new Error(response.data.message || 'Failed to add subtitle.');
+                    throw new Error(response.data.message || 'Failed to update subtitle.');
                 }
             } catch (err) {
-                console.error('Error adding subtitle:', err);
-                const errorMessage = err.response?.data?.message || 'Failed to add subtitle.';
+                console.error('Error updating subtitle:', err);
+                const errorMessage = err.response?.data?.message || 'Failed to update subtitle.';
                 setSubtitleModalError(errorMessage);
                 showFlashMessage(errorMessage, 'error');
             } finally {
                 setSubtitleModalLoading(false);
             }
         } else {
-            // Logic for adding subtitle to a new (unsaved) publication
-            // Generate a temporary unique ID for new subtitles
-            const tempSubtitle = { _id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, name: newSubtitleName.trim() };
-            setNewPublicationSubtitles(prev => [...prev, tempSubtitle]);
-            showFlashMessage('Subtitle added temporarily. It will be saved with the new publication.', 'info');
-            closeSubtitleModal();
-            setSubtitleModalLoading(false); // Manually set false as no API call for temporary add
+            // Logic for ADDING a new subtitle
+            if (editingPublicationId) {
+                // Add to existing publication
+                try {
+                    const response = await api.post(`/publications/${editingPublicationId}/subtitles`, {
+                        name: newSubtitleName.trim(),
+                        discount: newSubtitleDiscount
+                    });
+                    if (response.data.status === 'success') {
+                        showFlashMessage('Subtitle added successfully!', 'success');
+                        closeSubtitleModal();
+                        fetchPublications(); // Re-fetch publications to update the table with new subtitle
+                    } else {
+                        throw new Error(response.data.message || 'Failed to add subtitle.');
+                    }
+                } catch (err) {
+                    console.error('Error adding subtitle:', err);
+                    const errorMessage = err.response?.data?.message || 'Failed to add subtitle.';
+                    setSubtitleModalError(errorMessage);
+                    showFlashMessage(errorMessage, 'error');
+                } finally {
+                    setSubtitleModalLoading(false);
+                }
+            } else {
+                // Add to a new (unsaved) publication
+                const tempSubtitle = {
+                    _id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    name: newSubtitleName.trim(),
+                    discount: newSubtitleDiscount
+                };
+                setNewPublicationSubtitles(prev => [...prev, tempSubtitle]);
+                showFlashMessage('Subtitle added temporarily. It will be saved with the new publication.', 'info');
+                closeSubtitleModal();
+                setSubtitleModalLoading(false);
+            }
         }
     };
 
@@ -417,22 +456,13 @@ const PublicationManagement = ({ showFlashMessage }) => {
         setLoading(true); // Use main loading for this action
         setLocalError(null);
 
-        if (editingPublicationId) {
+        if (publicationId) {
             // Logic for removing subtitle from an existing publication
             try {
                 const response = await api.delete(`/publications/subtitles/${subtitleId}`);
                 if (response.status === 204) {
                     showFlashMessage('Subtitle removed successfully!', 'success');
                     fetchPublications(); // Re-fetch publications to update the table
-
-                    // Also update selectedPublicationForSubtitle if it's the current one being edited
-                    setSelectedPublicationForSubtitle(prev => {
-                        if (prev && prev._id === publicationId) {
-                            return { ...prev, subtitles: prev.subtitles.filter(sub => sub._id !== subtitleId) };
-                        }
-                        return prev;
-                    });
-
                 } else {
                     throw new Error(response.data?.message || 'Failed to remove subtitle.');
                 }
@@ -536,19 +566,19 @@ const PublicationManagement = ({ showFlashMessage }) => {
 
             // Generate table data
             const tableColumn = [
-                "S.No.", "Name", "Person", "Address", "City", "Mobile",
-                "GSTIN", "Discount" // NOTE: Removed Bank, Acc No., IFSC from PDF columns as they were missing from column headers.
+                "S.No.", "Publication Type", "Name", "Person", "Address", "City", "Mobile",
+                "GSTIN" // Removed Discount from PDF columns
             ];
             const tableRows = filteredPublications.map((pubItem, index) => [
                 // S.No. is always index + 1 for the filtered data for PDF
                 index + 1,
+                pubItem.publicationType, // NEW: Add Publication Type
                 pubItem.name,
                 pubItem.personName,
                 pubItem.address,
                 pubItem.city ? pubItem.city.name : 'N/A', // Display city name
                 pubItem.mobileNumber,
-                pubItem.gstin,
-                `${pubItem.discount}%`,
+                pubItem.gstin
             ]);
 
             // Add the table to the document with professional styling
@@ -581,8 +611,8 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 columnStyles: {
                     0: { cellWidth: 15, halign: 'center' }, 1: { cellWidth: 'auto', halign: 'left' },
                     2: { cellWidth: 'auto', halign: 'left' }, 3: { cellWidth: 'auto', halign: 'left' },
-                    4: { cellWidth: 'auto', halign: 'left' }, 5: { cellWidth: 'auto', halign: 'center' },
-                    6: { cellWidth: 'auto', halign: 'left' }, 7: { cellWidth: 'auto', halign: 'center' },
+                    4: { cellWidth: 'auto', halign: 'left' }, 5: { cellWidth: 'auto', halign: 'left' },
+                    6: { cellWidth: 'auto', halign: 'center' }, 7: { cellWidth: 'auto', halign: 'left' }
                 },
                 margin: { top: 10, right: 14, bottom: 10, left: 14 },
                 didDrawPage: function (data) {
@@ -673,6 +703,43 @@ const PublicationManagement = ({ showFlashMessage }) => {
                     <form onSubmit={handleSubmit} className="app-form">
                         <h3 className="form-title">{editingPublicationId ? 'Edit Publication' : 'Publication Details'}</h3>
 
+                        {/* NEW: Radio buttons for publication type */}
+                        <div className="form-group publication-type-radio-group">
+                            <label>Publishers Detail:</label>
+                            <div className="radio-group">
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="publicationType"
+                                        value="Private Pub"
+                                        checked={formData.publicationType === 'Private Pub'}
+                                        onChange={handleChange}
+                                        disabled={loading}
+                                    /> Private Pub
+                                </label>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="publicationType"
+                                        value="Govt. Pub"
+                                        checked={formData.publicationType === 'Govt. Pub'}
+                                        onChange={handleChange}
+                                        disabled={loading}
+                                    /> Govt. Pub
+                                </label>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="publicationType"
+                                        value="Other Pub"
+                                        checked={formData.publicationType === 'Other Pub'}
+                                        onChange={handleChange}
+                                        disabled={loading}
+                                    /> Other Pub
+                                </label>
+                            </div>
+                        </div>
+
                         <div className="form-row"> {/* Use form-row for multi-column layout */}
                             <div className="form-group">
                                 <label htmlFor="name">Publication Name:</label>
@@ -712,7 +779,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     {editingPublicationId
                                         ? selectedPublicationForSubtitle.subtitles.map(sub => (
                                             <span key={sub._id} className="subtitle-tag">
-                                                {sub.name}
+                                                {sub.name} ({sub.discount}%)
                                                 <button
                                                     className="remove-subtitle-btn"
                                                     onClick={() => handleRemoveSubtitle(sub._id, selectedPublicationForSubtitle._id, sub.name)}
@@ -725,7 +792,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                         ))
                                         : newPublicationSubtitles.map(sub => (
                                             <span key={sub._id} className="subtitle-tag">
-                                                {sub.name}
+                                                {sub.name} ({sub.discount}%)
                                                 <button
                                                     className="remove-subtitle-btn"
                                                     onClick={() => handleRemoveSubtitle(sub._id, null, sub.name)} // Pass null for publicationId as it's temporary
@@ -860,27 +927,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                             </div>
 
                         </div>
-                        <h3 className="form-title">{editingPublicationId ? 'Edit Discount Details' : 'Discount Details'}</h3>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="discount">Discount (%):</label>
-                                <input
-                                    type="number"
-                                    id="discount"
-                                    name="discount"
-                                    value={formData.discount}
-                                    onChange={handleChange}
-                                    placeholder="e.g., 10"
-                                    min="0"
-                                    max="100"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-
-                        </div>
-
-
 
                         <div className="form-group">
                             <label htmlFor="status">Status:</label>
@@ -945,68 +991,57 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                 <thead>
                                     <tr>
                                         {/* <th>S.No.</th><th>Name</th><th>Sub Title</th><th>Person</th><th>Address</th><th>City</th><th>Phone</th><th>Bank</th><th>Acc No.</th><th>IFSC</th><th>OTHER (GSTIN/Disc)</th><th>Add Date</th><th>Status</th><th>Action</th> */}
-                                        <th>S.No.</th><th>Publication Name</th><th>Contact Person Name</th><th>Sub Title</th><th>Mobile No</th><th>Address</th><th>City</th><th>GST No.</th><th>Bank</th><th>Acc No.</th><th>IFSC</th><th>Add Date</th><th>Status</th><th>Action</th>
+                                        <th>S.No.</th><th>Publication Type</th><th>Publication Name</th><th>Contact Person Name</th><th>Sub Title</th><th>Mobile No</th><th>Address</th><th>City</th><th>GST No.</th><th>Bank</th><th>Acc No.</th><th>IFSC</th><th>Add Date</th><th>Status</th><th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody ref={tableBodyRef}>
                                     {currentPublications.map((pubItem, index) => (
                                         <tr key={pubItem._id}>
                                             <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td>{pubItem.publicationType}</td>
                                             <td>{pubItem.name}</td>
                                             <td>{pubItem.personName}</td>
                                             <td>
-
                                                 {/* Display Subtitles */}
                                                 <div className="subtitle-list">
-                                                    <button
-                                                        className="toggle-subtitles-btn"
-                                                        onClick={() => setIsOpen(prev => !prev)}
-                                                    >
-                                                        {isOpen ? "Hide Subtitles" : "Show Subtitles"}
-                                                        {isOpen ? <FaChevronUp /> : <FaChevronDown />}
-                                                    </button>
-
-                                                    {isOpen && (
-                                                        <div className="subtitle-dropdown">
-                                                            {pubItem.subtitles && pubItem.subtitles.length > 0 ? (
-                                                                pubItem.subtitles.map(sub => (
-                                                                    <span key={sub._id} className="subtitle-tag">
-                                                                        {sub.name}
-                                                                        <button
-                                                                            className="remove-subtitle-btn"
-                                                                            onClick={() => handleRemoveSubtitle(sub._id, pubItem._id, sub.name)}
-                                                                            title="Remove Subtitle"
-                                                                            disabled={loading}
-                                                                        >
-                                                                            <FaTimes />
-                                                                        </button>
-                                                                    </span>
-                                                                ))
-                                                            ) : (
-                                                                <span>No subtitles</span>
-                                                            )}
-                                                        </div>
+                                                    {pubItem.subtitles && pubItem.subtitles.length > 0 ? (
+                                                        pubItem.subtitles.map(sub => (
+                                                            <div key={sub._id} className="subtitle-tag-container">
+                                                                <span className="subtitle-tag">
+                                                                    {sub.name} ({sub.discount}%)
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => handleEditSubtitle(sub, pubItem)}
+                                                                    className="action-icon-button edit-button"
+                                                                    title="Edit Subtitle"
+                                                                    disabled={loading}
+                                                                >
+                                                                    <FaEdit />
+                                                                </button>
+                                                                <button
+                                                                    className="action-icon-button remove-subtitle-btn"
+                                                                    onClick={() => handleRemoveSubtitle(sub._id, pubItem._id, sub.name)}
+                                                                    title="Remove Subtitle"
+                                                                    disabled={loading}
+                                                                >
+                                                                    <FaTimes />
+                                                                </button>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <span>No subtitles</span>
                                                     )}
                                                 </div>
-
                                             </td>
-
                                             <td>{pubItem.mobileNumber}</td>
-
                                             <td>{pubItem.address}</td>
                                             <td>{pubItem.city ? pubItem.city.name : 'N/A'}</td>
-
-
                                             <td>
-                                                {pubItem.gstin && `GSTIN: ${pubItem.gstin}`}
-                                                {pubItem.gstin && pubItem.discount > 0 && <br />}
-                                                {pubItem.discount > 0 && `DISCOUNT: ${pubItem.discount}%`}
+                                                {pubItem.gstin && `${pubItem.gstin}`}
                                             </td>
-
                                             <td>{pubItem.bank}</td>
                                             <td>{pubItem.accountNumber}</td>
                                             <td>{pubItem.ifsc}</td>
-
                                             <td>{formatDateWithTime(pubItem.createdAt)}</td>
                                             <td>
                                                 <span className={`status-badge ${pubItem.status}`}>
@@ -1078,7 +1113,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
             {showSubtitleModal && (
                 <div className="modal-backdrop">
                     <div className="modal-content">
-                        <h3>Add Subtitle {editingPublicationId ? `for "${selectedPublicationForSubtitle?.name}"` : 'for New Publication'}</h3>
+                        <h3>{editingSubtitleId ? 'Edit Subtitle' : 'Add Subtitle'}</h3>
                         <form onSubmit={handleAddSubtitle}>
                             <div className="form-group">
                                 <label htmlFor="newSubtitleName">Subtitle Name:</label>
@@ -1094,12 +1129,28 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
+                            {/* NEW: Discount input in the modal */}
+                            <div className="form-group">
+                                <label htmlFor="newSubtitleDiscount">Discount (%):</label>
+                                <input
+                                    type="number"
+                                    id="newSubtitleDiscount"
+                                    name="newSubtitleDiscount"
+                                    value={newSubtitleDiscount}
+                                    onChange={(e) => setNewSubtitleDiscount(e.target.value)}
+                                    placeholder="e.g., 10"
+                                    min="0"
+                                    max="100"
+                                    disabled={subtitleModalLoading}
+                                    className="form-input"
+                                />
+                            </div>
                             {subtitleModalError && (
                                 <p className="error-message text-center">{subtitleModalError}</p>
                             )}
                             <div className="form-actions">
                                 <button type="submit" className="btn btn-primary" disabled={subtitleModalLoading}>
-                                    {subtitleModalLoading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Add Subtitle'}
+                                    {subtitleModalLoading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingSubtitleId ? 'Update Subtitle' : 'Add Subtitle')}
                                 </button>
                                 <button type="button" className="btn btn-secondary" onClick={closeSubtitleModal} disabled={subtitleModalLoading}>
                                     Cancel

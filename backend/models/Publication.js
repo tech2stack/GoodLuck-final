@@ -42,26 +42,19 @@ const publicationSchema = new mongoose.Schema({
     ifsc: {
         type: String,
         trim: true,
-        maxlength: [20, 'IFSC cannot exceed 20 characters'],
+        maxlength: [50, 'IFSC code cannot exceed 50 characters'],
         default: ''
     },
     gstin: {
         type: String,
         trim: true,
-        maxlength: [15, 'GSTIN cannot exceed 15 characters'],
         validate: {
             validator: function(v) {
-                return !v || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(v);
+                return !v || /^\d{2}[A-Z]{5}\d{4}[A-Z]{1}\d[Z]{1}[A-Z\d]{1}$/.test(v);
             },
             message: props => `${props.value} is not a valid GSTIN format!`
         },
         default: ''
-    },
-    discount: {
-        type: Number,
-        min: [0, 'Discount cannot be negative'],
-        max: [100, 'Discount cannot exceed 100%'],
-        default: 0
     },
     address: {
         type: String,
@@ -73,6 +66,25 @@ const publicationSchema = new mongoose.Schema({
         enum: ['active', 'inactive'],
         default: 'active'
     },
+    publicationType: {
+        type: String,
+        enum: ['Private Pub', 'Govt. Pub', 'Other Pub'],
+        default: 'Private Pub'
+    },
+    subtitles: [{
+        name: {
+            type: String,
+            required: [true, 'Subtitle name is required'],
+            trim: true,
+            maxlength: [100, 'Subtitle name cannot exceed 100 characters']
+        },
+        discount: {
+            type: Number,
+            min: [0, 'Discount cannot be negative'],
+            max: [100, 'Discount cannot exceed 100%'],
+            default: 0
+        }
+    }],
     createdAt: {
         type: Date,
         default: Date.now
@@ -82,20 +94,6 @@ const publicationSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-publicationSchema.pre(/^find/, function(next) {
-    this.populate({
-        path: 'city',
-        select: 'name'
-    });
-    next();
-});
-
-publicationSchema.virtual('subtitles', {
-    ref: 'PublicationSubtitle',
-    localField: '_id',
-    foreignField: 'publication',
-    justOne: false
-});
-
 const Publication = mongoose.model('Publication', publicationSchema);
+
 module.exports = Publication;

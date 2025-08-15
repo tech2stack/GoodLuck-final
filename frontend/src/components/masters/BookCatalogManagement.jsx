@@ -1057,7 +1057,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                         <th>Discount %</th>
                                         <th>Net Profit %</th>
                                         <th>Add Date</th>
-                                        <th>Status</th>
+                                        {/* <th>Status</th>\ */}
                                         <th>Action</th>
                                     </tr>
                                 </thead>
