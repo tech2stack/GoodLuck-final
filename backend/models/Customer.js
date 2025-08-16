@@ -1,4 +1,4 @@
-// backend/models/Customer.js (Ensure this file has the 'branch' field added)
+// backend/models/Customer.js
 const mongoose = require('mongoose');
 const validator = require('validator');
 
@@ -17,56 +17,124 @@ const customerSchema = new mongoose.Schema({
         maxlength: [20, 'School code cannot exceed 20 characters'],
         default: null
     },
-    branch: { // THIS FIELD IS CRUCIAL FOR THE CASCADING DROPDOWN
+    branch: {
         type: mongoose.Schema.ObjectId,
         ref: 'Branch',
-        required: [true, 'Branch is required']
+        // 'required' validation removed from here and moved to the controller
+        // where it can be conditionally applied.
     },
     city: {
         type: mongoose.Schema.ObjectId,
         ref: 'City',
         required: [true, 'City is required']
     },
+    zone: {
+        type: String,
+        trim: true,
+        maxlength: [50, 'Zone cannot exceed 50 characters'],
+        default: null,
+    },
+    salesBy: {
+        type: String,
+        trim: true,
+        maxlength: [100, 'Sales By cannot exceed 100 characters'],
+        default: null,
+    },
+    dealer: {
+        type: String,
+        trim: true,
+        maxlength: [100, 'Dealer cannot exceed 100 characters'],
+        default: null,
+    },
+    // Updated enum to include all four customer type combinations
+    customerType: {
+        type: String,
+        trim: true,
+        enum: ['Dealer-Retail', 'Dealer-Supply', 'School-Retail', 'School-Supply'],
+        required: [true, 'Customer type is required'],
+        default: 'School-Retail'
+    },
     contactPerson: {
         type: String,
         trim: true,
         maxlength: [100, 'Contact person name cannot exceed 100 characters'],
-        default: null
+        default: null,
     },
     mobileNumber: {
         type: String,
+        required: [true, 'Mobile number is required'],
         trim: true,
         validate: {
-            validator: function(val) {
-                return val === null || val === '' || (validator.isMobilePhone(val, 'en-IN') && val.length === 10);
-            },
-            message: 'Please provide a valid 10-digit Indian mobile number if specified'
+            validator: (val) => validator.isMobilePhone(val, 'en-IN'),
+            message: 'Please provide a valid Indian mobile number.'
         },
-        default: null
     },
     email: {
         type: String,
         trim: true,
         lowercase: true,
-        validate: {
-            validator: function(val) {
-                return val === null || val === '' || validator.isEmail(val);
-            },
-            message: 'Please provide a valid email if specified'
-        },
-        default: null
+        validate: [validator.isEmail, 'Please provide a valid email'],
+        default: null,
     },
     gstNumber: {
         type: String,
         trim: true,
         uppercase: true,
         validate: {
-            validator: function(val) {
-                return val === null || val === '' || (val.length === 15);
+            validator: function (val) {
+                return val === null || val === '' || /^([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1})$/.test(val);
             },
-            message: 'GST number must be 15 characters if specified'
+            message: 'Please provide a valid GSTIN.'
         },
-        default: null
+        default: null,
+    },
+    discount: {
+        type: Number,
+        min: [0, 'Discount must be a positive number'],
+        default: 0,
+    },
+    returnTime: {
+        type: String,
+        trim: true,
+        maxlength: [50, 'Return time cannot exceed 50 characters'],
+        default: null,
+    },
+    bankName: {
+        type: String,
+        trim: true,
+        default: null,
+    },
+    accountNumber: {
+        type: String,
+        trim: true,
+        default: null,
+    },
+    ifscCode: {
+        type: String,
+        trim: true,
+        default: null,
+    },
+    openingBalance: {
+        type: Number,
+        default: 0,
+    },
+    balanceType: {
+        type: String,
+        enum: ['Dr.', 'Cr.'],
+        default: 'Dr.',
+    },
+    chequeImage: {
+        type: String,
+        default: null,
+    },
+    passportImage: {
+        type: String,
+        default: null,
+    },
+    // New field for other attachments
+    otherAttachment: {
+        type: String,
+        default: null,
     },
     aadharNumber: {
         type: String,
@@ -103,10 +171,6 @@ const customerSchema = new mongoose.Schema({
         maxlength: [200, 'Home address cannot exceed 200 characters'],
         default: null
     },
-    image: {
-        type: String,
-        default: 'https://placehold.co/200x200/cccccc/ffffff?text=No+Image'
-    },
     status: {
         type: String,
         enum: ['active', 'inactive'],
@@ -121,13 +185,26 @@ const customerSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-customerSchema.index({ customerName: 1 }, { unique: true });
-customerSchema.index({ mobileNumber: 1 });
-customerSchema.index({ email: 1 });
-customerSchema.index({ gstNumber: 1 });
-customerSchema.index({ aadharNumber: 1 });
-customerSchema.index({ panNumber: 1 });
+customerSchema.index({ customerName: 1, customerType: 1 }, { unique: true });
+customerSchema.index({ mobileNumber: 1 }, { unique: true, sparse: true });
+customerSchema.index({ email: 1 }, { unique: true, sparse: true });
+customerSchema.index({ gstNumber: 1 }, { unique: true, sparse: true });
+customerSchema.index({ aadharNumber: 1 }, { unique: true, sparse: true });
+customerSchema.index({ panNumber: 1 }, { unique: true, sparse: true });
 
+customerSchema.virtual('branchDetail', {
+    ref: 'Branch',
+    localField: 'branch',
+    foreignField: '_id',
+    justOne: true
+});
+
+customerSchema.virtual('cityDetail', {
+    ref: 'City',
+    localField: 'city',
+    foreignField: '_id',
+    justOne: true
+});
 
 const Customer = mongoose.model('Customer', customerSchema);
 

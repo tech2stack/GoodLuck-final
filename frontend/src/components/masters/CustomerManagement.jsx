@@ -7,7 +7,6 @@ import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, F
 import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
-// Import the new CustomerManagement specific styles
 import '../../styles/CustomerManagement.css'; // NEW: Import specific styles
 
 // NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
@@ -22,7 +21,6 @@ import companyLogo from '../../assets/glbs-logo.jpg';
 
 const CustomerManagement = ({ showFlashMessage }) => {
     // Backend base URL ko environment variable se fetch karein.
-    // Ismein sirf domain aur port hoga, /api/v1 nahi.
     const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
     // State for managing list of customers
@@ -30,14 +28,16 @@ const CustomerManagement = ({ showFlashMessage }) => {
     // States for dropdown data (Branches and Cities)
     const [branches, setBranches] = useState([]);
     const [cities, setCities] = useState([]);
-    // State for form inputs
-    const [formData, setFormData] = useState({
+
+    // Initial form data state
+    const initialFormData = {
         customerName: '',
         schoolCode: '',
         branch: '', // Will store Branch ID
         city: '',   // Will store City ID
         contactPerson: '',
         mobileNumber: '',
+        // email field is no longer required
         email: '',
         gstNumber: '',
         aadharNumber: '',
@@ -45,9 +45,28 @@ const CustomerManagement = ({ showFlashMessage }) => {
         shopAddress: '',
         homeAddress: '',
         status: 'active', // Default status
-    });
-    const [selectedImageFile, setSelectedImageFile] = useState(null); // To store the actual File object
-    const [imagePreviewUrl, setImagePreviewUrl] = useState(''); // To display image preview
+        primaryCustomerType: null, // Change: Default to null, no radio button selected
+        secondaryCustomerType: null, // Change: Secondary type is initially null
+        zone: '',
+        salesBy: '',
+        dealer: '',
+        discount: 0,
+        returnTime: '',
+        bankName: '',
+        accountNumber: '',
+        ifscCode: '',
+        openingBalance: 0,
+        balanceType: 'Dr.',
+    };
+    
+    // State for form inputs
+    const [formData, setFormData] = useState(initialFormData);
+    const [selectedChequeFile, setSelectedChequeFile] = useState(null);
+    const [selectedPassportFile, setSelectedPassportFile] = useState(null);
+    const [selectedOtherFile, setSelectedOtherFile] = useState(null); // NEW: Other attachment file state
+    const [chequeImagePreviewUrl, setChequeImagePreviewUrl] = useState('');
+    const [passportImagePreviewUrl, setPassportImagePreviewUrl] = useState('');
+    const [otherAttachmentPreviewUrl, setOtherAttachmentPreviewUrl] = useState(''); // NEW: Other attachment preview state
 
     // State for loading indicators
     const [loading, setLoading] = useState(false);
@@ -61,13 +80,13 @@ const CustomerManagement = ({ showFlashMessage }) => {
     const [customerToDeleteId, setCustomerToDeleteId] = useState(null);
     const [customerToDeleteName, setCustomerToDeleteName] = useState('');
 
-    // Ref for scrolling to the new item in the table (if needed)
+    // Ref for scrolling to the new item in the table
     const tableBodyRef = useRef(null);
 
     // States for Search
     const [searchTerm, setSearchTerm] = useState('');
 
-    // NEW: State for Branch Filter
+    // State for Branch Filter
     const [selectedBranchFilter, setSelectedBranchFilter] = useState(''); // Stores branch ID for filtering
 
 
@@ -232,7 +251,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
             if (!editingCustomerId) {
                 setFormData(prev => ({
                     ...prev,
-                    branch: fetchedBranches.length > 0 ? fetchedBranches[0]._id : '',
                     city: fetchedCities.length > 0 ? fetchedCities[0]._id : ''
                 }));
             }
@@ -259,15 +277,37 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
     // --- Form Handling ---
     const handleChange = (e) => {
-        const { name, value, type } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'number' ? (value === '' ? '' : parseFloat(value)) : value
-        }));
+        const { name, value, type, checked } = e.target;
+        
+        setFormData(prev => {
+            const newState = { ...prev };
+    
+            if (name === 'primaryCustomerType') {
+                newState.primaryCustomerType = value;
+                // Change: Secondary type reset when primary changes
+                if (value === 'School') {
+                    // Set default secondary type for 'School'
+                    newState.secondaryCustomerType = 'Retail'; 
+                    // Set default branch and school code if available
+                    newState.branch = branches.length > 0 ? branches[0]._id : '';
+                    newState.schoolCode = ''; // Default to empty
+                } else {
+                    // Reset fields not relevant for 'Dealer'
+                    newState.secondaryCustomerType = 'Retail'; // Change: Default to 'Retail' when 'Dealer' is selected
+                    newState.branch = '';
+                    newState.schoolCode = '';
+                }
+            } else if (name === 'secondaryCustomerType') {
+                newState.secondaryCustomerType = value;
+            } else {
+                newState[name] = type === 'number' ? (value === '' ? '' : parseFloat(value)) : value;
+            }
+            return newState;
+        });
     };
-
+    
     // --- Handle Image File Change ---
-    const handleImageFileChange = (e) => {
+    const handleFileChange = (e, fieldName) => {
         const file = e.target.files[0];
         const MAX_FILE_SIZE_MB = 5; // 5 MB limit
         const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -276,37 +316,80 @@ const CustomerManagement = ({ showFlashMessage }) => {
             if (file.size > MAX_FILE_SIZE_BYTES) {
                 showFlashMessage(`File size exceeds ${MAX_FILE_SIZE_MB}MB limit. Please choose a smaller image.`, 'error');
                 e.target.value = null; // Clear the input
-                setSelectedImageFile(null);
-                setImagePreviewUrl('');
+                // Reset the specific file state and preview URL
+                if (fieldName === 'chequeImage') {
+                    setSelectedChequeFile(null);
+                    setChequeImagePreviewUrl('');
+                } else if (fieldName === 'passportImage') {
+                    setSelectedPassportFile(null);
+                    setPassportImagePreviewUrl('');
+                } else if (fieldName === 'otherAttachment') { // NEW: Handle other attachment file
+                    setSelectedOtherFile(null);
+                    setOtherAttachmentPreviewUrl('');
+                }
                 return;
             }
 
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
             if (!allowedTypes.includes(file.type)) {
-                showFlashMessage('Invalid file type. Please upload an image (JPEG, PNG, GIF, WEBP).', 'error');
+                showFlashMessage('Invalid file type. Please upload an image (JPEG, PNG, GIF, WEBP) or PDF.', 'error');
                 e.target.value = null; // Clear the input
-                setSelectedImageFile(null);
-                setImagePreviewUrl('');
+                // Reset the specific file state and preview URL
+                if (fieldName === 'chequeImage') {
+                    setSelectedChequeFile(null);
+                    setChequeImagePreviewUrl('');
+                } else if (fieldName === 'passportImage') {
+                    setSelectedPassportFile(null);
+                    setPassportImagePreviewUrl('');
+                } else if (fieldName === 'otherAttachment') { // NEW: Handle other attachment file
+                    setSelectedOtherFile(null);
+                    setOtherAttachmentPreviewUrl('');
+                }
                 return;
             }
 
-
-            setSelectedImageFile(file); // Store the File object
             const reader = new FileReader();
             reader.onloadend = () => {
-                setImagePreviewUrl(reader.result); // Store Base64 string for preview
-                console.log('Selected image for preview.');
+                if (fieldName === 'chequeImage') {
+                    setSelectedChequeFile(file);
+                    setChequeImagePreviewUrl(reader.result);
+                } else if (fieldName === 'passportImage') {
+                    setSelectedPassportFile(file);
+                    setPassportImagePreviewUrl(reader.result);
+                } else if (fieldName === 'otherAttachment') { // NEW: Handle other attachment file
+                    setSelectedOtherFile(file);
+                    setOtherAttachmentPreviewUrl(reader.result);
+                }
+                console.log(`Selected ${fieldName} for preview.`);
             };
             reader.onerror = (error) => {
                 console.error("Error reading file:", error);
-                showFlashMessage('Failed to read image file.', 'error');
-                setSelectedImageFile(null);
-                setImagePreviewUrl('');
+                showFlashMessage('Failed to read file.', 'error');
+                // Reset the specific file state and preview URL
+                if (fieldName === 'chequeImage') {
+                    setSelectedChequeFile(null);
+                    setChequeImagePreviewUrl('');
+                } else if (fieldName === 'passportImage') {
+                    setSelectedPassportFile(null);
+                    setPassportImagePreviewUrl('');
+                } else if (fieldName === 'otherAttachment') { // NEW: Handle other attachment file
+                    setSelectedOtherFile(null);
+                    setOtherAttachmentPreviewUrl('');
+                }
             };
             reader.readAsDataURL(file); // Read file as Base64 for preview
         } else {
-            setSelectedImageFile(null);
-            setImagePreviewUrl('');
+            // If file input is cleared
+            if (fieldName === 'chequeImage') {
+                setSelectedChequeFile(null);
+                setChequeImagePreviewUrl('');
+            } else if (fieldName === 'passportImage') {
+                setSelectedPassportFile(null);
+                setPassportImagePreviewUrl('');
+            } else if (fieldName === 'otherAttachment') {
+                setSelectedOtherFile(null);
+                setOtherAttachmentPreviewUrl('');
+            }
         }
     };
 
@@ -316,75 +399,61 @@ const CustomerManagement = ({ showFlashMessage }) => {
         setLoading(true);
         setLocalError(null);
 
+        // Derive final customerType from the two states
+        const finalCustomerType = formData.primaryCustomerType === 'School'
+            ? `School-${formData.secondaryCustomerType}`
+            : formData.primaryCustomerType === 'Dealer'
+                ? `Dealer-${formData.secondaryCustomerType || 'Retail'}`
+                : '';
+        
         // Basic validation
-        if (!formData.customerName || !formData.branch || !formData.city || !formData.mobileNumber) {
-            setLocalError('Please fill in all required fields: Customer Name, Branch, City, Mobile Number.');
+        // email is no longer required
+        if (!formData.customerName || !formData.city || !formData.mobileNumber) {
+            setLocalError('Please fill in all required fields: Customer Name, City, and Mobile Number.');
             showFlashMessage('Please fill in all required fields.', 'error');
             setLoading(false);
             return;
         }
 
-        const dataToSend = new FormData();
-        // Append all form data fields
-        // Ensure values are explicitly strings or File objects
-        console.log('--- Populating FormData ---');
-        for (const key in formData) {
-            const value = formData[key];
-            console.log(`Attempting to append: ${key}:`, value); // Log value before conversion
-            if (value !== null && value !== undefined) {
-                dataToSend.append(key, String(value)); // Explicitly convert to string
-                console.log(`Appended ${key}: "${String(value)}"`);
-            } else {
-                dataToSend.append(key, ''); // Append empty string for null/undefined fields
-                console.log(`Appended ${key}: "" (empty string for null/undefined)`);
+        // Conditional validation for School-Retail
+        // NOTE: The backend already has this validation, but good to have it on the frontend too
+        if (finalCustomerType === 'School-Retail' || finalCustomerType === 'School-Supply') {
+            if (!formData.branch || !formData.schoolCode) {
+                setLocalError('For School customers, Branch and School Code are required fields.');
+                showFlashMessage('For School customers, Branch and School Code are required fields.', 'error');
+                setLoading(false);
+                return;
             }
         }
 
-        // --- Image Handling Logic for FormData ---
-        if (selectedImageFile) {
-            // Case 1: A new image file has been selected by the user.
-            dataToSend.append('image', selectedImageFile);
-            console.log('Appended new image file:', selectedImageFile.name);
-        } else if (editingCustomerId && imagePreviewUrl && !imagePreviewUrl.startsWith('data:image/')) {
-            // Case 2: In edit mode, and there's an existing image URL (not a new base64 preview).
-            // This means the user did not select a new file, and we should retain the existing one.
-            // Send the existing URL back to the backend.
-            dataToSend.append('image', imagePreviewUrl);
-            console.log('Appended existing image URL (no new file selected):', imagePreviewUrl);
-        } else if (editingCustomerId && imagePreviewUrl === '') {
-            // Case 3: In edit mode, and imagePreviewUrl is explicitly empty.
-            // This means the user cleared the image. Send an empty string to signal removal.
-            dataToSend.append('image', '');
-            console.log('Appended empty string for image (user cleared existing image).');
-        } else if (!editingCustomerId && imagePreviewUrl === '') {
-            // Case 4: In add mode, and no image selected.
-            dataToSend.append('image', '');
-            console.log('Appended empty string for image (add mode, no image selected).');
+        const dataToSend = new FormData();
+        // Append all form data fields
+        for (const key in formData) {
+            const value = formData[key];
+            if (value !== null && value !== undefined) {
+                dataToSend.append(key, String(value));
+            }
         }
-        // Implicit Case: If in edit mode, selectedImageFile is null, and imagePreviewUrl is a base64 string,
-        // it means a file was selected for *preview* but not for *upload* in this specific update action.
-        // In this scenario, we do NOT append the 'image' field to FormData.
-        // The backend will then correctly infer that no new image was provided and retain the old image.
-        // This prevents sending large base64 strings unnecessarily.
-        console.log('--- FormData Population Complete ---');
+        // IMPORTANT: Append the combined customerType field for the backend
+        dataToSend.append('customerType', finalCustomerType);
 
+        // Append image files
+        if (selectedChequeFile) {
+            dataToSend.append('chequeImage', selectedChequeFile);
+        }
+        if (selectedPassportFile) {
+            dataToSend.append('passportImage', selectedPassportFile);
+        }
+        if (selectedOtherFile) { // NEW: Append other attachment file
+            dataToSend.append('otherAttachment', selectedOtherFile);
+        }
 
         try {
             let response;
             if (editingCustomerId) {
-                console.log('Attempting to update customer with ID:', editingCustomerId);
-                console.log('FormData state before sending:', formData); // Log the React state formData
-
-                // Log the FormData content (for debugging multipart/form-data, you can't directly log it,
-                // but you can iterate over its entries)
-                console.log('FormData entries being sent for update:');
-                for (let [key, value] of dataToSend.entries()) {
-                    console.log(`FormData Entry - ${key}:`, value); // Log value directly, not stringified for File objects
-                }
-
                 // Update existing customer
                 response = await api.patch(`/customers/${editingCustomerId}`, dataToSend, {
-                    headers: { 'Content-Type': 'multipart/form-data' }, // Important for file uploads
+                    headers: { 'Content-Type': 'multipart/form-data' },
                 });
                 if (response.data.status === 'success') {
                     showFlashMessage('Customer updated successfully!', 'success');
@@ -394,7 +463,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
             } else {
                 // Create new customer
                 response = await api.post('/customers', dataToSend, {
-                    headers: { 'Content-Type': 'multipart/form-data' }, // Important for file uploads
+                    headers: { 'Content-Type': 'multipart/form-data' },
                 });
                 if (response.data.status === 'success') {
                     showFlashMessage('Customer created successfully!', 'success');
@@ -402,17 +471,15 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     throw new Error(response.data.message || 'Failed to create customer.');
                 }
             }
-            console.log('Customer saved successfully. Response:', response.data); // Debugging: Confirm save
+            console.log('Customer saved successfully. Response:', response.data);
             // Reset form and re-fetch customers
-            setFormData({
-                customerName: '', schoolCode: '', branch: branches.length > 0 ? branches[0]._id : '',
-                city: cities.length > 0 ? cities[0]._id : '', contactPerson: '', mobileNumber: '',
-                email: '', gstNumber: '', aadharNumber: '', panNumber: '', shopAddress: '',
-                homeAddress: '',
-                status: 'active'
-            });
-            setSelectedImageFile(null);
-            setImagePreviewUrl('');
+            setFormData(initialFormData);
+            setSelectedChequeFile(null);
+            setSelectedPassportFile(null);
+            setSelectedOtherFile(null); // NEW: Reset other attachment state
+            setChequeImagePreviewUrl('');
+            setPassportImagePreviewUrl('');
+            setOtherAttachmentPreviewUrl(''); // NEW: Reset other attachment preview URL
             setEditingCustomerId(null);
             fetchCustomers(true); // Re-fetch and indicate to scroll
         } catch (err) {
@@ -427,9 +494,14 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
     // --- Edit and Delete Operations ---
     const handleEdit = (customerItem) => {
-        console.log('handleEdit: customerItem received:', customerItem); // NEW: Log the entire item
-        console.log('handleEdit: customerItem.branch:', customerItem.branch); // NEW: Log branch object
-        console.log('handleEdit: customerItem.city:', customerItem.city);   // NEW: Log city object
+        let primaryType = customerItem.customerType;
+        let secondaryType = '';
+
+        if (customerItem.customerType.includes('-')) {
+            const parts = customerItem.customerType.split('-');
+            primaryType = parts[0];
+            secondaryType = parts[1];
+        }
 
         setFormData({
             customerName: customerItem.customerName || '',
@@ -444,10 +516,26 @@ const CustomerManagement = ({ showFlashMessage }) => {
             panNumber: customerItem.panNumber || '',
             shopAddress: customerItem.shopAddress || '',
             homeAddress: customerItem.homeAddress || '',
-            status: customerItem.status || 'active'
+            status: customerItem.status || 'active',
+            primaryCustomerType: primaryType,
+            secondaryCustomerType: secondaryType,
+            zone: customerItem.zone || '',
+            salesBy: customerItem.salesBy || '',
+            dealer: customerItem.dealer || '',
+            discount: customerItem.discount || 0,
+            returnTime: customerItem.returnTime || '',
+            bankName: customerItem.bankName || '',
+            accountNumber: customerItem.accountNumber || '',
+            ifscCode: customerItem.ifscCode || '',
+            openingBalance: customerItem.openingBalance || 0,
+            balanceType: customerItem.balanceType || 'Dr.',
         });
-        setImagePreviewUrl(customerItem.image ? (customerItem.image.startsWith('/customer-logos/') ? `${BACKEND_BASE_URL}/uploads${customerItem.image}` : customerItem.image) : '');
-        setSelectedImageFile(null); // No file selected during edit initially
+        setChequeImagePreviewUrl(customerItem.chequeImage ? `${BACKEND_BASE_URL}/uploads/customer-logos/${customerItem.chequeImage}` : '');
+        setPassportImagePreviewUrl(customerItem.passportImage ? `${BACKEND_BASE_URL}/uploads/customer-logos/${customerItem.passportImage}` : '');
+        setOtherAttachmentPreviewUrl(customerItem.otherAttachment ? `${BACKEND_BASE_URL}/uploads/customer-logos/${customerItem.otherAttachment}` : ''); // NEW: Set preview URL for other attachment
+        setSelectedChequeFile(null); // No file selected during edit initially
+        setSelectedPassportFile(null);
+        setSelectedOtherFile(null); // NEW: No other file selected during edit initially
         setEditingCustomerId(customerItem._id);
         setLocalError(null);
         window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to form
@@ -489,15 +577,13 @@ const CustomerManagement = ({ showFlashMessage }) => {
     };
 
     const handleCancelEdit = () => {
-        setFormData({
-            customerName: '', schoolCode: '', branch: branches.length > 0 ? branches[0]._id : '',
-            city: cities.length > 0 ? cities[0]._id : '', contactPerson: '', mobileNumber: '',
-            email: '', gstNumber: '', aadharNumber: '', panNumber: '', shopAddress: '',
-            homeAddress: '',
-            status: 'active'
-        });
-        setSelectedImageFile(null);
-        setImagePreviewUrl('');
+        setFormData(initialFormData);
+        setSelectedChequeFile(null);
+        setSelectedPassportFile(null);
+        setSelectedOtherFile(null);
+        setChequeImagePreviewUrl('');
+        setPassportImagePreviewUrl('');
+        setOtherAttachmentPreviewUrl('');
         setEditingCustomerId(null);
         setLocalError(null);
     };
@@ -528,15 +614,19 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
     // --- PDF Download Functionality ---
     const downloadPdf = () => {
-        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF !== 'function') {
-            showFlashMessage('PDF generation libraries not fully loaded or accessible. Check console for details.', 'error');
-            console.error("PDF generation failed: window.jspdf or window.jspdf.jsPDF is not available/callable. Ensure CDNs are correctly linked in public/index.html");
+        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+            showFlashMessage('PDF generation library (jspdf) not loaded or accessible. Check console for details.', 'error');
+            console.error("PDF generation failed: jspdf is not loaded. Ensure jspdf.umd.min.js is correctly linked in public/index.html");
             return;
         }
 
+        if (customers.length === 0) {
+            showFlashMessage('No customer data to download.', 'warning');
+            return;
+        }
+        
         // Changed: Set PDF to A4 portrait
-        const doc = new window.jspdf.jsPDF('portrait', 'mm', 'a4'); 
-
+        const doc = new window.jspdf.jsPDF('portrait', 'mm', 'a4');
         if (typeof doc.autoTable !== 'function') {
             showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
             console.error("PDF generation failed: doc.autoTable is not a function. Ensure jspdf.plugin.autotable.min.js is correctly linked and loaded AFTER jspdf.umd.min.js.");
@@ -551,55 +641,37 @@ const CustomerManagement = ({ showFlashMessage }) => {
         const companyLogoUrl = companyLogo; // Use the imported logo directly
 
         // Function to generate the main report content (title, line, table, save)
-        // This function now accepts the dynamic startYPositionForTable as an argument
         const generateReportBody = (startYPositionForTable) => {
-            // Add a professional report title (centered, below company info)
             doc.setFontSize(18);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30); // Dark gray for title
-            // Adjust Y position for the report title to be below company info
             doc.text("Customer List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' });
-
-            // Add a line separator below the main title
             doc.setLineWidth(0.5);
             doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15); // Line spanning almost full width
-
-            // Update startYPositionForTable for autoTable
             const tableStartY = startYPositionForTable + 20;
-
 
             // Generate table data
             const tableColumn = [
-                "S.No.", "Name (Code)", "Branch", "City", "Contact Person", "Mobile", "Email",
-                "Documents", "Address"
+                "S.No.", "Name (Type)", "Contact Person", "Mobile No.", "Address", "City", "School Code", "GST No.", "Discount", "Opening Balance", "Sales By", "Return Time"
             ];
             const tableRows = [];
 
-            customers.forEach((customer, index) => { // Use 'customers' directly for PDF generation
-                const documents = [];
-                if (customer.aadharNumber) documents.push(`Aadhar: ${getStringValue(customer.aadharNumber)}`);
-                if (customer.panNumber) documents.push(`PAN: ${getStringValue(customer.panNumber)}`);
-                if (customer.gstNumber) documents.push(`GST: ${getStringValue(customer.gstNumber)}`);
-
-                // Construct the full image URL for PDF
-                // Now, customer.image will be like '/customer-logos/image.jpg'
-                const imageUrlForPdf = customer.image && customer.image.startsWith('/customer-logos/')
-                    ? `${BACKEND_BASE_URL}/uploads${customer.image}`
-                    : customer.image;
-
+            // Populate tableRows with data from filteredCustomers
+            customers.forEach((customer, index) => {
+                const customerType = customer.customerType ? `(${customer.customerType})` : '';
                 const customerData = [
-                    String(index + 1), // S.No.
-                    `${getStringValue(customer.customerName)} ${customer.schoolCode ? `(${getStringValue(customer.schoolCode)})` : ''}`.trim(), // Name and School Code
-                    customer.branch ? getStringValue(customer.branch.name) : 'N/A',
-                    customer.city ? getStringValue(customer.city.name) : 'N/A',
+                    index + 1,
+                    `${getStringValue(customer.customerName)} ${customerType}`,
                     getStringValue(customer.contactPerson),
                     getStringValue(customer.mobileNumber),
-                    getStringValue(customer.email),
-                    documents.join('\n') || 'N/A', // Combine documents
-                    `${getStringValue(customer.shopAddress)}\n${getStringValue(customer.homeAddress)}`.trim() || 'N/A', // Combine addresses
-                    imageUrlForPdf && (imageUrlForPdf.startsWith('data:image/') || imageUrlForPdf.startsWith('http')) ? 'Image Available' : 'No Image', // Check if it's a Base64 image or URL
-                    formatDateWithTime(customer.createdAt),
-                    getStringValue(customer.status).charAt(0).toUpperCase() + getStringValue(customer.status).slice(1)
+                    getAddressString(customer),
+                    customer.city ? getStringValue(customer.city.name) : 'N/A',
+                    getStringValue(customer.schoolCode),
+                    getStringValue(customer.gstNumber),
+                    getStringValue(customer.discount),
+                    getStringValue(customer.openingBalance),
+                    getStringValue(customer.salesBy),
+                    getStringValue(customer.returnTime)
                 ];
                 tableRows.push(customerData);
             });
@@ -632,37 +704,39 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     lineColor: [200, 200, 200] // Light gray border
                 },
                 columnStyles: {
-                    0: { cellWidth: 15, halign: 'center' }, 1: { cellWidth: 'auto', halign: 'left' },
-                    2: { cellWidth: 'auto', halign: 'left' }, 3: { cellWidth: 'auto', halign: 'left' },
-                    4: { cellWidth: 'auto', halign: 'left' }, 5: { cellWidth: 'auto', halign: 'center' },
-                    6: { cellWidth: 'auto', halign: 'left' }, 7: { cellWidth: 'auto', halign: 'left' },
-                    8: { cellWidth: 'auto', halign: 'left' }, 9: { cellWidth: 'auto', halign: 'center' }, // Logo column
-                    10: { halign: 'center' }, 11: { halign: 'center' }
+                    0: { cellWidth: 15, halign: 'center' },
+                    1: { cellWidth: 30, halign: 'left' },
+                    2: { cellWidth: 25, halign: 'left' },
+                    3: { cellWidth: 25, halign: 'center' },
+                    4: { cellWidth: 35, halign: 'left' },
+                    5: { cellWidth: 20, halign: 'left' },
+                    6: { cellWidth: 20, halign: 'center' },
+                    7: { cellWidth: 25, halign: 'left' },
+                    8: { cellWidth: 20, halign: 'center' },
+                    9: { cellWidth: 25, halign: 'center' },
+                    10: { cellWidth: 25, halign: 'left' },
+                    11: { cellWidth: 25, halign: 'center' }
                 },
-                margin: { top: 10, right: 14, bottom: 10, left: 14 },
-                didDrawPage: function (data) {
-                    // Add footer on each page
-                    doc.setFontSize(10);
-                    doc.setTextColor(100); // Gray color for footer text
-                    const pageCount = doc.internal.getNumberOfPages();
-                    doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                didParseCell: function (data) {
+                    if (data.section === 'head' && data.cell.text[0] === "Name (Type)") {
+                        data.cell.text = ["Name", "(Type)"];
+                    }
                 }
             });
-            doc.save(`Customer_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
-            showFlashMessage('Customer list downloaded as PDF!', 'success');
+
+            // Save the PDF
+            doc.save('Customer_List_Report.pdf');
         };
 
-        // 5. **Handle Logo Loading Asynchronously:**
+        // --- Header Generation with Logo and Info ---
         const img = new Image();
-        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
         img.onload = () => {
-            const logoX = 14; // Left margin for logo
-            const logoY = 10; // Top margin for logo
-            const imgWidth = 25; // Changed: Reduced logo width
-            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+            const imgWidth = 40; // width in mm
+            const imgHeight = (img.height * imgWidth) / img.width;
+            const logoX = 14; // Start X position from left margin
+            const logoY = 10; // Start Y position from top margin
 
-
-            // Add the logo at the top-left
+            // Add the image to the PDF
             doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight);
 
             // Add company name and details next to logo
@@ -670,7 +744,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
             doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
-
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
@@ -678,11 +751,9 @@ const CustomerManagement = ({ showFlashMessage }) => {
             doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17); // Mobile
             doc.text(companyGST, logoX + imgWidth + 5, logoY + 22); // GST No.
 
-            // Calculate startYPositionForTable based on logo and company info block
-            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10); // Ensure enough space
+            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10);
             generateReportBody(calculatedStartY); // Pass the calculated Y position
         };
-
         img.onerror = () => {
             console.warn("Logo image could not be loaded. Generating PDF without logo.");
             // If logo fails, add only company info block
@@ -690,18 +761,15 @@ const CustomerManagement = ({ showFlashMessage }) => {
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(30, 30, 30);
             doc.text(companyName, 14, 20); // Company Name
-
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(50, 50, 50);
             doc.text(companyAddress, 14, 27); // Address
             doc.text(companyMobile, 14, 32); // Mobile
             doc.text(companyGST, 14, 37); // GST No.
-
             const calculatedStartY = 45; // Adjust startY since no logo
             generateReportBody(calculatedStartY); // Pass the calculated Y position
         };
-
         img.src = companyLogoUrl; // This will now use the imported image data
 
         // Add generation date/time to the top right (this part can run immediately)
@@ -714,21 +782,72 @@ const CustomerManagement = ({ showFlashMessage }) => {
     // --- UI Rendering ---
     return (
         <div className="customer-management-container">
-            <h2 className="main-section-title">Customer Management</h2> 
-
+            <h2 className="main-section-title">Customer Management</h2>
             {localError && (
                 <p className="error-message text-center">
                     <FaTimesCircle className="icon error-icon mr-2" /> {localError}
                 </p>
             )}
-
-           
             <div className="main-content-layout">
-
-                                <div className="form-container-card">
-                    <form onSubmit={handleSubmit} className="app-form">
-                        <h3 className="form-title">{editingCustomerId ? 'Edit Customer' : 'Add New Customer'}</h3>
-
+                {/* Customer Form - SECOND CHILD */}
+                <div className="form-container">
+                    <h3>{editingCustomerId ? 'Update Customer' : 'Add New Customer'}</h3>
+                    <form onSubmit={handleSubmit} className="customer-form">
+                        <div className="form-row">
+                            <div className="form-group customer-type-group">
+                                <label>Customer Type (Primary):</label>
+                                <div className="radio-group">
+                                    <label>
+                                        <input
+                                            type="radio"
+                                            name="primaryCustomerType"
+                                            value="Dealer"
+                                            checked={formData.primaryCustomerType === 'Dealer'}
+                                            onChange={handleChange}
+                                            disabled={loading}
+                                        /> Dealer
+                                    </label>
+                                    <label>
+                                        <input
+                                            type="radio"
+                                            name="primaryCustomerType"
+                                            value="School"
+                                            checked={formData.primaryCustomerType === 'School'}
+                                            onChange={handleChange}
+                                            disabled={loading}
+                                        /> School
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        {/* Secondary radio buttons are now always visible, but conditionally disabled */}
+                        <div className="form-row">
+                            <div className="form-group customer-type-group">
+                                <label>Customer Type (Secondary):</label>
+                                <div className="radio-group">
+                                    <label>
+                                        <input
+                                            type="radio"
+                                            name="secondaryCustomerType"
+                                            value="Retail"
+                                            checked={formData.secondaryCustomerType === 'Retail'}
+                                            onChange={handleChange}
+                                            disabled={loading || !formData.primaryCustomerType}
+                                        /> Retail
+                                    </label>
+                                    <label>
+                                        <input
+                                            type="radio"
+                                            name="secondaryCustomerType"
+                                            value="Supply"
+                                            checked={formData.secondaryCustomerType === 'Supply'}
+                                            onChange={handleChange}
+                                            disabled={loading || !formData.primaryCustomerType}
+                                        /> Supply
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                         <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="customerName">Customer Name:</label>
@@ -738,52 +857,11 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     name="customerName"
                                     value={formData.customerName}
                                     onChange={handleChange}
-                                    placeholder="e.g., ABC School"
+                                    placeholder="e.g., Good Luck Book Store"
                                     required
                                     disabled={loading}
                                     className="form-input"
                                 />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="schoolCode">School Code:</label>
-                                <input
-                                    type="text"
-                                    id="schoolCode"
-                                    name="schoolCode"
-                                    value={formData.schoolCode}
-                                    onChange={handleChange}
-                                    placeholder="e.g., SCH001"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="branch">Branch:</label>
-                                <select
-                                    id="branch"
-                                    name="branch"
-                                    value={formData.branch}
-                                    onChange={handleChange}
-                                    required
-                                    disabled={loading || branches.length === 0}
-                                    className="form-select"
-                                >
-                                    {branches.length === 0 ? (
-                                        <option value="">Loading Branches...</option>
-                                    ) : (
-                                        <>
-                                            <option value="">-- SELECT BRANCH --</option>
-                                            {branches.map(branch => (
-                                                <option key={branch._id} value={branch._id}>
-                                                    {branch.name}
-                                                </option>
-                                            ))}
-                                        </>
-                                    )}
-                                </select>
                             </div>
                             <div className="form-group">
                                 <label htmlFor="city">City:</label>
@@ -812,20 +890,51 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             </div>
                         </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="contactPerson">Contact Person:</label>
-                                <input
-                                    type="text"
-                                    id="contactPerson"
-                                    name="contactPerson"
-                                    value={formData.contactPerson}
-                                    onChange={handleChange}
-                                    placeholder="e.g., Jane Doe"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
+                        {/* Conditional rendering for School/Retail fields */}
+                        {(formData.primaryCustomerType === 'School' && formData.secondaryCustomerType) && (
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="schoolCode">School Code:</label>
+                                    <input
+                                        type="text"
+                                        id="schoolCode"
+                                        name="schoolCode"
+                                        value={formData.schoolCode}
+                                        onChange={handleChange}
+                                        placeholder="e.g., GSS001"
+                                        disabled={loading}
+                                        className="form-input"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="branch">Branch:</label>
+                                    <select
+                                        id="branch"
+                                        name="branch"
+                                        value={formData.branch}
+                                        onChange={handleChange}
+                                        required
+                                        disabled={loading || branches.length === 0}
+                                        className="form-select"
+                                    >
+                                        {branches.length === 0 ? (
+                                            <option value="">Loading Branches...</option>
+                                        ) : (
+                                            <>
+                                                <option value="">-- SELECT BRANCH --</option>
+                                                {branches.map(branch => (
+                                                    <option key={branch._id} value={branch._id}>
+                                                        {branch.name}
+                                                    </option>
+                                                ))}
+                                            </>
+                                        )}
+                                    </select>
+                                </div>
                             </div>
+                        )}
+                        
+                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="mobileNumber">Mobile Number:</label>
                                 <input
@@ -836,6 +945,19 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     onChange={handleChange}
                                     placeholder="e.g., 9876543210"
                                     required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="contactPerson">Contact Person:</label>
+                                <input
+                                    type="text"
+                                    id="contactPerson"
+                                    name="contactPerson"
+                                    value={formData.contactPerson}
+                                    onChange={handleChange}
+                                    placeholder="e.g., Jane Doe"
                                     disabled={loading}
                                     className="form-input"
                                 />
@@ -852,6 +974,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     value={formData.email}
                                     onChange={handleChange}
                                     placeholder="e.g., info@example.com"
+                                    // Removed 'required' from here
                                     disabled={loading}
                                     className="form-input"
                                 />
@@ -900,7 +1023,138 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             </div>
                         </div>
 
-                        <div className="form-group">
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="zone">Zone:</label>
+                                <input
+                                    type="text"
+                                    id="zone"
+                                    name="zone"
+                                    value={formData.zone}
+                                    onChange={handleChange}
+                                    placeholder="e.g., North"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="salesBy">Sales By:</label>
+                                <input
+                                    type="text"
+                                    id="salesBy"
+                                    name="salesBy"
+                                    value={formData.salesBy}
+                                    onChange={handleChange}
+                                    placeholder="e.g., Piyush Goyal"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="discount">Discount:</label>
+                                <input
+                                    type="number"
+                                    id="discount"
+                                    name="discount"
+                                    value={formData.discount}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 10"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="returnTime">Return Time:</label>
+                                <input
+                                    type="text"
+                                    id="returnTime"
+                                    name="returnTime"
+                                    value={formData.returnTime}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 7 days"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="bankName">Bank Name:</label>
+                                <input
+                                    type="text"
+                                    id="bankName"
+                                    name="bankName"
+                                    value={formData.bankName}
+                                    onChange={handleChange}
+                                    placeholder="e.g., HDFC Bank"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="accountNumber">Account Number:</label>
+                                <input
+                                    type="text"
+                                    id="accountNumber"
+                                    name="accountNumber"
+                                    value={formData.accountNumber}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 1234567890"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="ifscCode">IFSC Code:</label>
+                                <input
+                                    type="text"
+                                    id="ifscCode"
+                                    name="ifscCode"
+                                    value={formData.ifscCode}
+                                    onChange={handleChange}
+                                    placeholder="e.g., HDFC0001234"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="openingBalance">Opening Balance:</label>
+                                <input
+                                    type="number"
+                                    id="openingBalance"
+                                    name="openingBalance"
+                                    value={formData.openingBalance}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 5000"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+                        <div className="form-row">
+                             <div className="form-group full-width-group">
+                                <label htmlFor="balanceType">Balance Type:</label>
+                                <select
+                                    id="balanceType"
+                                    name="balanceType"
+                                    value={formData.balanceType}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    className="form-select"
+                                >
+                                    <option value="Dr.">Dr.</option>
+                                    <option value="Cr.">Cr.</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="form-group full-width-group">
                             <label htmlFor="shopAddress">Shop Address:</label>
                             <textarea
                                 id="shopAddress"
@@ -912,8 +1166,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 className="form-textarea"
                             ></textarea>
                         </div>
-
-                        <div className="form-group">
+                        <div className="form-group full-width-group">
                             <label htmlFor="homeAddress">Home Address:</label>
                             <textarea
                                 id="homeAddress"
@@ -925,49 +1178,45 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 className="form-textarea"
                             ></textarea>
                         </div>
-
-                        <div className="form-group">
-                            <label htmlFor="customerImage">Customer Logo:</label>
-                            <input
-                                type="file"
-                                id="customerImage"
-                                name="image" // Ensure this matches the backend field name for file upload
-                                accept="image/*"
-                                onChange={handleImageFileChange}
-                                disabled={loading}
-                                className="form-input-file"
-                            />
-                            {imagePreviewUrl && (
-                                <div className="image-preview-container">
-                                    <img src={imagePreviewUrl} alt="Customer Preview" className="image-preview" />
-                                    <button
-                                        type="button"
-                                        className="clear-image-btn"
-                                        onClick={() => {
-                                            setSelectedImageFile(null);
-                                            setImagePreviewUrl('');
-                                            // Clear the file input visually as well
-                                            const fileInput = document.getElementById('customerImage');
-                                            if (fileInput) fileInput.value = '';
-                                        }}
-                                        disabled={loading}
-                                    >
-                                        <FaTimesCircle className="icon mr-1" /> Clear Image {/* Added icon and margin utility */}
-                                    </button>
-                                </div>
-                            )}
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="chequeImage">Cheque Image:</label>
+                                <input
+                                    type="file"
+                                    id="chequeImage"
+                                    name="chequeImage"
+                                    accept="image/*, .pdf"
+                                    onChange={(e) => handleFileChange(e, 'chequeImage')}
+                                    disabled={loading}
+                                    className="form-input-file"
+                                />
+                                {chequeImagePreviewUrl && (
+                                    <div className="image-preview">
+                                        <img src={chequeImagePreviewUrl} alt="Cheque Preview" />
+                                        <button type="button" onClick={() => setChequeImagePreviewUrl('')} className="remove-image-btn">Remove</button>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="passportImage">Passport Image:</label>
+                                <input
+                                    type="file"
+                                    id="passportImage"
+                                    name="passportImage"
+                                    accept="image/*, .pdf"
+                                    onChange={(e) => handleFileChange(e, 'passportImage')}
+                                    disabled={loading}
+                                    className="form-input-file"
+                                />
+                                {passportImagePreviewUrl && (
+                                    <div className="image-preview">
+                                        <img src={passportImagePreviewUrl} alt="Passport Preview" />
+                                        <button type="button" onClick={() => setPassportImagePreviewUrl('')} className="remove-image-btn">Remove</button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-
-
-                        <h3 className="form-title">{editingCustomerId ? 'Edit Bank Details' : 'Add bank Details'}</h3>
-                            
-                            {/* Bank Name , Account No , IFSC Code  */}
-
-                        <h3 className="form-title">{editingCustomerId ? 'Edit Attachments' : 'Add Attachments'}</h3>
-
-                            {/* Bank Cheque Image , Passport Size photo , other document.. */}
-
-                        <div className="form-group">
+                        <div className="form-group status-group">
                             <label htmlFor="status">Status:</label>
                             <select
                                 id="status"
@@ -981,18 +1230,12 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 <option value="inactive">Inactive</option>
                             </select>
                         </div>
-
                         <div className="form-actions">
-                            <button type="submit" className="btn-primary" disabled={loading}> {/* Renamed class */}
-                                {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : (editingCustomerId ? 'Update Customer' : 'Add Customer')} {/* Added icon class */}
+                            <button type="submit" className="btn-primary" disabled={loading}>
+                                {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : editingCustomerId ? 'Update' : 'Add'}
                             </button>
                             {editingCustomerId && (
-                                <button
-                                    type="button"
-                                    className="btn-secondary ml-2" 
-                                    onClick={handleCancelEdit}
-                                    disabled={loading}
-                                >
+                                <button type="button" className="btn-secondary ml-2" onClick={handleCancelEdit} disabled={loading}>
                                     Cancel Edit
                                 </button>
                             )}
@@ -1000,9 +1243,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     </form>
                 </div>
                 {/* Customer List Table - FIRST CHILD */}
-                <div className="table-container"> 
+                <div className="table-container">
                     {/* <h3 className="table-title">Existing Customers</h3> */}
-
                     {/* Search and Filter Section */}
                     <div className="table-controls">
                         <div className="search-input-group">
@@ -1019,7 +1261,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             />
                             <FaSearch className="search-icon" />
                         </div>
-
                         <div className="filter-group">
                             {/* <label htmlFor="branchFilter" className="sr-only" >Filter by Branch:</label> */}
                             <select
@@ -1040,101 +1281,64 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 ))}
                             </select>
                         </div>
-
                         <button onClick={downloadPdf} className="download-pdf-btn" disabled={loading || customers.length === 0}>
                             <FaFilePdf className="icon mr-2" /> Download PDF
                         </button>
                     </div>
-
                     {loading && customers.length === 0 ? (
                         <p className="loading-state text-center">
-                            <FaSpinner className="icon animate-spin mr-2" /> Loading customers... 
+                            <FaSpinner className="icon animate-spin" /> Fetching customer data...
                         </p>
                     ) : customers.length === 0 ? (
-                        <p className="no-data-message text-center">No customers found matching your criteria. Start by adding one!</p>
+                        <p className="no-records-found">No customers found.</p>
                     ) : (
-                        <div className="table-scroll-wrapper"> 
-                            <table className="app-table"> 
+                        <div className="table-scroll-container">
+                            <table className="app-table">
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>
-                                        <th>Customer Name (Code)</th>
-                                        <th>Branch</th>
-                                        <th>City</th>
+                                        <th>Name</th>
                                         <th>Contact Person</th>
-                                        <th>Mobile</th>
-                                        <th>Email</th>
-                                        <th>Documents</th>
+                                        <th>Mobile No.</th>
                                         <th>Address</th>
-                                        <th>Logo</th>
-                                        <th>Add Date</th>
+                                        <th>City</th>
                                         <th>Status</th>
-                                        <th>Action</th>
-                                        
+                                        <th>Created At</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody ref={tableBodyRef}>
                                     {currentItems.map((customer, index) => (
                                         <tr key={customer._id}>
                                             <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                            <td>{`${customer.customerName} ${customer.schoolCode ? `(${customer.schoolCode})` : ''}`}</td>
-                                            <td>{customer.branch?.name || 'N/A'}</td>
-                                            <td>{customer.city?.name || 'N/A'}</td>
-                                            <td>{customer.contactPerson}</td>
-                                            <td>{customer.mobileNumber}</td>
-                                            <td>{customer.email || 'N/A'}</td>
-                                            <td>{getDocumentsString(customer)}</td>
-                                            <td>{getAddressString(customer)}</td>
-                                            <td>
-                                                {customer.image ? (
-                                                    <img
-                                                        src={customer.image.startsWith('/customer-logos/') ? `${BACKEND_BASE_URL}/uploads${customer.image}` : customer.image}
-                                                        alt="Customer Logo"
-                                                        className="customer-logo-thumbnail"
-                                                        onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/50x50/e0e0e0/ffffff?text=No+Logo'; }}
-                                                    />
-                                                ) : (
-                                                    'No Logo'
-                                                )}
-                                            </td>
+                                            <td>{customer.customerName} ({customer.customerType})</td>
+                                            <td>{customer.contactPerson || 'N/A'}</td>
+                                            <td>{customer.mobileNumber || 'N/A'}</td>
+                                            <td>{customer.shopAddress || customer.homeAddress || 'N/A'}</td>
+                                            <td>{customer.city ? customer.city.name : 'N/A'}</td>
+                                            <td>{customer.status}</td>
                                             <td>{formatDateWithTime(customer.createdAt)}</td>
-                                            <td>
-                                                <span className={`status-badge ${customer.status}`}>
-                                                    {customer.status.charAt(0).toUpperCase() + customer.status.slice(1)}
-                                                </span>
-                                            </td>
                                             <td className="actions-column">
-                                                <button
-                                                    onClick={() => handleEdit(customer)}
-                                                    className="action-icon-button edit-button"
-                                                    title="Edit Customer"
-                                                    disabled={loading}
-                                                >
-                                                    <FaEdit className="icon" /> {/* Added icon class */}
+                                                <button onClick={() => handleEdit(customer)} className="btn-action edit">
+                                                    <FaEdit />
                                                 </button>
-                                                <button
-                                                    onClick={() => openConfirmModal(customer)}
-                                                    className="action-icon-button delete-button"
-                                                    title="Delete Customer"
-                                                    disabled={loading}
-                                                >
-                                                    {loading && customerToDeleteId === customer._id ? <FaSpinner className="icon animate-spin" /> : <FaTrashAlt className="icon" />} {/* Added icon class */}
+                                                <button onClick={() => openConfirmModal(customer)} className="btn-action delete">
+                                                    <FaTrashAlt />
                                                 </button>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
-
                             {/* Pagination Controls */}
-                            {totalPages > 1 && (
+                            {customers.length > itemsPerPage && (
                                 <div className="pagination-controls">
-                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn-page"> {/* Renamed class */}
-                                        <FaChevronLeft className="icon mr-2" /> Previous {/* Renamed class */}
+                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn-page">
+                                        <FaChevronLeft className="icon mr-2" /> Prev
                                     </button>
                                     <span>Page {currentPage} of {totalPages}</span>
-                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn-page"> {/* Renamed class */}
-                                        Next <FaChevronRight className="icon ml-2" /> {/* Renamed class */}
+                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn-page">
+                                        Next <FaChevronRight className="icon ml-2" />
                                     </button>
                                 </div>
                             )}
@@ -1145,8 +1349,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     )}
                 </div>
 
-               
-
             </div> {/* End of main-content-layout */}
 
             {/* Confirmation Modal */}
@@ -1156,10 +1358,10 @@ const CustomerManagement = ({ showFlashMessage }) => {
                         <h3>Confirm Deletion</h3>
                         <p>Are you sure you want to delete customer: <strong>{customerToDeleteName}</strong>?</p>
                         <div className="modal-actions">
-                            <button onClick={confirmDelete} className="btn-danger" disabled={loading}> {/* Renamed class */}
-                                {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : 'Delete'} {/* Added icon class */}
+                            <button onClick={confirmDelete} className="btn-danger" disabled={loading}>
+                                {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : 'Delete'}
                             </button>
-                            <button onClick={closeConfirmModal} className="btn-secondary" disabled={loading}>Cancel</button> {/* Renamed class */}
+                            <button onClick={closeConfirmModal} className="btn-secondary" disabled={loading}>Cancel</button>
                         </div>
                     </div>
                 </div>

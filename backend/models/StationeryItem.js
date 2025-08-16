@@ -13,12 +13,19 @@ const stationeryItemSchema = new mongoose.Schema({
     category: {
         type: String,
         required: [true, 'Category is required for the stationery item'],
-        enum: ['Notebooks', 'Covers', 'Plastic Items', 'Bags', 'Other Stationery'] // Restrict to these specific values
+        enum: ['Notebooks', 'Covers', 'Plastic Items', 'Bags', 'School kit', 'Other Stationery'] // Restrict to these specific values
     },
     price: {
         type: Number,
         required: [true, 'Price is required for the stationery item'],
         min: [0, 'Price cannot be negative']
+    },
+    // NEW: Add a margin percentage field
+    marginPercentage: {
+        type: Number,
+        required: [true, 'Margin percentage is required'],
+        min: [0, 'Margin cannot be negative'],
+        max: [100, 'Margin cannot exceed 100']
     },
     status: {
         type: String,

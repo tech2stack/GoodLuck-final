@@ -5,7 +5,8 @@ const Customer = require('../models/Customer');
 const Class = require('../models/Class');
 const BookCatalog = require('../models/BookCatalog');
 const StationeryItem = require('../models/StationeryItem');
-// const PublicationSubtitle = require('../models/PublicationSubtitle');
+// const PublicationSubtitle = require('../models/PublicationSubtitle'); // This model is no longer used
+const Publication = require('../models/Publication'); // NEW: Import Publication model
 const Branch = require('../models/Branch'); // Import Branch model
 
 const AppError = require('../utils/appError');
@@ -472,7 +473,12 @@ exports.getBooksBySchool = catchAsync(async (req, res, next) => {
 
 // Get all customers (schools) for dropdown
 exports.getAllCustomersForDropdown = catchAsync(async (req, res, next) => {
-    const customers = await Customer.find().select('customerName schoolCode').sort('customerName');
+    // UPDATED: Ab customerType 'school-retail' wale customers hi fetch honge
+    const customers = await Customer.find({ customerType: 'School-Retail' }).select('customerName schoolCode').sort('customerName');
+    // DEBUGGING LOG: Yeh aapko server ke console mein dikhayega ki kitne customers mile hain
+    console.log("DEBUG: Customers fetched for dropdown. Count:", customers.length);
+    console.log("DEBUG: Fetched customers data:", customers);
+
     res.status(200).json({
         status: 'success',
         data: {
@@ -480,7 +486,6 @@ exports.getAllCustomersForDropdown = catchAsync(async (req, res, next) => {
         }
     });
 });
-
 // Get all classes for dropdown
 exports.getAllClassesForDropdown = catchAsync(async (req, res, next) => {
     const classes = await Class.find().select('name').sort('name');
@@ -525,7 +530,14 @@ exports.getAllStationeryItemsForDropdown = catchAsync(async (req, res, next) => 
 
 // Get all publication subtitles for dropdown
 exports.getAllPublicationSubtitlesForDropdown = catchAsync(async (req, res, next) => {
-    const subtitles = await PublicationSubtitle.find().select('name').sort('name');
+    // UPDATED: This now uses a Mongoose aggregation pipeline to fetch unique subtitles from the 'Publication' model
+    const subtitles = await Publication.aggregate([
+        { $match: { subtitle: { $ne: null, $ne: '' } } }, // Find documents with a subtitle
+        { $group: { _id: '$subtitle' } }, // Group by subtitle to get unique values
+        { $project: { _id: 0, name: '$_id' } }, // Reformat the output to have a 'name' field
+        { $sort: { name: 1 } } // Sort alphabetically
+    ]);
+
     res.status(200).json({
         status: 'success',
         data: {
@@ -533,6 +545,7 @@ exports.getAllPublicationSubtitlesForDropdown = catchAsync(async (req, res, next
         }
     });
 });
+
 
 // NEW: Get all branches for dropdown (using the Branch model)
 exports.getAllBranchesForDropdown = catchAsync(async (req, res, next) => {

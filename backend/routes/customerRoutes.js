@@ -3,11 +3,10 @@ const express = require('express');
 const customerController = require('../controllers/customerController');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs'); // For file system operations
+const fs = require('fs');
 
 const router = express.Router();
 
-// Ensure the uploads directory exists
 const uploadsDir = path.join(__dirname, '../uploads');
 const customerLogosDir = path.join(uploadsDir, 'customer-logos');
 
@@ -18,45 +17,48 @@ if (!fs.existsSync(customerLogosDir)) {
     fs.mkdirSync(customerLogosDir);
 }
 
-// Multer storage configuration for customer logos
 const customerStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, customerLogosDir); // Save files to 'uploads/customer-logos'
+        cb(null, customerLogosDir);
     },
     filename: (req, file, cb) => {
-        // Create a unique filename: fieldname-timestamp.ext
-        cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const extname = path.extname(file.originalname);
+        cb(null, `${file.fieldname}-${uniqueSuffix}${extname}`);
     }
 });
 
-// Multer upload middleware
-const uploadCustomerLogo = multer({
+const uploadCustomerImages = multer({
     storage: customerStorage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit per file
     fileFilter: (req, file, cb) => {
-        // Allow only image files
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
         } else {
-            cb(new Error('Only image files are allowed for customer logos!'), false);
+            cb(new Error('Only image files are allowed!'), false);
         }
     }
 });
 
-// Customer Routes
 router
     .route('/')
     .get(customerController.getAllCustomers)
-    // Use uploadCustomerLogo middleware for image upload
-    .post(uploadCustomerLogo.single('image'), customerController.createCustomer);
+    // Use .fields() to handle multiple image fields
+    .post(uploadCustomerImages.fields([
+        { name: 'chequeImage', maxCount: 1 }, 
+        { name: 'passportImage', maxCount: 1 },
+        { name: 'otherAttachment', maxCount: 1 } // New attachment field
+    ]), customerController.createCustomer);
 
 router
     .route('/:id')
+    // Corrected function name from getCustomerById to getCustomer
     .get(customerController.getCustomer)
-    // For PATCH, use .fields to ensure all text fields are also parsed into req.body.
-    // Multer will parse text fields into req.body and files into req.files (or req.file for single).
-    // We explicitly define the 'image' field for the file.
-    .patch(uploadCustomerLogo.fields([{ name: 'image', maxCount: 1 }]), customerController.updateCustomer)
+    .patch(uploadCustomerImages.fields([
+        { name: 'chequeImage', maxCount: 1 }, 
+        { name: 'passportImage', maxCount: 1 },
+        { name: 'otherAttachment', maxCount: 1 } // New attachment field
+    ]), customerController.updateCustomer)
     .delete(customerController.deleteCustomer);
 
 module.exports = router;

@@ -5,12 +5,13 @@ const catchAsync = require('../utils/catchAsync');
 
 // 1. Create a new Stationery Item
 exports.createStationeryItem = catchAsync(async (req, res, next) => {
-    const { itemName, category, price, status } = req.body;
+    // NEW: Include marginPercentage in destructuring
+    const { itemName, category, price, marginPercentage, status } = req.body;
 
     // Basic validation
-    // NEW: Check if category is provided
-    if (!itemName || !category || price === undefined || price === null || price < 0) {
-        return next(new AppError('Item Name, Category, and a non-negative Price are required.', 400));
+    // NEW: Validate marginPercentage
+    if (!itemName || !category || price === undefined || price === null || price < 0 || marginPercentage === undefined || marginPercentage === null || marginPercentage < 0 || marginPercentage > 100) {
+        return next(new AppError('Item Name, Category, a non-negative Price, and a valid Margin Percentage (0-100) are required.', 400));
     }
 
     // Check for duplicate item name
@@ -19,8 +20,8 @@ exports.createStationeryItem = catchAsync(async (req, res, next) => {
         return next(new AppError('A stationery item with this name already exists.', 409));
     }
 
-    // NEW: Include category in the creation
-    const newItem = await StationeryItem.create({ itemName, category, price, status });
+    // NEW: Include category and marginPercentage in the creation
+    const newItem = await StationeryItem.create({ itemName, category, price, marginPercentage, status });
 
     res.status(201).json({
         status: 'success',
@@ -63,7 +64,8 @@ exports.getStationeryItem = catchAsync(async (req, res, next) => {
 // 4. Update a Stationery Item
 exports.updateStationeryItem = catchAsync(async (req, res, next) => {
     const { id } = req.params;
-    const { itemName, category, price, status } = req.body;
+    // NEW: Include marginPercentage in destructuring
+    const { itemName, category, price, marginPercentage, status } = req.body;
 
     const currentItem = await StationeryItem.findById(id);
     if (!currentItem) {
@@ -79,12 +81,13 @@ exports.updateStationeryItem = catchAsync(async (req, res, next) => {
     }
 
     // Basic validation for update
-    // NEW: Check if price or category are invalid
-    if (price !== undefined && (price === null || price < 0)) {
-        return next(new AppError('Price must be a non-negative number.', 400));
+    // NEW: Validate price and marginPercentage
+    if ((price !== undefined && (price === null || price < 0)) || (marginPercentage !== undefined && (marginPercentage === null || marginPercentage < 0 || marginPercentage > 100))) {
+        return next(new AppError('Price must be a non-negative number and Margin Percentage must be between 0 and 100.', 400));
     }
 
-    const updatedItem = await StationeryItem.findByIdAndUpdate(id, { itemName, category, price, status }, {
+    // NEW: Include marginPercentage in the update
+    const updatedItem = await StationeryItem.findByIdAndUpdate(id, { itemName, category, price, marginPercentage, status }, {
         new: true,
         runValidators: true,
         context: 'query'

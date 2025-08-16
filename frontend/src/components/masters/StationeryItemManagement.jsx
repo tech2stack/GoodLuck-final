@@ -27,6 +27,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
     const [formData, setFormData] = useState({
         itemName: '',
         price: '',
+        marginPercentage: '', // NEW: Add marginPercentage to form data
         status: 'active',
     });
     // State for loading indicators
@@ -52,7 +53,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
     const itemsPerPage = 10;
 
     // List of valid categories
-    const categories = ['Notebooks', 'Covers', 'Plastic Items', 'Bags', 'Other Stationery'];
+    const categories = ['Notebooks', 'Covers', 'Plastic Items', 'Bags', 'School kit', 'Other Stationery']; // NEW: Add 'School kit'
 
     // State for selected category filter
     const [selectedCategory, setSelectedCategory] = useState('');
@@ -154,13 +155,13 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         setLocalError(null);
 
         // Basic validation
-        if (!formData.itemName.trim() || formData.price === '' || formData.price === null || isNaN(formData.price)) {
-            setLocalError('Please fill in all required fields (Item Name, Price). Price must be a valid number.');
+        if (!formData.itemName.trim() || formData.price === '' || formData.price === null || isNaN(formData.price) || formData.marginPercentage === '' || formData.marginPercentage === null || isNaN(formData.marginPercentage)) {
+            setLocalError('Please fill in all required fields (Item Name, Price, Margin %). Price and Margin must be valid numbers.');
             showFlashMessage('Please fill in all required fields.', 'error');
             setLoading(false);
             return;
         }
-
+        
         if (!selectedCategory) {
             setLocalError('Please select a category from the dropdown above the table.');
             showFlashMessage('Please select a category first.', 'error');
@@ -175,12 +176,20 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
             return;
         }
 
+        if (formData.marginPercentage < 0 || formData.marginPercentage > 100) {
+            setLocalError('Margin % must be between 0 and 100.');
+            showFlashMessage('Margin % must be between 0 and 100.', 'error');
+            setLoading(false);
+            return;
+        }
+
         try {
             let response;
             const dataToSend = {
                 itemName: formData.itemName,
                 category: selectedCategory, // Use the globally selected category
                 price: parseFloat(formData.price),
+                marginPercentage: parseFloat(formData.marginPercentage), // NEW: Add marginPercentage to dataToSend
                 status: formData.status
             };
 
@@ -200,7 +209,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                 }
             }
             // Reset form and re-fetch stationery items
-            setFormData({ itemName: '', price: '', status: 'active' });
+            setFormData({ itemName: '', price: '', marginPercentage: '', status: 'active' }); // NEW: Reset marginPercentage
             setEditingItemId(null);
             fetchStationeryItems(true);
         } catch (err) {
@@ -215,7 +224,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
 
     // --- Edit and Delete Operations ---
     const handleEdit = (item) => {
-        setFormData({ itemName: item.itemName, price: item.price, status: item.status });
+        setFormData({ itemName: item.itemName, price: item.price, marginPercentage: item.marginPercentage, status: item.status }); // NEW: Set marginPercentage
         setSelectedCategory(item.category);
         setEditingItemId(item._id);
         setLocalError(null);
@@ -258,7 +267,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
     };
 
     const handleCancelEdit = () => {
-        setFormData({ itemName: '', price: '', status: 'active' });
+        setFormData({ itemName: '', price: '', marginPercentage: '', status: 'active' }); // NEW: Reset marginPercentage
         setSelectedCategory('');
         setEditingItemId(null);
         setLocalError(null);
@@ -271,12 +280,14 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
             const itemName = item.itemName ? String(item.itemName).toLowerCase() : '';
             const category = item.category ? String(item.category).toLowerCase() : '';
             const price = item.price !== undefined && item.price !== null ? String(item.price).toLowerCase() : '';
+            const marginPercentage = item.marginPercentage !== undefined && item.marginPercentage !== null ? String(item.marginPercentage).toLowerCase() : ''; // NEW: Include marginPercentage in search
             const status = item.status ? String(item.status).toLowerCase() : '';
 
             const matchesSearchTerm = (
                 itemName.includes(lowercasedSearchTerm) ||
                 category.includes(lowercasedSearchTerm) ||
                 price.includes(lowercasedSearchTerm) ||
+                marginPercentage.includes(lowercasedSearchTerm) || // NEW: Search by marginPercentage
                 status.includes(lowercasedSearchTerm)
             );
 
@@ -337,18 +348,22 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
 
             const tableStartY = startYPositionForTable + 20;
 
-            const tableColumn = ["S.No.", "Item Name", "Category", "Price (Rs.)", "Add Date", "Status"];
+            const tableColumn = ["S.No.", "Item Name", "Category", "Price (Rs.)", "Margin %", "Add Date", "Status"]; // NEW: Add Margin % to PDF table
             const tableRows = [];
 
             filteredItems.forEach((item, index) => {
                 const formattedPrice = typeof item.price === 'number' && !isNaN(item.price)
                                         ? `Rs ${item.price.toFixed(2)}`
                                         : 'N/A';
+                const formattedMargin = typeof item.marginPercentage === 'number' && !isNaN(item.marginPercentage)
+                                        ? `${item.marginPercentage.toFixed(2)}%`
+                                        : 'N/A';
                 const itemData = [
                     String(index + 1),
                     String(item.itemName || '').trim(),
                     String(item.category || '').trim(),
                     formattedPrice,
+                    formattedMargin, // NEW: Add marginPercentage to row data
                     formatDateWithTime(item.createdAt),
                     String(item.status || '').trim().charAt(0).toUpperCase() + String(item.status || '').trim().slice(1)
                 ];
@@ -386,8 +401,9 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                     1: { cellWidth: 'auto', halign: 'left' },
                     2: { cellWidth: 'auto', halign: 'left' },
                     3: { cellWidth: 'auto', halign: 'right' },
-                    4: { halign: 'center' },
-                    5: { halign: 'center' }
+                    4: { cellWidth: 'auto', halign: 'right' }, // NEW: Column style for Margin %
+                    5: { halign: 'center' },
+                    6: { halign: 'center' }
                 },
                 margin: { top: 10, right: 14, bottom: 10, left: 14 },
                 didDrawPage: function (data) {
@@ -521,6 +537,25 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                             />
                         </div>
 
+                        {/* NEW: Add Margin Percentage field */}
+                        <div className="form-group">
+                            <label htmlFor="marginPercentage">Margin (%):</label>
+                            <input
+                                type="number"
+                                id="marginPercentage"
+                                name="marginPercentage"
+                                value={formData.marginPercentage}
+                                onChange={handleChange}
+                                placeholder="e.g., 20"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                required
+                                disabled={loading}
+                                className="form-input"
+                            />
+                        </div>
+
                         <div className="form-group">
                             <label htmlFor="status">Status:</label>
                             <select
@@ -594,6 +629,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                                         <th>Item Name</th>
                                         <th>Category</th>
                                         <th>Price</th>
+                                        <th>Margin (%)</th> 
                                         <th>Add Date</th>
                                         <th>Status</th>
                                         <th>Action</th>
@@ -608,6 +644,12 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                                             <td>
                                                 {typeof item.price === 'number' && !isNaN(item.price)
                                                     ? `Rs ${item.price.toFixed(2)}`
+                                                    : 'N/A'
+                                                }
+                                            </td>
+                                            <td>{/* NEW: Display marginPercentage in a cell */}
+                                                {typeof item.marginPercentage === 'number' && !isNaN(item.marginPercentage)
+                                                    ? `${item.marginPercentage.toFixed(2)}%`
                                                     : 'N/A'
                                                 }
                                             </td>
