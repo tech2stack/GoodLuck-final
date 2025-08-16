@@ -166,14 +166,14 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     setTimeout(() => {
                         const lastPageIndex = Math.ceil(response.data.data.customers.length / itemsPerPage);
                         if (currentPage !== lastPageIndex) {
-                           setCurrentPage(lastPageIndex);
-                           setTimeout(() => {
+                            setCurrentPage(lastPageIndex);
+                            setTimeout(() => {
                                 if (tableBodyRef.current.lastElementChild) {
                                     tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
                                 } else {
                                     tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
                                 }
-                           }, 50);
+                            }, 50);
                         } else {
                             if (tableBodyRef.current.lastElementChild) {
                                 tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -691,8 +691,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [240, 240, 240], // Light gray header
-                    textColor: [51, 51, 51], // Dark text for header
+                    fillColor: [60, 141, 188], // Change this line
+                    textColor: [255, 255, 255], // Optional: Change text color to white for contrast
                     fontStyle: 'bold',
                     halign: 'center', // Center align header text
                     valign: 'middle', // Vertically align header text
@@ -788,66 +788,14 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     <FaTimesCircle className="icon error-icon mr-2" /> {localError}
                 </p>
             )}
+
+
             <div className="main-content-layout">
-                {/* Customer Form - SECOND CHILD */}
-                <div className="form-container">
-                    <h3>{editingCustomerId ? 'Update Customer' : 'Add New Customer'}</h3>
-                    <form onSubmit={handleSubmit} className="customer-form">
-                        <div className="form-row">
-                            <div className="form-group customer-type-group">
-                                <label>Customer Type (Primary):</label>
-                                <div className="radio-group">
-                                    <label>
-                                        <input
-                                            type="radio"
-                                            name="primaryCustomerType"
-                                            value="Dealer"
-                                            checked={formData.primaryCustomerType === 'Dealer'}
-                                            onChange={handleChange}
-                                            disabled={loading}
-                                        /> Dealer
-                                    </label>
-                                    <label>
-                                        <input
-                                            type="radio"
-                                            name="primaryCustomerType"
-                                            value="School"
-                                            checked={formData.primaryCustomerType === 'School'}
-                                            onChange={handleChange}
-                                            disabled={loading}
-                                        /> School
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        {/* Secondary radio buttons are now always visible, but conditionally disabled */}
-                        <div className="form-row">
-                            <div className="form-group customer-type-group">
-                                <label>Customer Type (Secondary):</label>
-                                <div className="radio-group">
-                                    <label>
-                                        <input
-                                            type="radio"
-                                            name="secondaryCustomerType"
-                                            value="Retail"
-                                            checked={formData.secondaryCustomerType === 'Retail'}
-                                            onChange={handleChange}
-                                            disabled={loading || !formData.primaryCustomerType}
-                                        /> Retail
-                                    </label>
-                                    <label>
-                                        <input
-                                            type="radio"
-                                            name="secondaryCustomerType"
-                                            value="Supply"
-                                            checked={formData.secondaryCustomerType === 'Supply'}
-                                            onChange={handleChange}
-                                            disabled={loading || !formData.primaryCustomerType}
-                                        /> Supply
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
+
+                <div className="form-container-card">
+                    <form onSubmit={handleSubmit} className="app-form">
+                        <h3 className="form-title">{editingCustomerId ? 'Edit Customer' : 'Add New Customer'}</h3>
+
                         <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="customerName">Customer Name:</label>
@@ -1216,7 +1164,17 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 )}
                             </div>
                         </div>
-                        <div className="form-group status-group">
+
+
+                        <h3 className="form-title">{editingCustomerId ? 'Edit Bank Details' : 'Add bank Details'}</h3>
+
+                        {/* Bank Name , Account No , IFSC Code  */}
+
+                        <h3 className="form-title">{editingCustomerId ? 'Edit Attachments' : 'Add Attachments'}</h3>
+
+                        {/* Bank Cheque Image , Passport Size photo , other document.. */}
+
+                        <div className="form-group">
                             <label htmlFor="status">Status:</label>
                             <select
                                 id="status"
@@ -1235,7 +1193,12 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : editingCustomerId ? 'Update' : 'Add'}
                             </button>
                             {editingCustomerId && (
-                                <button type="button" className="btn-secondary ml-2" onClick={handleCancelEdit} disabled={loading}>
+                                <button
+                                    type="button"
+                                    className="btn-secondary ml-2"
+                                    onClick={handleCancelEdit}
+                                    disabled={loading}
+                                >
                                     Cancel Edit
                                 </button>
                             )}
@@ -1287,12 +1250,12 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     </div>
                     {loading && customers.length === 0 ? (
                         <p className="loading-state text-center">
-                            <FaSpinner className="icon animate-spin" /> Fetching customer data...
+                            <FaSpinner className="icon animate-spin mr-2" /> Loading customers...
                         </p>
                     ) : customers.length === 0 ? (
                         <p className="no-records-found">No customers found.</p>
                     ) : (
-                        <div className="table-scroll-container">
+                        <div className="table-scroll-wrapper">
                             <table className="app-table">
                                 <thead>
                                     <tr>
@@ -1303,8 +1266,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                         <th>Address</th>
                                         <th>City</th>
                                         <th>Status</th>
-                                        <th>Created At</th>
-                                        <th>Actions</th>
+                                        <th>Action</th>
+
                                     </tr>
                                 </thead>
                                 <tbody ref={tableBodyRef}>
@@ -1348,6 +1311,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
                         </div>
                     )}
                 </div>
+
+
 
             </div> {/* End of main-content-layout */}
 
