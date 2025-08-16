@@ -1,43 +1,56 @@
 /* Preloader Component Styles */
 .preloader {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  overflow: hidden; /* prevent any accidental scroll */
-}
-
-/* SVG Container */
-.preloader svg {
-  width: 90%;
-  max-width: 900px; /* keeps it from stretching too much */
-  height: auto;
-}
-
-/* Text Animation & Styling */
-.preloader .animate-stroke {
-  font-weight: bold;
-  font-family: 'Segoe UI', sans-serif;
-  fill: none;
-  stroke: #4CAF50;
-  stroke-width: 2.5;
-  stroke-dasharray: 800;
-  stroke-dashoffset: 800;
-  animation: dash 2s ease-in-out forwards;
-
-  /* Responsive fluid font size */
-  font-size: clamp(20px, 10vw, 100px);
-}
-
-/* Animation */
-@keyframes dash {
-  to {
-    stroke-dashoffset: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
   }
-}
+  
+  /* SVG Container */
+  .preloader svg {
+    width: 100%;
+    max-width: 1000px;
+    height: auto;
+  }
+  
+  /* Text Animation & Styling */
+  .preloader .animate-stroke {
+    font-weight: bold;
+    font-family: 'Segoe UI', sans-serif;
+    fill: none;
+    stroke: #4CAF50;
+    stroke-width: 2.5;
+    stroke-dasharray: 800;
+    stroke-dashoffset: 800;
+    animation: dash 2s ease-in-out forwards;
+  
+    /* Default for large screens */
+    font-size: 8vw;
+  }
+  
+  /* Bigger text on small screens */
+  @media (max-width: 768px) {
+    .preloader .animate-stroke {
+      font-size: 15vw; /* Tablets */
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .preloader .animate-stroke {
+      font-size: 25vw; /* Mobiles */
+    }
+  }
+  
+  /* Animation */
+  @keyframes dash {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  
