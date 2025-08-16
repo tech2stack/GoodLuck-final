@@ -1,3 +1,4 @@
+// BookCatalog.js
 const mongoose = require('mongoose');
 
 const BookCatalogSchema = new mongoose.Schema({
@@ -13,8 +14,7 @@ const BookCatalogSchema = new mongoose.Schema({
     required: [true, 'Publication is required'],
   },
   subtitle: {
-    type: mongoose.Schema.ObjectId,
-    ref: 'PublicationSubtitle',
+    type: mongoose.Schema.ObjectId, // ref हटा दिया गया है
     default: null,
   },
   language: {
@@ -95,13 +95,6 @@ const BookCatalogSchema = new mongoose.Schema({
 }, {
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
-});
-
-BookCatalogSchema.pre(/^find/, function(next) {
-  this.populate({ path: 'publication', select: 'name' })
-    .populate({ path: 'subtitle', select: 'name' })
-    .populate({ path: 'language', select: 'name' });
-  next();
 });
 
 BookCatalogSchema.index({ bookName: 1, publication: 1, subtitle: 1 }, { unique: true });

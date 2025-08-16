@@ -5,7 +5,7 @@ const Customer = require('../models/Customer');
 const Class = require('../models/Class');
 const BookCatalog = require('../models/BookCatalog');
 const StationeryItem = require('../models/StationeryItem');
-const PublicationSubtitle = require('../models/PublicationSubtitle');
+// const PublicationSubtitle = require('../models/PublicationSubtitle');
 const Branch = require('../models/Branch'); // Import Branch model
 
 const AppError = require('../utils/appError');

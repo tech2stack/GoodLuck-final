@@ -61,11 +61,44 @@ exports.createBookCatalog = catchAsync(async (req, res, next) => {
 
 // Get all Book Catalogs
 exports.getAllBookCatalogs = catchAsync(async (req, res, next) => {
-  const bookCatalogs = await BookCatalog.find();
+  const bookCatalogs = await BookCatalog.find()
+    .populate({
+      path: 'publication',
+      select: 'name subtitles'
+    })
+    .populate({
+      path: 'language',
+      select: 'name'
+    });
+
+  const populatedCatalogs = bookCatalogs.map(catalog => {
+    // Mongoose ऑब्जेक्ट को एक सामान्य JavaScript ऑब्जेक्ट में बदलें
+    const catalogObject = catalog.toObject();
+
+    // सबटाइटल को सही तरीके से पॉपुलेट करें
+    const subtitleId = catalogObject.subtitle;
+    const publicationSubtitles = catalogObject.publication?.subtitles;
+    const foundSubtitle = publicationSubtitles?.find(sub => sub._id.toString() === subtitleId?.toString());
+    catalogObject.subtitle = foundSubtitle ? { _id: foundSubtitle._id, name: foundSubtitle.name } : null;
+
+    // प्रकाशन (publication) को सही तरीके से पॉपुलेट करें
+    if (catalogObject.publication) {
+      catalogObject.publication = { _id: catalogObject.publication._id, name: catalogObject.publication.name };
+    }
+    
+    // कीमतों (pricesByClass) और ISBN (isbnByClass) को एक सामान्य ऑब्जेक्ट में बदलें
+    if (catalogObject.bookType === 'default') {
+      catalogObject.pricesByClass = Object.fromEntries(catalogObject.pricesByClass);
+      catalogObject.isbnByClass = Object.fromEntries(catalogObject.isbnByClass);
+    }
+
+    return catalogObject;
+  });
+
   res.status(200).json({
     status: 'success',
-    results: bookCatalogs.length,
-    data: { bookCatalogs }
+    results: populatedCatalogs.length,
+    data: { bookCatalogs: populatedCatalogs }
   });
 });
 
