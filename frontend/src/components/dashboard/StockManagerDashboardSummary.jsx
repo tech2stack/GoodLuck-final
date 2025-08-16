@@ -109,12 +109,12 @@ const StockManagerDashboardSummary = ({ showFlashMessage }) => {
   }
 
   return (
-<<<<<<< Updated upstream
     <div className="space-y-8">
-      <h2 className="text-4xl font-bold text-gray-800 text-center mb-6 mt-6 drop-shadow-md animate__animated animate__fadeIn">
-          Stock Dashboard Summary
-      </h2>
+      <h2 className="text-2xl font-bold text-gray-800 text-center mb-6 mt-6 drop-shadow-md animate__animated animate__fadeIn">
+  Stock Dashboard Summary
+     </h2>
 
+      <div className="dashboard-content">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         <SummaryCard title="Total Classes" count={Math.floor(animatedCounts.classes)} icon={FaGraduationCap} color="from-green-400 to-green-600" />
         <SummaryCard title="Total Zones" count={Math.floor(animatedCounts.zones)} icon={FaGlobeAsia} color="from-teal-400 to-teal-600" />
@@ -125,25 +125,9 @@ const StockManagerDashboardSummary = ({ showFlashMessage }) => {
         <SummaryCard title="Total Stationery Items" count={Math.floor(animatedCounts.stationeryItems)} icon={FaPencilRuler} color="from-yellow-400 to-yellow-600" />
         <SummaryCard title="Total Customers" count={Math.floor(animatedCounts.customers)} icon={FaUserCheck} color="from-blue-400 to-blue-600" />
         <SummaryCard title="Total Transports" count={Math.floor(animatedCounts.transports)} icon={FaTruck} color="from-red-400 to-red-600" />
-=======
-    <div className="space-y-6">
-      <h2 className="main-section-title">Overall Dashboard Summary</h2>
-      <div className="dashboard-content">
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        <SummaryCard title="Total Classes" count={counts.classes} icon={FaGraduationCap} color="green" />
-        <SummaryCard title="Total Zones" count={counts.zones} icon={FaGlobeAsia} color="teal" />
-        <SummaryCard title="Total Cities" count={counts.cities} icon={FaCity} color="emerald" />
-        <SummaryCard title="Total Publications" count={counts.publications} icon={FaBook} color="green" />
-        <SummaryCard title="Total Languages" count={counts.languages} icon={FaLanguage} color="teal" />
-        <SummaryCard title="Total Book Catalogs" count={counts.bookCatalogs} icon={FaBookOpen} color="emerald" />
-        <SummaryCard title="Total Stationery Items" count={counts.stationeryItems} icon={FaPencilRuler} color="green" />
-        <SummaryCard title="Total Customers" count={counts.customers} icon={FaUserCheck} color="teal" />
-        <SummaryCard title="Total Transports" count={counts.transports} icon={FaTruck} color="emerald" />
->>>>>>> Stashed changes
       </div>
     </div>
-    </div>
+  </div>
   );
 };
 

@@ -5,7 +5,7 @@ import React from 'react';
 const SummaryCard = ({ title, count, icon: Icon, color = 'green' }) => {
   const colorVariants = {
     green: {
-      gradient: 'from-green-400 to-green-600',
+      gradient: "bg-[rgb(84,186,122)] hover:bg-[rgb(64,160,100)] text-white",
       shadow: 'shadow-green-400/50'
     },
     teal: {
@@ -19,10 +19,16 @@ const SummaryCard = ({ title, count, icon: Icon, color = 'green' }) => {
     lime: {
       gradient: 'from-lime-400 to-lime-600',
       shadow: 'shadow-lime-400/50'
-    }
+    },
+    lightGreen:{
+       gradient: "bg-green-400 hover:bg-green-500 text-white",
+       shadow: 'shadow-lime-400/50'
+  }
   };
 
-  const colors = colorVariants[color] || colorVariants.emerald;
+
+const colors = colorVariants[color] || colorVariants.green;
+
 
   return (
     <div
