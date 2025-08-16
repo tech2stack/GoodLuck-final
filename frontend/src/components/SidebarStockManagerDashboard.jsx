@@ -195,7 +195,7 @@ const SidebarStockManagerDashboard = ({
         ref={sidebarRef}
         style={{
           position: 'fixed',
-          top: '96px',
+          top: '85px',
           bottom: 0,
           left: 0,
           zIndex: 10,

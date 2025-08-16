@@ -182,7 +182,7 @@
 .prices-by-class-section {
     margin-top: 15px;
     margin-bottom: 15px; /* Added margin-bottom for consistency */
-    /* padding: 15px; */
+    padding-left: 10px; 
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     background-color: #f9f9f9;
@@ -208,17 +208,7 @@
         grid-template-columns: repeat(2, 1fr); /* Two columns on larger screens */
     }
 }
-@media (min-width: 992px) { /* For the form's specific max-width, maybe 3 cols is too much */
-    .form-grid-3-cols {
-        /* grid-template-columns: 1fr; Keep it single column within the fixed form width */
-    }
-}
-/* Adjust for very wide screens if needed, or keep it single column within the form */
-@media (min-width: 1200px) {
-    .form-grid-3-cols {
-        /* grid-template-columns: 1fr; Still single column within the fixed form width */
-    }
-}
+
 
 
 /* Form actions (buttons) */
@@ -569,6 +559,8 @@
     }
     .form-container-card {
         padding: 15px; /* Reduced card padding */
+        text-align: center;
+        margin-left: 30px;
     }
     .form-container-card .form-title {
         font-size: 1.2rem;

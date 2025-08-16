@@ -110,9 +110,15 @@ const StockManagerDashboardSummary = ({ showFlashMessage }) => {
 
   return (
     <div className="space-y-8">
-      <h2 className="text-2xl font-bold text-gray-800 text-center mb-6 mt-6 drop-shadow-md animate__animated animate__fadeIn">
+<h2
+  className="relative text-[1.6rem] font-bold text-gray-800 text-center mb-6 drop-shadow-md animate__animated animate__fadeIn pt-8
+         after:content-[''] after:absolute after:left-1/2 after:bottom-0 after:-translate-x-1/2 
+         after:w-[70px] after:h-[3px] after:bg-[#6a0dad] after:rounded">
   Stock Dashboard Summary
-     </h2>
+</h2>
+
+
+
 
       <div className="dashboard-content">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
