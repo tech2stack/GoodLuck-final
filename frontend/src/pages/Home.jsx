@@ -42,8 +42,9 @@ const Home = () => {
       </section>
 
       {/* Good Luck Book Store - About Section */}
+      {/* इस div में inline स्टाइल जोड़ी गई है */}
       <section className="goodluck-about-section">
-        <div className="about-content">
+        <div id="content">
           <div className="about-text-wrapper">
             <div className="about-header">
               <h2 className="about-heading">GOOD LUCK BOOK STORE</h2>
