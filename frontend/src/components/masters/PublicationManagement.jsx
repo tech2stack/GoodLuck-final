@@ -715,7 +715,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                         checked={formData.publicationType === 'Private Pub'}
                                         onChange={handleChange}
                                         disabled={loading}
-                                    /> Private Pub
+                                    /> Private 
                                 </label>
                                 <label>
                                     <input
@@ -725,7 +725,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                         checked={formData.publicationType === 'Govt. Pub'}
                                         onChange={handleChange}
                                         disabled={loading}
-                                    /> Govt. Pub
+                                    /> Govt.
                                 </label>
                                 <label>
                                     <input
@@ -735,7 +735,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                         checked={formData.publicationType === 'Other Pub'}
                                         onChange={handleChange}
                                         disabled={loading}
-                                    /> Other Pub
+                                    /> Other 
                                 </label>
                             </div>
                         </div>

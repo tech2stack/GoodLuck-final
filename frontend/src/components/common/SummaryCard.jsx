@@ -5,40 +5,57 @@ import React from 'react';
 const SummaryCard = ({ title, count, icon: Icon, color = 'green' }) => {
   const colorVariants = {
     green: {
-      bg: 'bg-green-100',
-      text: 'text-green-600',
-      border: 'border-green-200'
+      gradient: 'from-green-400 to-green-600',
+      shadow: 'shadow-green-400/50'
     },
     teal: {
-      bg: 'bg-teal-100',
-      text: 'text-teal-600',
-      border: 'border-teal-200'
+      gradient: 'from-teal-400 to-teal-600',
+      shadow: 'shadow-teal-400/50'
     },
     emerald: {
-      bg: 'bg-emerald-100',
-      text: 'text-emerald-600',
-      border: 'border-emerald-200'
+      gradient: 'from-emerald-400 to-emerald-600',
+      shadow: 'shadow-emerald-400/50'
     },
     lime: {
-      bg: 'bg-lime-100',
-      text: 'text-lime-600',
-      border: 'border-lime-200'
+      gradient: 'from-lime-400 to-lime-600',
+      shadow: 'shadow-lime-400/50'
     }
   };
 
-  const colors = colorVariants[color] || colorVariants.green;
+  const colors = colorVariants[color] || colorVariants.emerald;
 
   return (
-    // मुख्य कार्ड कंटेनर जिसमें text-center और hover प्रभाव है
-    <div className={`p-4 rounded-lg shadow-sm border ${colors.border} bg-white hover:shadow-md hover:scale-105 hover:bg-gray-50 transition-all duration-200 text-center`}>
-      {/* आइकन के लिए कंटेनर, mx-auto से केंद्र में आएगा */}
-      <div className={`w-12 h-12 rounded-full ${colors.bg} flex items-center justify-center mb-3 mx-auto`}>
-        {Icon && <Icon className={`text-xl ${colors.text}`} />}
+    <div
+      className={`
+        relative p-6 rounded-2xl 
+        bg-white/70 backdrop-blur-md 
+        border border-gray-200
+        shadow-lg hover:shadow-2xl 
+        transform hover:-translate-y-2 
+        transition-all duration-300 ease-in-out
+      `}
+    >
+      {/* Icon with gradient & glow */}
+      <div
+        className={`
+          w-14 h-14 flex items-center justify-center 
+          rounded-full bg-gradient-to-r ${colors.gradient} 
+          text-white text-2xl mx-auto mb-3
+          shadow-md ${colors.shadow}
+        `}
+      >
+        {Icon && <Icon />}
       </div>
-      
-      {/* शीर्षक और संख्या, जो अब केंद्र में हैं */}
-      <p className="text-sm text-gray-500 mb-1">{title}</p>
-      <p className="text-2xl font-bold text-gray-800">{count}</p>
+
+      {/* Title */}
+      <p className="text-lg font-medium text-gray-500 mb-1 text-center tracking-wide">
+        {title}
+      </p>
+
+      {/* Count */}
+      <p className="text-3xl font-bold text-gray-800 text-center drop-shadow-sm">
+        {count}
+      </p>
     </div>
   );
 };

@@ -1,0 +1,40 @@
+/* Pop-in card animation */
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.card-animate {
+  animation: popIn 0.6s ease forwards;
+  background: linear-gradient(to right, #ffffff, #f9f9f9);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+  color: #333;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Icon rotate on hover */
+.card-animate svg {
+  transition: transform 0.5s ease;
+}
+
+.card-animate:hover svg {
+  transform: rotate(20deg) scale(1.2);
+}
+
+/* Count number pop-up effect */
+.card-animate p {
+  font-weight: bold;
+  font-size: 2rem;
+  transition: all 0.5s ease;
+}
