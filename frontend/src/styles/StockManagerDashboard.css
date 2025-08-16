@@ -135,3 +135,14 @@
 .dashboard-container{
     background-color: rgb(234, 234, 234);
 }
+@media (max-width: 480px){
+    .dashboard-container{
+      margin-top: -60px;   
+    }
+  }
+
+@media (max-width: 320px){
+    .dashboard-container{
+      margin-top: -80px;   
+    }
+  }

@@ -74,6 +74,7 @@ const SidebarStockManagerDashboard = ({
   const handleNavigationClick = (key) => {
     handleOptionClick(key);
     setIsSidebarCollapsed(true); // ✅ close sidebar after navigation
+    window.scrollTo(0, 0); // Add this line to scroll to the top
   };
 
   useEffect(() => {
@@ -192,59 +193,62 @@ const SidebarStockManagerDashboard = ({
 
       {/* Sidebar */}
       <aside
-        ref={sidebarRef}
-        style={{
-          position: 'fixed',
-          top: '85px',
-          bottom: 0,
-          left: 0,
-          zIndex: 10,
-        }}
-        className={`bg-[#2c3e50] text-gray-200 transition-transform duration-300 ease-in-out
-          ${isSidebarCollapsed ? '-translate-x-full' : 'translate-x-0 w-72'}
-          overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-transparent`}
-      >
-        <div className="flex items-center justify-between p-4 border-b border-gray-600">
-          <div className="flex flex-col overflow-hidden whitespace-nowrap">
-            <h3 className="text-xl font-semibold text-white">Stock Manager</h3>
-            <p className="text-sm text-gray-400">Welcome, {userData.name || userData.email}!</p>
-          </div>
-        </div>
+  ref={sidebarRef}
+  style={{
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    zIndex: 10,
+    top: '85px',
+    '@media (max-width: 420px)': {
+      top: '68px',
+    },
+  }}
+  className={`bg-[#2c3e50] text-gray-200 transition-transform duration-300 ease-in-out
+    ${isSidebarCollapsed ? '-translate-x-full' : 'translate-x-0 w-72'}
+    overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-transparent`}
+>
+  <div className="flex items-center justify-between p-4 border-b border-gray-600">
+    <div className="flex flex-col overflow-hidden whitespace-nowrap">
+      <h3 className="text-xl font-semibold text-white">Stock Manager</h3>
+      <p className="text-sm text-gray-400">Welcome, {userData.name || userData.email}!</p>
+    </div>
+  </div>
 
-        <nav className="flex-grow p-4">
-          <ul className="space-y-1">
-            <li>
-              <button
-                className={`flex items-left w-full px-4 py-3 text-sm rounded-lg transition-colors duration-200
-                  ${activeView === 'dashboard' ? 'bg-[#34495e] text-white' : 'hover:bg-gray-700'}`}
-                onClick={() => handleNavigationClick('dashboard')}
-              >
-                <FaChartBar className="text-lg min-w-[1.5rem] mr-3" />
-                <span className="truncate">Dashboard </span>
-              </button>
-            </li>
+  <nav className="flex-grow p-4">
+    <ul className="space-y-1">
+      <li>
+        <button
+          className={`flex items-left w-full px-4 py-3 text-sm rounded-lg transition-colors duration-200
+            ${activeView === 'dashboard' ? 'bg-[#34495e] text-white' : 'hover:bg-gray-700'}`}
+          onClick={() => handleNavigationClick('dashboard')}
+        >
+          <FaChartBar className="text-lg min-w-[1.5rem] mr-3" />
+          <span className="truncate">Dashboard </span>
+        </button>
+      </li>
 
-            {sections.map(({ title, icon: Icon, ref, toggle, show, items }) => (
-              <li key={title} className="relative" ref={ref}>
-                <button
-                  className={`flex items-flex-start justify-between w-full px-4 py-3 text-sm rounded-lg transition-colors duration-200
-                    ${show ? 'bg-[#34495e] text-white' : 'hover:bg-gray-700'}`}
-                  onClick={toggle}
-                >
-                  <div className="flex items-center">
-                    <Icon className="text-lg min-w-[1.5rem] mr-3" />
-                    <span className="truncate">{title}</span>
-                  </div>
-                  <FaChevronDown
-                    className={`transform transition-transform duration-200 ${show ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                {show && renderDropdown(items)}
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </aside>
+      {sections.map(({ title, icon: Icon, ref, toggle, show, items }) => (
+        <li key={title} className="relative" ref={ref}>
+          <button
+            className={`flex items-flex-start justify-between w-full px-4 py-3 text-sm rounded-lg transition-colors duration-200
+              ${show ? 'bg-[#34495e] text-white' : 'hover:bg-gray-700'}`}
+            onClick={toggle}
+          >
+            <div className="flex items-center">
+              <Icon className="text-lg min-w-[1.5rem] mr-3" />
+              <span className="truncate">{title}</span>
+            </div>
+            <FaChevronDown
+              className={`transform transition-transform duration-200 ${show ? 'rotate-180' : ''}`}
+            />
+          </button>
+          {show && renderDropdown(items)}
+        </li>
+      ))}
+    </ul>
+  </nav>
+</aside>
     </>
   );
 };

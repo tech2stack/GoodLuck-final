@@ -118,3 +118,13 @@
         font-size: 1.1rem;
     }
 }
+@media (max-width: 320px){
+    .main-section-title{
+      margin-top: -80px;   
+    }
+}
+@media (max-width: 480px){
+    .main-section-title{
+      margin-top: -60px;   
+    }
+  }

@@ -670,4 +670,10 @@ body {
   .contact-details h3 {
     font-size: 1.5em;
   }
+
+  @media (max-width: 480px){
+    .home-container{
+      margin-top: -30px;   
+    }
+  }
 }
