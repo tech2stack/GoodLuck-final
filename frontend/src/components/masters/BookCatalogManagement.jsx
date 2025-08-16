@@ -579,7 +579,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             // Generate table data
             const tableColumn = [
                 "S.No.", "Name", "Publisher", "Subtitle", "Language", "Price",
-                "ISBN", "Add Date", "Status"
+                "ISBN", "Status"
             ];
             const tableRows = filteredBookCatalogs.map((bookItem, index) => [
                 // S.No. is always index + 1 for the filtered data for PDF
@@ -589,12 +589,12 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 String(bookItem.subtitle?.name || bookItem.subtitle || '').trim(),
                 String(bookItem.language?.name || bookItem.language || '').trim(), // Ensure language is displayed
                 bookItem.bookType === 'common_price'
-                    ? `Rs${bookItem.commonPrice?.toFixed(2) || '0.00'}`
-                    : Object.entries(bookItem.pricesByClass).map(([classId, price]) => `${classes.find(c => c._id === classId)?.name || 'Unknown'}: Rs${price?.toFixed(2) || '0.00'}`).join(', '),
+                    ? `${bookItem.commonPrice?.toFixed(2) || '0.00'}`
+                    : Object.entries(bookItem.pricesByClass).map(([classId, price]) => `${classes.find(c => c._id === classId)?.name || 'Unknown'}/${price?.toFixed(2) || '0.00'}`).join(', '),
                 bookItem.bookType === 'common_price'
                     ? bookItem.commonIsbn || 'N/A'
                     : Object.entries(bookItem.isbnByClass).map(([classId, isbn]) => `${classes.find(c => c._id === classId)?.name || 'Unknown'}: ${isbn || 'N/A'}`).join(', '),
-                bookItem.createdAt ? formatDateWithTime(bookItem.createdAt) : 'N/A',
+                // bookItem.createdAt ? formatDateWithTime(bookItem.createdAt) : 'N/A',
                 (bookItem.status?.charAt(0).toUpperCase() + bookItem.status?.slice(1)) || 'N/A'
             ]);
 
@@ -613,8 +613,8 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                     halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [240, 240, 240], // Light gray header
-                    textColor: [51, 51, 51], // Dark text for header
+                    fillColor: [60, 141, 188], // Change this line
+        textColor: [255, 255, 255], // Optional: Change text color to white for contrast
                     fontStyle: 'bold',
                     halign: 'center', // Center align header text
                     valign: 'middle', // Vertically align header text

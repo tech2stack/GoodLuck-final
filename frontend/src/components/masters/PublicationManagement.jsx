@@ -596,8 +596,8 @@ const PublicationManagement = ({ showFlashMessage }) => {
                     halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [240, 240, 240], // Light gray header
-                    textColor: [51, 51, 51], // Dark text for header
+                    fillColor: [60, 141, 188], // Change this line
+                    textColor: [255, 255, 255], // Optional: Change text color to white for contrast
                     fontStyle: 'bold',
                     halign: 'center', // Center align header text
                     valign: 'middle', // Vertically align header text
@@ -715,7 +715,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                         checked={formData.publicationType === 'Private Pub'}
                                         onChange={handleChange}
                                         disabled={loading}
-                                    /> Private 
+                                    /> Private
                                 </label>
                                 <label>
                                     <input
@@ -735,7 +735,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                         checked={formData.publicationType === 'Other Pub'}
                                         onChange={handleChange}
                                         disabled={loading}
-                                    /> Other 
+                                    /> Other
                                 </label>
                             </div>
                         </div>
@@ -973,21 +973,21 @@ const PublicationManagement = ({ showFlashMessage }) => {
                         <p className="no-data-message">No publications found matching your criteria. Start by adding one!</p>
                     ) : (
                         <div className="table-container"> {/* This div is for table overflow, not layout */}
-                                            <div className="table-controls">
-                        <div className="search-input-group">
-                            <input
-                                type="text"
-                                placeholder="Search by Name, Person, City, Mobile, GSTIN..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="search-input"
-                            />
-                            <FaSearch className="search-icon" />
-                        </div>
-                        <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredPublications.length === 0}>
-                            <FaFilePdf className="mr-2" /> Download PDF
-                        </button>
-                    </div>
+                            <div className="table-controls">
+                                <div className="search-input-group">
+                                    <input
+                                        type="text"
+                                        placeholder="Search by Name, Person, City, Mobile, GSTIN..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="search-input"
+                                    />
+                                    <FaSearch className="search-icon" />
+                                </div>
+                                <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredPublications.length === 0}>
+                                    <FaFilePdf className="mr-2" /> Download PDF
+                                </button>
+                            </div>
                             <table className="app-table">
                                 <thead>
                                     <tr>
