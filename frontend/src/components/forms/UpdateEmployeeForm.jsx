@@ -46,7 +46,7 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                 ifscCode: employeeData.ifscCode || '',
                 status: employeeData.status || 'active',
                 passportPhoto: null, // reset file input
-                documentPDF: null,   // reset file input
+                documentPDF: null,   // reset file input
             });
         }
 
@@ -125,7 +125,7 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
             <h2 className="text-xl font-bold mb-4">Update Employee</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="form-group">
-                    <label htmlFor="name" className="form-label">Full Name:*</label>
+                    <label htmlFor="name" className="form-label">Full Name:<span className="text-red-500">*</span></label>
                     <input type="text" id="name" name="name" className="form-input" value={formData.name} onChange={handleChange} required />
                 </div>
                 <div className="form-group">
@@ -137,7 +137,7 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                     <input type="text" id="address" name="address" className="form-input" value={formData.address} onChange={handleChange} />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="branchId" className="form-label">Branch:*</label>
+                    <label htmlFor="branchId" className="form-label">Branch:<span className="text-red-500">*</span></label>
                     <select id="branchId" name="branchId" className="form-select" value={formData.branchId} onChange={handleChange} required>
                         <option value="">Select Branch</option>
                         {branches.map(branch => (
@@ -146,7 +146,7 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                     </select>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="cityId" className="form-label">City:*</label>
+                    <label htmlFor="cityId" className="form-label">City:<span className="text-red-500">*</span></label>
                     <select id="cityId" name="cityId" className="form-select" value={formData.cityId} onChange={handleChange} required>
                         <option value="">Select City</option>
                         {cities.map(city => (
@@ -155,7 +155,7 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                     </select>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="postId" className="form-label">Post:*</label>
+                    <label htmlFor="postId" className="form-label">Post:<span className="text-red-500">*</span></label>
                     <select id="postId" name="postId" className="form-select" value={formData.postId} onChange={handleChange} required>
                         <option value="">Select Post</option>
                         {posts.map(post => (

@@ -10,19 +10,16 @@ const employeeSchema = new mongoose.Schema({
     },
     mobileNumber: {
         type: String,
-        required: false, // <-- `required` ko false kiya gaya hai
-        unique: false,
         trim: true,
     },
     address: {
         type: String,
-        required: false,
         trim: true
     },
     branchId: {
         type: mongoose.Schema.ObjectId,
         ref: 'Branch',
-        required: [true, 'Please provide the branch ID'] // <-- `required` ko true kiya gaya hai
+        required: [true, 'Please provide the branch ID']
     },
     cityId: {
         type: mongoose.Schema.ObjectId,
@@ -41,49 +38,37 @@ const employeeSchema = new mongoose.Schema({
     },
     adharNo: {
         type: String,
-        required: false,
-        unique: true,
-        sparse: true,
         trim: true
     },
     panCardNo: {
         type: String,
-        required: false,
         trim: true
     },
     employeeCode: {
         type: String,
-        required: false,
-        unique: false,
         trim: true
     },
     salary: {
         type: Number,
-        required: false,
     },
     bankName: {
         type: String,
-        required: false,
         trim: true
     },
     accountNo: {
         type: String,
-        required: false,
         trim: true
     },
     ifscCode: {
         type: String,
-        required: false,
         trim: true
     },
     passportPhoto: {
         type: String,
-        required: false,
         trim: true
     },
     documentPDF: {
         type: String,
-        required: false,
         trim: true
     },
     createdAt: {
@@ -96,6 +81,46 @@ const employeeSchema = new mongoose.Schema({
     }
 });
 
+// Create partial unique indexes to allow multiple documents with null or missing values
+// but enforce uniqueness for non-null values.
+
+// Unique index for mobileNumber
+employeeSchema.index(
+    { mobileNumber: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { mobileNumber: { $type: "string" } }
+    }
+);
+
+// Unique index for adharNo
+employeeSchema.index(
+    { adharNo: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { adharNo: { $type: "string" } }
+    }
+);
+
+// Unique index for panCardNo
+employeeSchema.index(
+    { panCardNo: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { panCardNo: { $type: "string" } }
+    }
+);
+
+// Unique index for employeeCode
+employeeSchema.index(
+    { employeeCode: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { employeeCode: { $type: "string" } }
+    }
+);
+
+// Pre-find middleware to populate fields
 employeeSchema.pre(/^find/, function(next) {
     this.populate({
         path: 'postId',
