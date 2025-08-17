@@ -1,6 +1,6 @@
 // backend/models/StockManager.js
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs'); // Make sure this is imported!
+const bcrypt = require('bcryptjs'); 
 
 const StockManagerSchema = new mongoose.Schema({
     name: {
@@ -26,7 +26,7 @@ const StockManagerSchema = new mongoose.Schema({
         type: String,
         required: true,
         minlength: 6,
-        select: false // IMPORTANT: Do not send password back by default in queries
+        select: false 
     },
     address: {
         type: String,
@@ -36,7 +36,7 @@ const StockManagerSchema = new mongoose.Schema({
     role: {
         type: String,
         default: 'stock_manager',
-        enum: ['stock_manager'], // Ensure only 'stock_manager' can be assigned
+        enum: ['stock_manager'], 
     },
     createdAt: {
         type: Date,
@@ -44,7 +44,6 @@ const StockManagerSchema = new mongoose.Schema({
     },
 });
 
-// Hash password before saving
 StockManagerSchema.pre('save', async function (next) {
     if (!this.isModified('password')) return next();
     const salt = await bcrypt.genSalt(10);
@@ -52,7 +51,6 @@ StockManagerSchema.pre('save', async function (next) {
     next();
 });
 
-// CRITICAL: Ensure this method is named 'correctPassword' and uses bcrypt.compare
 StockManagerSchema.methods.correctPassword = async function (candidatePassword, userPassword) {
     return await bcrypt.compare(candidatePassword, userPassword);
 };

@@ -3,26 +3,41 @@ import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import { FaPlus, FaTimes } from 'react-icons/fa';
 
-const CreateBranchAdminForm = ({ onBranchAdminCreated, onCancel, branches }) => {
-    const [name, setName] = useState('');
+const CreateBranchAdminForm = ({ onBranchAdminCreated, onCancel }) => {
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [branchId, setBranchId] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
+    const [employees, setEmployees] = useState([]);
 
-    // Effect to clear success/error messages after a delay
     useEffect(() => {
         let timer;
         if (success || error) {
             timer = setTimeout(() => {
                 setSuccess(null);
                 setError(null);
-            }, 5000); // Clear after 5 seconds
+            }, 5000);
         }
         return () => clearTimeout(timer);
     }, [success, error]);
+
+    useEffect(() => {
+        const fetchEligibleEmployees = async () => {
+            try {
+                // Fetch employees with the post 'Store Manager'
+                const response = await api.get('/employees/by-role/store_manager');
+                // CORRECTED: Access the data correctly from the nested object
+                setEmployees(response.data.data.employees);
+            } catch (err) {
+                console.error('Error fetching employees:', err.response?.data || err);
+                setError(err.response?.data?.message || 'Failed to fetch eligible employees.');
+            }
+        };
+
+        fetchEligibleEmployees();
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -31,23 +46,19 @@ const CreateBranchAdminForm = ({ onBranchAdminCreated, onCancel, branches }) => 
         setSuccess(null);
 
         try {
-            // --- CHANGE MADE HERE: Removed '/register' from the URL ---
-            const response = await api.post('/branch-admins', { name, email, password, branchId });
-            // --- END CHANGE ---
-            
-            setSuccess('Branch Admin added successfully!');
-            console.log('New Branch Admin created:', response.data);
-            setName('');
+            await api.post('/branch-admins', {
+                employeeId: selectedEmployeeId,
+                email,
+                password,
+            });
+            setSuccess('Branch admin created successfully!');
+            onBranchAdminCreated();
+            setSelectedEmployeeId('');
             setEmail('');
             setPassword('');
-            setBranchId('');
-
-            if (onBranchAdminCreated) {
-                onBranchAdminCreated(response.data.data);
-            }
         } catch (err) {
             console.error('Error creating branch admin:', err.response?.data || err);
-            setError(err.response?.data?.message || 'Failed to add Branch Admin. Make sure email is unique and branch is selected.');
+            setError(err.response?.data?.message || 'Failed to create branch admin.');
         } finally {
             setLoading(false);
         }
@@ -55,22 +66,31 @@ const CreateBranchAdminForm = ({ onBranchAdminCreated, onCancel, branches }) => 
 
     return (
         <div className="form-container">
-            <h2 className="form-title">Add New Branch Admin</h2>
-            <form onSubmit={handleSubmit} className="form-content">
-                {success && <p className="success-message">{success}</p>}
-                {error && <p className="error-message">{error}</p>}
-
+            <h2 className="form-title">Create New Branch Admin</h2>
+            {success && <div className="alert alert-success">{success}</div>}
+            {error && <div className="alert alert-danger">{error}</div>}
+            <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                    <label htmlFor="adminName" className="form-label">Name:</label>
-                    <input
-                        type="text"
-                        id="adminName"
-                        className="form-input"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
+                    <label htmlFor="employeeId" className="form-label">Select Employee (Store Manager):</label>
+                    <select
+                        id="employeeId"
+                        className="form-select"
+                        value={selectedEmployeeId}
+                        onChange={(e) => setSelectedEmployeeId(e.target.value)}
                         required
-                        aria-label="Branch Admin Name"
-                    />
+                        aria-label="Select Employee"
+                    >
+                        <option value="">-- Select an Employee --</option>
+                        {employees.length > 0 ? (
+                            employees.map((employee) => (
+                                <option key={employee._id} value={employee._id}>
+                                    {employee.name}
+                                </option>
+                            ))
+                        ) : (
+                            <option value="" disabled>No eligible employees found</option>
+                        )}
+                    </select>
                 </div>
 
                 <div className="form-group">
@@ -97,23 +117,6 @@ const CreateBranchAdminForm = ({ onBranchAdminCreated, onCancel, branches }) => 
                         required
                         aria-label="Branch Admin Password"
                     />
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="adminBranch" className="form-label">Assign Branch:</label>
-                    <select
-                        id="adminBranch"
-                        className="form-select"
-                        value={branchId}
-                        onChange={(e) => setBranchId(e.target.value)}
-                        required
-                        aria-label="Assign Branch to Admin"
-                    >
-                        <option value="">Select a Branch</option>
-                        {branches.map(branch => (
-                            <option key={branch._id} value={branch._id}>{branch.name} ({branch.location})</option>
-                        ))}
-                    </select>
                 </div>
 
                 <div className="form-actions">

@@ -3,9 +3,8 @@ import api from '../../utils/api';
 import { FaSave, FaTimes } from 'react-icons/fa';
 
 const UpdateBranchAdminForm = ({ adminData, onBranchAdminUpdated, onCancel, branches }) => {
-    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [branchId, setBranchId] = useState('');
+    const [password, setPassword] = useState('');
     const [status, setStatus] = useState('active'); // Added status state
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -13,9 +12,7 @@ const UpdateBranchAdminForm = ({ adminData, onBranchAdminUpdated, onCancel, bran
 
     useEffect(() => {
         if (adminData) {
-            setName(adminData.name || '');
             setEmail(adminData.email || '');
-            setBranchId(adminData.branchId?._id || adminData.branchId || ''); // Handle nested branch object
             setStatus(adminData.status || 'active'); // Initialize status
         }
     }, [adminData]);
@@ -37,22 +34,27 @@ const UpdateBranchAdminForm = ({ adminData, onBranchAdminUpdated, onCancel, bran
         setLoading(true);
         setError(null);
         setSuccess(null);
+        
+        const updatePayload = {
+            email,
+            status
+        };
+
+        // Only include password in the payload if it's being updated
+        if (password) {
+            updatePayload.password = password;
+        }
 
         try {
-            const updatePayload = { name, email, branchId, status }; // Include status in payload
-
-            // --- THE ONLY CHANGE HERE: Changed api.put to api.patch ---
             const response = await api.patch(`/branch-admins/${adminData._id}`, updatePayload);
-            // --- END CHANGE ---
-
             setSuccess('Branch Admin updated successfully!');
             console.log('Branch Admin updated:', response.data);
             if (onBranchAdminUpdated) {
-                onBranchAdminUpdated(response.data.data.admin); // Pass the 'admin' object from data
+                onBranchAdminUpdated(response.data.data.admin);
             }
         } catch (err) {
             console.error('Error updating branch admin:', err.response?.data || err);
-            setError(err.response?.data?.message || 'Failed to update Branch Admin. Please try again.');
+            setError(err.response?.data?.message || 'Failed to update Branch Admin. Please check your inputs.');
         } finally {
             setLoading(false);
         }
@@ -64,20 +66,7 @@ const UpdateBranchAdminForm = ({ adminData, onBranchAdminUpdated, onCancel, bran
             <form onSubmit={handleSubmit} className="form-content">
                 {success && <p className="success-message">{success}</p>}
                 {error && <p className="error-message">{error}</p>}
-
-                <div className="form-group">
-                    <label htmlFor="adminName" className="form-label">Name:</label>
-                    <input
-                        type="text"
-                        id="adminName"
-                        className="form-input"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                        aria-label="Branch Admin Name"
-                    />
-                </div>
-
+                
                 <div className="form-group">
                     <label htmlFor="adminEmail" className="form-label">Email:</label>
                     <input
@@ -92,20 +81,15 @@ const UpdateBranchAdminForm = ({ adminData, onBranchAdminUpdated, onCancel, bran
                 </div>
 
                 <div className="form-group">
-                    <label htmlFor="adminBranch" className="form-label">Assign Branch:</label>
-                    <select
-                        id="adminBranch"
-                        className="form-select"
-                        value={branchId}
-                        onChange={(e) => setBranchId(e.target.value)}
-                        required
-                        aria-label="Assign Branch to Admin"
-                    >
-                        <option value="">Select a Branch</option>
-                        {branches.map(branch => (
-                            <option key={branch._id} value={branch._id}>{branch.name} ({branch.location})</option>
-                        ))}
-                    </select>
+                    <label htmlFor="adminPassword" className="form-label">New Password (optional):</label>
+                    <input
+                        type="password"
+                        id="adminPassword"
+                        className="form-input"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        aria-label="New Branch Admin Password"
+                    />
                 </div>
 
                 <div className="form-group">

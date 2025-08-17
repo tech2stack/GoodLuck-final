@@ -1,7 +1,7 @@
 // src/components/forms/CreateStockManagerForm.jsx
 import React, { useState } from 'react';
 import api from '../../utils/api';
-import '../../styles/Form.css'; // Assuming you have a general form stylesheet
+import '../../styles/Form.css';
 import { FaTimes } from 'react-icons/fa';
 
 const CreateStockManagerForm = ({ onStockManagerCreated, onCancel, showFlashMessage }) => {
@@ -22,10 +22,10 @@ const CreateStockManagerForm = ({ onStockManagerCreated, onCancel, showFlashMess
         e.preventDefault();
         setLoading(true);
         try {
-            const response = await api.post('/stock-managers', formData); // Make sure your backend route exists
+            const response = await api.post('/stock-managers', formData);
             showFlashMessage(response.data.message || 'Stock Manager created successfully!', 'success');
             onStockManagerCreated(response.data.data);
-            setFormData({ name: '', email: '', phone: '', password: '', address: '' }); // Clear form
+            setFormData({ name: '', email: '', phone: '', password: '', address: '' });
         } catch (err) {
             console.error('Error creating stock manager:', err.response || err);
             showFlashMessage(err.response?.data?.message || 'Failed to create Stock Manager.', 'error');

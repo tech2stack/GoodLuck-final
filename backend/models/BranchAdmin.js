@@ -1,5 +1,7 @@
+// backend/models/BranchAdmin.js
+
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs'); // Assuming you use bcrypt for password hashing
+const bcrypt = require('bcryptjs');
 
 const branchAdminSchema = new mongoose.Schema({
     name: {
@@ -13,22 +15,27 @@ const branchAdminSchema = new mongoose.Schema({
         unique: true,
         lowercase: true,
         trim: true,
-        // Add email validation if needed
     },
     password: {
         type: String,
         required: [true, 'Please enter password'],
         minlength: 8,
-        select: false // Do not return password in queries by default
+        select: false 
+    },
+    employeeId: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Employee',
+        required: [true, 'Employee ID is required'],
+        unique: true
     },
     role: {
         type: String,
-        enum: ['branch_admin'], // Explicitly define role
+        enum: ['branch_admin'],
         default: 'branch_admin'
     },
     branchId: {
         type: mongoose.Schema.ObjectId,
-        ref: 'Branch', // Reference to the Branch model
+        ref: 'Branch',
         required: [true, 'Branch ID is required']
     },
     status: {
@@ -51,24 +58,15 @@ const branchAdminSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Password hashing middleware (pre-save hook)
 branchAdminSchema.pre('save', async function(next) {
-    // Only run this function if password was actually modified
     if (!this.isModified('password')) return next();
-
-    // Hash the password with cost of 12
     this.password = await bcrypt.hash(this.password, 12);
-
-    // Delete passwordConfirm field (if you have one)
-    // this.passwordConfirm = undefined;
     next();
 });
 
-// Instance method to compare passwords
 branchAdminSchema.methods.correctPassword = async function(candidatePassword, userPassword) {
     return await bcrypt.compare(candidatePassword, userPassword);
 };
 
 const BranchAdmin = mongoose.model('BranchAdmin', branchAdminSchema);
-
 module.exports = BranchAdmin;

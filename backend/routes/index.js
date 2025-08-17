@@ -17,9 +17,9 @@ const stationeryItemRoutes = require('./stationeryItemRoutes');
 const customerRoutes = require('./customerRoutes');
 const transportRouter = require('./transportRoutes');
 const pendingBookRouter = require('./pendingBookRoutes');
-const setRouter = require('./setRoutes'); 
-const dashboardRoutes = require('./dashboardRoutes'); // <<< ZAROORI: Dashboard routes import karein
-
+const setRouter = require('./setRoutes');
+const dashboardRoutes = require('./dashboardRoutes');
+const postRoutes = require('./postRoutes'); // <<<< UPDATED: Added import for postRoutes
 
 const router = express.Router();
 
@@ -41,8 +41,8 @@ router.use('/stationery-items', stationeryItemRoutes);
 router.use('/customers', customerRoutes);
 router.use('/transports', transportRouter);
 router.use('/pending-books', pendingBookRouter);
-router.use('/sets', setRouter); 
-router.use('/dashboard', dashboardRoutes); // <<< ZAROORI: Dashboard routes mount karein
-
+router.use('/sets', setRouter);
+router.use('/dashboard', dashboardRoutes);
+router.use('/posts', postRoutes); // <<<< UPDATED: Added mounting for postRoutes
 
 module.exports = router;

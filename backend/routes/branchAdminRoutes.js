@@ -14,6 +14,9 @@ router.route('/')
     .post(branchAdminController.createBranchAdmin) // This handles the POST to /api/v1/branch-admins
     .get(branchAdminController.getAllBranchAdmins);
 
+// NEW ROUTE: To get employees by their role name (e.g., 'Store Manager')
+router.get('/employees/by-role/:roleName', branchAdminController.getEmployeesByPost);
+
 // Routes for /api/v1/branch-admins/:id
 router.route('/:id')
     .get(branchAdminController.getBranchAdmin)
