@@ -5,7 +5,9 @@ const Employee = require('../models/Employee');
 const Branch = require('../models/Branch');
 const City = require('../models/City');
 const Post = require('../models/Post');
-const mongoose = require('mongoose');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 // A function to initialize default posts
 const initializeDefaultPosts = async () => {
@@ -28,76 +30,34 @@ const initializeDefaultPosts = async () => {
         try {
             await Post.findOneAndUpdate({ name: post.name }, post, { upsert: true, new: true, runValidators: true });
         } catch (err) {
-            console.error(`Error initializing post: ${post.name}`, err);
+            console.error(`Error initializing default post: ${post.name}`, err);
         }
     }
 };
 
-initializeDefaultPosts();
-
 exports.createEmployee = catchAsync(async (req, res, next) => {
-    // Collect all fields from request body, and files from req.files
-    const { name, mobileNumber, address, branchId, postId, cityId, adharNo, panCardNo, employeeCode, salary, bankDetail, status } = req.body;
-    const passportPhotoPath = req.files && req.files['passportPhoto'] ? req.files['passportPhoto'][0].path : undefined;
-    const documentPDFPath = req.files && req.files['documentPDF'] ? req.files['documentPDF'][0].path : undefined;
+    // Passport photo और documentPDF को req.files से अलग करें
+    const { passportPhoto, documentPDF } = req.files;
 
-    // Validate based on your provided schema and requirements
-    if (!name || !postId || !cityId) {
-        return next(new AppError('Please provide employee name, post, and city.', 400));
-    }
-    
-    // Check if provided IDs are valid MongoDB ObjectIds
-    if (postId && !mongoose.Types.ObjectId.isValid(postId)) {
-        return next(new AppError('Provided post ID is not a valid MongoDB ObjectId.', 400));
-    }
-    if (cityId && !mongoose.Types.ObjectId.isValid(cityId)) {
-        return next(new AppError('Provided city ID is not a valid MongoDB ObjectId.', 400));
-    }
-    if (branchId && !mongoose.Types.ObjectId.isValid(branchId)) {
-        return next(new AppError('Provided branch ID is not a valid MongoDB ObjectId.', 400));
-    }
+    // बाकी body डेटा को req.body से लें, जिसमें नए बैंक फ़ील्ड भी शामिल हैं
+    const {
+        name, mobileNumber, address, branchId, cityId, postId, adharNo, panCardNo,
+        employeeCode, salary, bankName, accountNo, ifscCode // नए बैंक फ़ील्ड्स
+    } = req.body;
 
-    // Find the post to check if it's a 'Store Manager'
-    const post = await Post.findById(postId);
-    if (!post) {
-        return next(new AppError('Provided post ID does not exist.', 404));
-    }
-    
-    // A branch must be assigned to a Store Manager.
-    if (post.name === 'Store Manager' && !branchId) {
-        return next(new AppError('A branch must be assigned to a Store Manager.', 400));
-    }
+    const newEmployeeData = {
+        name, mobileNumber, address, branchId, cityId, postId, adharNo, panCardNo,
+        employeeCode, salary, bankName, accountNo, ifscCode, // डेटा को नए फ़ील्ड्स में डालें
+        passportPhoto: passportPhoto ? passportPhoto[0].path : undefined,
+        documentPDF: documentPDF ? documentPDF[0].path : undefined,
+    };
 
-    if (branchId) {
-        const branchExists = await Branch.findById(branchId);
-        if (!branchExists) {
-            return next(new AppError('Provided branch ID does not exist.', 404));
-        }
-    }
+    const newEmployee = await Employee.create(newEmployeeData);
 
-    const cityExists = await City.findById(cityId);
-    if (!cityExists) {
-        return next(new AppError('Provided city ID does not exist.', 404));
-    }
-
-    const newEmployee = await Employee.create({
-        name,
-        mobileNumber,
-        address,
-        branchId,
-        postId,
-        cityId,
-        adharNo,
-        panCardNo,
-        employeeCode,
-        salary,
-        bankDetail,
-        passportPhoto: passportPhotoPath,
-        documentPDF: documentPDFPath,
-        status,
+    res.status(201).json({
+        status: 'success',
+        data: { employee: newEmployee }
     });
-
-    res.status(201).json({ status: 'success', data: { employee: newEmployee } });
 });
 
 exports.getAllEmployees = catchAsync(async (req, res, next) => {
@@ -112,53 +72,19 @@ exports.getEmployee = catchAsync(async (req, res, next) => {
 });
 
 exports.updateEmployee = catchAsync(async (req, res, next) => {
-    const { branchId, postId, cityId, ...restOfBody } = req.body;
+    // req.files में फ़ाइलें हैं या नहीं, यह जाँचें और उन्हें req.body से अलग करें
+    const { passportPhoto, documentPDF } = req.files || {};
+    const { ...restOfBody } = req.body;
 
-    // Check if provided IDs are valid MongoDB ObjectIds
-    if (branchId && !mongoose.Types.ObjectId.isValid(branchId)) {
-        return next(new AppError('Provided branch ID is not a valid MongoDB ObjectId.', 400));
+    // यदि फ़ाइलें अपलोड की गई हैं, तो उनके पथ को restOfBody में जोड़ें
+    if (passportPhoto) {
+        restOfBody.passportPhoto = passportPhoto[0].path;
     }
-    if (postId && !mongoose.Types.ObjectId.isValid(postId)) {
-        return next(new AppError('Provided post ID is not a valid MongoDB ObjectId.', 400));
-    }
-    if (cityId && !mongoose.Types.ObjectId.isValid(cityId)) {
-        return next(new AppError('Provided city ID is not a valid MongoDB ObjectId.', 400));
-    }
-
-    if (branchId) {
-        const branchExists = await Branch.findById(branchId);
-        if (!branchExists) {
-            return next(new AppError('Provided branch ID does not exist.', 404));
-        }
-        restOfBody.branchId = branchId;
+    if (documentPDF) {
+        restOfBody.documentPDF = documentPDF[0].path;
     }
 
-    if (postId) {
-        const postExists = await Post.findById(postId);
-        if (!postExists) {
-            return next(new AppError('Provided post ID does not exist.', 404));
-        }
-        restOfBody.postId = postId;
-    }
-
-    if (cityId) {
-        const cityExists = await City.findById(cityId);
-        if (!cityExists) {
-            return next(new AppError('Provided city ID does not exist.', 404));
-        }
-        restOfBody.cityId = cityId;
-    }
-
-    if (req.files) {
-        if (req.files['passportPhoto'] && req.files['passportPhoto'].length > 0) {
-            restOfBody.passportPhoto = req.files['passportPhoto'][0].path;
-        }
-        if (req.files['documentPDF'] && req.files['documentPDF'].length > 0) {
-            restOfBody.documentPDF = req.files['documentPDF'][0].path;
-        }
-    }
-
-    // Now correctly update with restOfBody
+    // अब restOfBody के साथ सही ढंग से अपडेट करें, जिसमें नए बैंक फ़ील्ड भी शामिल हैं
     const updatedEmployee = await Employee.findByIdAndUpdate(req.params.id, restOfBody, { new: true, runValidators: true });
 
     if (!updatedEmployee) return next(new AppError('No employee found with that ID to update.', 404));
@@ -179,7 +105,17 @@ exports.getEmployeesByRole = catchAsync(async (req, res, next) => {
     const employees = await Employee.find({ postId: post._id }).select('name mobileNumber');
     
     if (!employees || employees.length === 0) {
-        return next(new AppError('No employees found with the role of Store Manager.', 404));
+        return next(new AppError('No employees found for the role: Store Manager', 404));
     }
-    res.status(200).json({ status: 'success', results: employees.length, data: { employees } });
+    
+    res.status(200).json({
+        status: 'success',
+        results: employees.length,
+        data: {
+            employees,
+        },
+    });
 });
+
+// Run this function once, perhaps on server start, to ensure default posts exist
+initializeDefaultPosts().catch(err => console.error("Failed to initialize default posts:", err));

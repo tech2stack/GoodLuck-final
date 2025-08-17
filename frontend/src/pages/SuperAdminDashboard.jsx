@@ -150,7 +150,7 @@ const SuperAdminDashboard = () => {
     const [newPostName, setNewPostName] = useState('');
     const [editingPostId, setEditingPostId] = useState(null);
     const [editingPostName, setEditingPostName] = useState('');
-    
+
     // Function to show flash messages
     const showFlashMessage = useCallback((message, type) => {
         clearTimeout(window.flashMessageTimeout);
@@ -446,7 +446,7 @@ const SuperAdminDashboard = () => {
         });
         setShowConfirmDialog(true);
     };
-    
+
     // --- Post Handlers (UPDATED) ---
     const handleViewPosts = () => {
         closeAllDropdowns();
@@ -480,7 +480,7 @@ const SuperAdminDashboard = () => {
                 await api.post('/posts', { name: newPostName });
                 showFlashMessage("New post created successfully!", 'success');
             }
-            
+
             setNewPostName('');
             setEditingPostId(null);
             setEditingPostName('');
@@ -579,7 +579,7 @@ const SuperAdminDashboard = () => {
             {children}
         </button>
     );
-    
+
 
     // Function to render the active report component
     const renderActiveReportComponent = () => {
@@ -743,7 +743,7 @@ const SuperAdminDashboard = () => {
                         </div>
                     )}
                 </div>
-                
+
 
                 {/* NEW: Stock Managers Button and Dropdown */}
                 <div className="relative-dropdown" ref={stockManagersDropdownRef}>
@@ -762,7 +762,7 @@ const SuperAdminDashboard = () => {
                         </div>
                     )}
                 </div>
-                
+
                 {/* Posts Button (No Dropdown) */}
                 <button
                     onClick={handleViewPosts}
@@ -912,7 +912,8 @@ const SuperAdminDashboard = () => {
                     onEmployeeCreated={onEmployeeCreated}
                     onCancel={() => setActiveView('employees')}
                     branches={branches}
-                    posts={posts} // Pass the posts to the form
+                    posts={posts}
+                    showFlashMessage={showFlashMessage} // <-- NEW: Passing the flash message function
                 />
             )}
 
@@ -922,7 +923,8 @@ const SuperAdminDashboard = () => {
                     onEmployeeUpdated={onEmployeeUpdated}
                     onCancel={() => setActiveView('employees')}
                     branches={branches}
-                    posts={posts} // Pass the posts to the form
+                    posts={posts}
+                    showFlashMessage={showFlashMessage} // <-- NEW: Passing the flash message function
                 />
             )}
 
@@ -942,7 +944,7 @@ const SuperAdminDashboard = () => {
                     showFlashMessage={showFlashMessage}
                 />
             )}
-            
+
             {activeView === 'branches' && (
                 <div className="table-section">
                     <div className="table-header">
@@ -1066,15 +1068,17 @@ const SuperAdminDashboard = () => {
                             <thead className="table-head">
                                 <tr>
                                     <th className="table-th">Name</th>
-                                    <th className="table-th">Post</th>
-                                    <th className="table-th">City</th>
-                                    <th className="table-th">Adhaar No</th>
-                                    <th className="table-th">PAN Card No</th>
-                                    <th className="table-th">Emp. Code</th>
-                                    <th className="table-th">Salary</th>
                                     <th className="table-th">Mobile Number</th>
                                     <th className="table-th">Address</th>
-                                    <th className="table-th">Bank Details</th>
+                                    <th className="table-th">Aadhaar Number</th>
+                                    <th className="table-th">PAN Card Number</th>
+                                    <th className="table-th">Employee Code</th>
+                                    <th className="table-th">Salary</th>
+                                    <th className="table-th">Bank Name</th>
+                                    <th className="table-th">IFSC Code</th>
+                                    <th className="table-th">Account Number</th>
+                                    <th className="table-th">Post</th>
+                                    <th className="table-th">City</th>
                                     <th className="table-th">Branch</th>
                                     <th className="table-th">Status</th>
                                     <th className="table-th">Passport Photo</th>
@@ -1085,25 +1089,27 @@ const SuperAdminDashboard = () => {
                             <tbody className="table-body">
                                 {loadingData ? (
                                     <tr>
-                                        <td colSpan="15" className="text-center">Loading...</td>
+                                        <td colSpan="17" className="text-center">Loading...</td>
                                     </tr>
                                 ) : employees.length === 0 ? (
                                     <tr>
-                                        <td colSpan="15" className="text-center">No employees found.</td>
+                                        <td colSpan="17" className="text-center">No employees found.</td>
                                     </tr>
                                 ) : (
                                     employees.map(employee => (
                                         <tr key={employee._id} className="table-row">
-                                            <td className="table-td">{employee.name}</td>
-                                            <td className="table-td">{employee.postId?.name || 'N/A'}</td>
-                                            <td className="table-td">{employee.cityId?.name || 'N/A'}</td>
+                                            <td className="table-td">{employee.name || 'N/A'}</td>
+                                            <td className="table-td">{employee.mobileNumber || 'N/A'}</td>
+                                            <td className="table-td">{employee.address || 'N/A'}</td>
                                             <td className="table-td">{employee.adharNo || 'N/A'}</td>
                                             <td className="table-td">{employee.panCardNo || 'N/A'}</td>
                                             <td className="table-td">{employee.employeeCode || 'N/A'}</td>
                                             <td className="table-td">{employee.salary || 'N/A'}</td>
-                                            <td className="table-td">{employee.mobileNumber || 'N/A'}</td>
-                                            <td className="table-td">{employee.address || 'N/A'}</td>
-                                            <td className="table-td">{employee.bankDetail || 'N/A'}</td>
+                                            <td className="table-td">{employee.bankName || 'N/A'}</td>
+                                            <td className="table-td">{employee.ifscCode || 'N/A'}</td>
+                                            <td className="table-td">{employee.accountNo || 'N/A'}</td>
+                                            <td className="table-td">{employee.postId?.name || 'N/A'}</td>
+                                            <td className="table-td">{employee.cityId?.name || 'N/A'}</td>
                                             <td className="table-td">
                                                 {employee.branchId ? employee.branchId.name || 'N/A' : 'N/A'}
                                             </td>
@@ -1155,149 +1161,149 @@ const SuperAdminDashboard = () => {
                 </div>
             )}
 
-           {activeView === 'stockManagers' && (
-    <div className="table-view card shadow-sm">
-        <div className="table-header">
-            <h2>All Stock Managers</h2>
-            <button onClick={handleCreateStockManagerClick} className="btn btn-add">
-                <FaPlus className="mr-2" /> Add New Stock Manager
-            </button>
-        </div>
-        <table className="data-table">
-            <thead className="table-head">
-                <tr className="table-row-header">
-                    <th className="table-th">Name</th>
-                    <th className="table-th">Mobile</th>
-                    <th className="table-th">Branch</th>
-                    <th className="table-th">Actions</th>
-                </tr>
-            </thead>
-            <tbody className="table-body">
-                {stockManagers.length === 0 ? (
-                    <tr>
-                        <td colSpan="4" className="text-center">No stock managers found.</td>
-                    </tr>
-                ) : (
-                    stockManagers.map(manager => (
-                        <tr key={manager._id} className="table-row">
-                            <td className="table-td">{manager.name}</td>
-                            <td className="table-td">{manager.mobileNumber || 'N/A'}</td>
-                            <td className="table-td">{manager.branchId?.name || 'N/A'}</td>
-                            <td className="table-td action-buttons">
-                                <button
-                                    onClick={() => handleUpdateStockManager(manager)}
-                                    className="action-icon-button edit-button"
-                                    title="Update Stock Manager"
-                                >
-                                    <FaEdit />
-                                </button>
-                                <button
-                                    onClick={() => handleDeleteStockManager(manager._id)}
-                                    className="action-icon-button delete-button"
-                                    title="Delete Stock Manager"
-                                >
-                                    <FaTrash />
-                                </button>
-                            </td>
-                        </tr>
-                    ))
-                )}
-            </tbody>
-        </table>
-    </div>
-)}
-
-{activeView === 'posts' && (
-    <div className="table-view card shadow-sm">
-        <div className="table-header">
-            <h2>All Posts</h2>
-        </div>
-        <div className="form-container mb-3 p-3">
-            <form onSubmit={handleCreateOrUpdatePost}>
-                <div className="form-group mb-2 d-flex align-items-center">
-                    <FaPlus className="mr-2" />
-                    <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Enter new post name..."
-                        value={newPostName}
-                        onChange={(e) => setNewPostName(e.target.value)}
-                    />
-                    <button type="submit" className="btn btn-primary ml-2">Add Post</button>
+            {activeView === 'stockManagers' && (
+                <div className="table-view card shadow-sm">
+                    <div className="table-header">
+                        <h2>All Stock Managers</h2>
+                        <button onClick={handleCreateStockManagerClick} className="btn btn-add">
+                            <FaPlus className="mr-2" /> Add New Stock Manager
+                        </button>
+                    </div>
+                    <table className="data-table">
+                        <thead className="table-head">
+                            <tr className="table-row-header">
+                                <th className="table-th">Name</th>
+                                <th className="table-th">Mobile</th>
+                                <th className="table-th">Branch</th>
+                                <th className="table-th">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="table-body">
+                            {stockManagers.length === 0 ? (
+                                <tr>
+                                    <td colSpan="4" className="text-center">No stock managers found.</td>
+                                </tr>
+                            ) : (
+                                stockManagers.map(manager => (
+                                    <tr key={manager._id} className="table-row">
+                                        <td className="table-td">{manager.name}</td>
+                                        <td className="table-td">{manager.mobileNumber || 'N/A'}</td>
+                                        <td className="table-td">{manager.branchId?.name || 'N/A'}</td>
+                                        <td className="table-td action-buttons">
+                                            <button
+                                                onClick={() => handleUpdateStockManager(manager)}
+                                                className="action-icon-button edit-button"
+                                                title="Update Stock Manager"
+                                            >
+                                                <FaEdit />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteStockManager(manager._id)}
+                                                className="action-icon-button delete-button"
+                                                title="Delete Stock Manager"
+                                            >
+                                                <FaTrash />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
-            </form>
-        </div>
-        <table className="data-table">
-            <thead className="table-head">
-                <tr className="table-row-header">
-                    <th className="table-th">Post Name</th>
-                    <th className="table-th actions-th">Actions</th>
-                </tr>
-            </thead>
-            <tbody className="table-body">
-                {posts.length === 0 ? (
-                    <tr>
-                        <td colSpan="2" className="text-center">No posts found.</td>
-                    </tr>
-                ) : (
-                    posts.map(post => (
-                        <tr key={post._id} className="table-row">
-                            <td className="table-td">
-                                {editingPostId === post._id ? (
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={editingPostName}
-                                        onChange={(e) => setEditingPostName(e.target.value)}
-                                    />
-                                ) : (
-                                    post.name
-                                )}
-                            </td>
-                            <td className="table-td action-buttons">
-                                {editingPostId === post._id ? (
-                                    <>
-                                        <button
-                                            onClick={handleCreateOrUpdatePost}
-                                            className="action-icon-button edit-button"
-                                            title="Save Changes"
-                                        >
-                                            <FaCheckCircle />
-                                        </button>
-                                        <button
-                                            onClick={handleCancelEdit}
-                                            className="action-icon-button delete-button"
-                                            title="Cancel Edit"
-                                        >
-                                            <FaTimes />
-                                        </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <button
-                                            onClick={() => handleEditPost(post)}
-                                            className="action-icon-button edit-button"
-                                            title="Update Post"
-                                        >
-                                            <FaEdit />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeletePost(post._id)}
-                                            className="action-icon-button delete-button"
-                                            title="Delete Post"
-                                        >
-                                            <FaTrash />
-                                        </button>
-                                    </>
-                                )}
-                            </td>
-                        </tr>
-                    ))
-                )}
-            </tbody>
-        </table>
-    </div>
-)}
+            )}
+
+            {activeView === 'posts' && (
+                <div className="table-view card shadow-sm">
+                    <div className="table-header">
+                        <h2>All Posts</h2>
+                    </div>
+                    <div className="form-container mb-3 p-3">
+                        <form onSubmit={handleCreateOrUpdatePost}>
+                            <div className="form-group mb-2 d-flex align-items-center">
+                                <FaPlus className="mr-2" />
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="Enter new post name..."
+                                    value={newPostName}
+                                    onChange={(e) => setNewPostName(e.target.value)}
+                                />
+                                <button type="submit" className="btn btn-primary ml-2">Add Post</button>
+                            </div>
+                        </form>
+                    </div>
+                    <table className="data-table">
+                        <thead className="table-head">
+                            <tr className="table-row-header">
+                                <th className="table-th">Post Name</th>
+                                <th className="table-th actions-th">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="table-body">
+                            {posts.length === 0 ? (
+                                <tr>
+                                    <td colSpan="2" className="text-center">No posts found.</td>
+                                </tr>
+                            ) : (
+                                posts.map(post => (
+                                    <tr key={post._id} className="table-row">
+                                        <td className="table-td">
+                                            {editingPostId === post._id ? (
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    value={editingPostName}
+                                                    onChange={(e) => setEditingPostName(e.target.value)}
+                                                />
+                                            ) : (
+                                                post.name
+                                            )}
+                                        </td>
+                                        <td className="table-td action-buttons">
+                                            {editingPostId === post._id ? (
+                                                <>
+                                                    <button
+                                                        onClick={handleCreateOrUpdatePost}
+                                                        className="action-icon-button edit-button"
+                                                        title="Save Changes"
+                                                    >
+                                                        <FaCheckCircle />
+                                                    </button>
+                                                    <button
+                                                        onClick={handleCancelEdit}
+                                                        className="action-icon-button delete-button"
+                                                        title="Cancel Edit"
+                                                    >
+                                                        <FaTimes />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleEditPost(post)}
+                                                        className="action-icon-button edit-button"
+                                                        title="Update Post"
+                                                    >
+                                                        <FaEdit />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeletePost(post._id)}
+                                                        className="action-icon-button delete-button"
+                                                        title="Delete Post"
+                                                    >
+                                                        <FaTrash />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
 
             {activeView === 'reports' && (

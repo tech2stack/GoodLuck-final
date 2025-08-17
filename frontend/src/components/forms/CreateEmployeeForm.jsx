@@ -15,7 +15,10 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
         panCardNo: '',
         employeeCode: '',
         salary: '',
-        bankDetail: '',
+        // bankDetail को हटाकर ये तीन नए फ़ील्ड्स जोड़े गए हैं
+        bankName: '',
+        accountNo: '',
+        ifscCode: '',
         passportPhoto: null,
         documentPDF: null,
     });
@@ -34,7 +37,6 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
             setCities(citiesResponse.data.data.cities || []);
         } catch (err) {
             console.error('Error fetching posts and cities:', err);
-            // Calling the showFlashMessage prop correctly
             showFlashMessage('Failed to load posts or cities.', 'error');
         }
     };
@@ -45,60 +47,50 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prevData => ({ ...prevData, [name]: value }));
     };
 
     const handleFileChange = (e) => {
         const { name, files } = e.target;
-        setFormData(prev => ({ ...prev, [name]: files[0] }));
+        setFormData(prevData => ({ ...prevData, [name]: files[0] }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        // Find the selected post to check its name for conditional validation
-        const selectedPost = posts.find(post => post._id === formData.postId);
-
-        // Check if the selected post is 'Store Manager' and if branchId is missing
-        if (selectedPost && selectedPost.name === 'Store Manager' && !formData.branchId) {
-            // Calling the showFlashMessage prop correctly
-            showFlashMessage('A branch must be assigned to a Store Manager.', 'error');
-            return; // Stop form submission
-        }
-
         setLoading(true);
-        const employeeData = new FormData();
+
+        // फ़ॉर्म डेटा को FormData ऑब्जेक्ट में जोड़ें ताकि फ़ाइलें भेजी जा सकें
+        const data = new FormData();
         for (const key in formData) {
             if (formData[key]) {
-                employeeData.append(key, formData[key]);
+                data.append(key, formData[key]);
             }
         }
 
         try {
-            const response = await api.post('/employees', employeeData, {
+            const response = await api.post('/employees', data, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
             });
+
             onEmployeeCreated(response.data.data.employee);
-            // Calling the showFlashMessage prop correctly
             showFlashMessage('Employee added successfully!', 'success');
         } catch (err) {
-            console.error('Error creating employee:', err);
-            // Calling the showFlashMessage prop correctly
-            showFlashMessage(`Failed to create employee: ${err.response?.data?.message || err.message}`, 'error');
+            console.error('Error creating employee:', err.response || err);
+            const message = err.response?.data?.message || 'Failed to create employee.';
+            showFlashMessage(message, 'error');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="form-container">
-            <h2 className="form-title">Add New Employee</h2>
-            <form onSubmit={handleSubmit} className="employee-form-grid">
-
+        <div className="form-container card p-4 shadow-sm">
+            <h2 className="text-xl font-bold mb-4">Add New Employee</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="form-group">
-                    <label htmlFor="name" className="form-label">Name:</label>
+                    <label htmlFor="name" className="form-label">Full Name:</label>
                     <input type="text" id="name" name="name" className="form-input" value={formData.name} onChange={handleChange} required />
                 </div>
                 <div className="form-group">
@@ -111,35 +103,33 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
                 </div>
                 <div className="form-group">
                     <label htmlFor="branchId" className="form-label">Branch:</label>
-                    <select id="branchId" name="branchId" className="form-input" value={formData.branchId} onChange={handleChange}>
-                        <option value="">Select Branch</option>
+                    <select id="branchId" name="branchId" className="form-select" value={formData.branchId} onChange={handleChange}>
+                        <option value="">Select a Branch</option>
                         {branches.map(branch => (
                             <option key={branch._id} value={branch._id}>{branch.name}</option>
                         ))}
                     </select>
                 </div>
-                
-                <div className="form-group">
-                    <label htmlFor="postId" className="form-label">Post:</label>
-                    <select id="postId" name="postId" className="form-input" value={formData.postId} onChange={handleChange} required>
-                        <option value="">Select Post</option>
-                        {posts.map(post => (
-                            <option key={post._id} value={post._id}>{post.name}</option>
-                        ))}
-                    </select>
-                </div>
-                
                 <div className="form-group">
                     <label htmlFor="cityId" className="form-label">City:</label>
-                    <select id="cityId" name="cityId" className="form-input" value={formData.cityId} onChange={handleChange} required>
-                        <option value="">Select City</option>
+                    <select id="cityId" name="cityId" className="form-select" value={formData.cityId} onChange={handleChange} required>
+                        <option value="">Select a City</option>
                         {cities.map(city => (
                             <option key={city._id} value={city._id}>{city.name}</option>
                         ))}
                     </select>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="adharNo" className="form-label">Adhaar No:</label>
+                    <label htmlFor="postId" className="form-label">Post:</label>
+                    <select id="postId" name="postId" className="form-select" value={formData.postId} onChange={handleChange} required>
+                        <option value="">Select a Post</option>
+                        {posts.map(post => (
+                            <option key={post._id} value={post._id}>{post.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="adharNo" className="form-label">Aadhar No:</label>
                     <input type="text" id="adharNo" name="adharNo" className="form-input" value={formData.adharNo} onChange={handleChange} />
                 </div>
                 <div className="form-group">
@@ -154,9 +144,18 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
                     <label htmlFor="salary" className="form-label">Salary:</label>
                     <input type="number" id="salary" name="salary" className="form-input" value={formData.salary} onChange={handleChange} />
                 </div>
+                {/* bankDetail फ़ील्ड को हटाकर ये तीन नए फ़ील्ड जोड़े गए हैं */}
                 <div className="form-group">
-                    <label htmlFor="bankDetail" className="form-label">Bank Detail:</label>
-                    <input type="text" id="bankDetail" name="bankDetail" className="form-input" value={formData.bankDetail} onChange={handleChange} />
+                    <label htmlFor="bankName" className="form-label">Bank Name:</label>
+                    <input type="text" id="bankName" name="bankName" className="form-input" value={formData.bankName} onChange={handleChange} />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="accountNo" className="form-label">Account No:</label>
+                    <input type="text" id="accountNo" name="accountNo" className="form-input" value={formData.accountNo} onChange={handleChange} />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="ifscCode" className="form-label">IFSC Code:</label>
+                    <input type="text" id="ifscCode" name="ifscCode" className="form-input" value={formData.ifscCode} onChange={handleChange} />
                 </div>
                 <div className="form-group">
                     <label htmlFor="passportPhoto" className="form-label">Passport Photo:</label>

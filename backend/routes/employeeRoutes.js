@@ -4,6 +4,7 @@ const employeeController = require('../controllers/employeeController');
 const authMiddleware = require('../middleware/authMiddleware');
 const multer = require('multer');
 const path = require('path');
+const { promises: fs } = require('fs');
 
 const router = express.Router();
 

@@ -42,7 +42,8 @@ const employeeSchema = new mongoose.Schema({
     adharNo: {
         type: String,
         required: false,
-        unique: false,
+        unique: true, // <-- `unique` ko `true` rakhiye, isse har adhar number unique rahega
+        sparse: true, // <-- **Yahaan par `sparse: true` jodiye.** Isse null values ko ignore kiya jayega
         trim: true
     },
     panCardNo: {
@@ -60,7 +61,17 @@ const employeeSchema = new mongoose.Schema({
         type: Number,
         required: false,
     },
-    bankDetail: {
+    bankName: {
+        type: String,
+        required: false,
+        trim: true
+    },
+    accountNo: {
+        type: String,
+        required: false,
+        trim: true
+    },
+    ifscCode: {
         type: String,
         required: false,
         trim: true
@@ -89,23 +100,19 @@ const employeeSchema = new mongoose.Schema({
 employeeSchema.pre(/^find/, function(next) {
     this.populate({
         path: 'postId',
-        select: 'name' // Only select the 'name' field from the Post
+        select: 'name'
     })
     .populate({
         path: 'cityId',
-        select: 'name' // Only select the 'name' field from the City
+        select: 'name'
     })
     .populate({
         path: 'branchId',
-        select: 'name location' // Select name and location from the Branch
+        select: 'name location'
     });
     next();
 });
 
-employeeSchema.methods.getSignedJwtToken = function () {
-    return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRE,
-    });
-};
+const Employee = mongoose.model('Employee', employeeSchema);
 
-module.exports = mongoose.model('Employee', employeeSchema);
+module.exports = Employee;
