@@ -10,7 +10,7 @@ const employeeSchema = new mongoose.Schema({
     },
     mobileNumber: {
         type: String,
-        required: false,
+        required: false, // <-- `required` ko false kiya gaya hai
         unique: false,
         trim: true,
     },
@@ -22,7 +22,7 @@ const employeeSchema = new mongoose.Schema({
     branchId: {
         type: mongoose.Schema.ObjectId,
         ref: 'Branch',
-        required: false
+        required: [true, 'Please provide the branch ID'] // <-- `required` ko true kiya gaya hai
     },
     cityId: {
         type: mongoose.Schema.ObjectId,
@@ -42,8 +42,8 @@ const employeeSchema = new mongoose.Schema({
     adharNo: {
         type: String,
         required: false,
-        unique: true, // <-- `unique` ko `true` rakhiye, isse har adhar number unique rahega
-        sparse: true, // <-- **Yahaan par `sparse: true` jodiye.** Isse null values ko ignore kiya jayega
+        unique: true,
+        sparse: true,
         trim: true
     },
     panCardNo: {
@@ -96,7 +96,6 @@ const employeeSchema = new mongoose.Schema({
     }
 });
 
-// Add a pre-find hook to automatically populate the 'post', 'branchId', and 'cityId' fields
 employeeSchema.pre(/^find/, function(next) {
     this.populate({
         path: 'postId',

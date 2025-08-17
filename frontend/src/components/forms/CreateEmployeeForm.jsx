@@ -15,7 +15,6 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
         panCardNo: '',
         employeeCode: '',
         salary: '',
-        // bankDetail को हटाकर ये तीन नए फ़ील्ड्स जोड़े गए हैं
         bankName: '',
         accountNo: '',
         ifscCode: '',
@@ -37,7 +36,7 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
             setCities(citiesResponse.data.data.cities || []);
         } catch (err) {
             console.error('Error fetching posts and cities:', err);
-            showFlashMessage('Failed to load posts or cities.', 'error');
+            showFlashMessage('Could not load post and city information.', 'error');
         }
     };
 
@@ -59,7 +58,6 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
         e.preventDefault();
         setLoading(true);
 
-        // फ़ॉर्म डेटा को FormData ऑब्जेक्ट में जोड़ें ताकि फ़ाइलें भेजी जा सकें
         const data = new FormData();
         for (const key in formData) {
             if (formData[key]) {
@@ -78,8 +76,23 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
             showFlashMessage('Employee added successfully!', 'success');
         } catch (err) {
             console.error('Error creating employee:', err.response || err);
-            const message = err.response?.data?.message || 'Failed to create employee.';
-            showFlashMessage(message, 'error');
+            const rawMessage = err.response?.data?.message || 'Failed to create employee.';
+            let userMessage = 'Failed to create employee. Please check the information.';
+
+            // Specific message for E11000 error
+            if (rawMessage.includes('E11000 duplicate key')) {
+                if (rawMessage.includes('adharNo')) {
+                    userMessage = 'Aadhaar Number already exists. Please enter a correct Aadhaar Number.';
+                } else if (rawMessage.includes('employeeCode')) {
+                    userMessage = 'Employee Code already exists. Please enter a new code.';
+                } else {
+                    userMessage = 'The provided information already exists. Please check.';
+                }
+            } else if (rawMessage.includes('Please provide the branch ID')) {
+                userMessage = 'Selecting a branch is mandatory. Please select a branch.';
+            }
+
+            showFlashMessage(userMessage, 'error');
         } finally {
             setLoading(false);
         }
@@ -102,38 +115,38 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
                     <input type="text" id="address" name="address" className="form-input" value={formData.address} onChange={handleChange} />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="branchId" className="form-label">Branch:</label>
-                    <select id="branchId" name="branchId" className="form-select" value={formData.branchId} onChange={handleChange}>
-                        <option value="">Select a Branch</option>
+                    <label htmlFor="branchId" className="form-label">Branch:*</label>
+                    <select id="branchId" name="branchId" className="form-select" value={formData.branchId} onChange={handleChange} required>
+                        <option value="">Select Branch</option>
                         {branches.map(branch => (
                             <option key={branch._id} value={branch._id}>{branch.name}</option>
                         ))}
                     </select>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="cityId" className="form-label">City:</label>
+                    <label htmlFor="cityId" className="form-label">City:*</label>
                     <select id="cityId" name="cityId" className="form-select" value={formData.cityId} onChange={handleChange} required>
-                        <option value="">Select a City</option>
+                        <option value="">Select City</option>
                         {cities.map(city => (
                             <option key={city._id} value={city._id}>{city.name}</option>
                         ))}
                     </select>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="postId" className="form-label">Post:</label>
+                    <label htmlFor="postId" className="form-label">Post:*</label>
                     <select id="postId" name="postId" className="form-select" value={formData.postId} onChange={handleChange} required>
-                        <option value="">Select a Post</option>
+                        <option value="">Select Post</option>
                         {posts.map(post => (
                             <option key={post._id} value={post._id}>{post.name}</option>
                         ))}
                     </select>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="adharNo" className="form-label">Aadhar No:</label>
+                    <label htmlFor="adharNo" className="form-label">Aadhaar Number:</label>
                     <input type="text" id="adharNo" name="adharNo" className="form-input" value={formData.adharNo} onChange={handleChange} />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="panCardNo" className="form-label">PAN Card No:</label>
+                    <label htmlFor="panCardNo" className="form-label">PAN Card Number:</label>
                     <input type="text" id="panCardNo" name="panCardNo" className="form-input" value={formData.panCardNo} onChange={handleChange} />
                 </div>
                 <div className="form-group">
@@ -144,13 +157,12 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
                     <label htmlFor="salary" className="form-label">Salary:</label>
                     <input type="number" id="salary" name="salary" className="form-input" value={formData.salary} onChange={handleChange} />
                 </div>
-                {/* bankDetail फ़ील्ड को हटाकर ये तीन नए फ़ील्ड जोड़े गए हैं */}
                 <div className="form-group">
                     <label htmlFor="bankName" className="form-label">Bank Name:</label>
                     <input type="text" id="bankName" name="bankName" className="form-input" value={formData.bankName} onChange={handleChange} />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="accountNo" className="form-label">Account No:</label>
+                    <label htmlFor="accountNo" className="form-label">Account Number:</label>
                     <input type="text" id="accountNo" name="accountNo" className="form-input" value={formData.accountNo} onChange={handleChange} />
                 </div>
                 <div className="form-group">
@@ -165,7 +177,6 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
                     <label htmlFor="documentPDF" className="form-label">Document PDF:</label>
                     <input type="file" id="documentPDF" name="documentPDF" className="form-input" onChange={handleFileChange} />
                 </div>
-
                 <div className="form-actions">
                     <button type="submit" className="btn btn-primary" disabled={loading}>
                         {loading ? <FaSpinner className="animate-spin mr-2" /> : <><FaPlus className="mr-2" /> Add Employee</>}
