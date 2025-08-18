@@ -360,7 +360,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                     String(item.itemName || '').trim(),
                     String(item.category || '').trim(),
                     formattedPrice,
-                    formattedMargin, // NEW: Add marginPercentage to row data
+                   // formattedMargin, // NEW: Add marginPercentage to row data
                     formatDateWithTime(item.createdAt),
                     String(item.status || '').trim().charAt(0).toUpperCase() + String(item.status || '').trim().slice(1)
                 ];
