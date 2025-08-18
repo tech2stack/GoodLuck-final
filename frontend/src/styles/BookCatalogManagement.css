@@ -384,9 +384,9 @@
 }
 
 .data-table th {
-    background-color: #f8f9fa; /* Light grey header background */
+    background-color: #008cff; /* Light grey header background */
     font-weight: 700;
-    color: #495057;
+    color: #ffffff;
     text-transform: uppercase;
     font-size: 0.75rem; /* Slightly smaller font for headers */
     white-space: nowrap; /* Prevent header text from wrapping */
@@ -659,4 +659,8 @@
     .modal-actions {
         gap: 8px;
     }
+}
+.posts-button{
+    background-color: #3498db;
+
 }

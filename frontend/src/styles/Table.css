@@ -54,7 +54,8 @@
     border-radius: 4px;
     font-size: 0.75em;
     font-weight: 600;
-    color: #fff;
+    /* color: #fff; */
+    color: #991b1b;
     text-align: center;
     white-space: nowrap;
 }
