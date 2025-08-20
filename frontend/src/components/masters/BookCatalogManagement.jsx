@@ -920,7 +920,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
               }))
             }
           >
-            {isbnVisible[classes[currentClassIndex]._id] ? 'Hide ISBN' : 'Add ISBN'}
+            {isbnVisible[classes[currentClassIndex]._id] ? '- Hide ISBN' : '+ Add ISBN'}
           </button>
 
           {/* ISBN input (only shown when toggled) */}
