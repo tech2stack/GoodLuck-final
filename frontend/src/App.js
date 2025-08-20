@@ -40,7 +40,7 @@ import LanguageManagement from './components/masters/LanguageManagement';    
 import PublicationManagement from './components/masters/PublicationManagement'; 
 import StationeryItemManagement from './components/masters/StationeryItemManagement'; 
 import TransportManagement from './components/masters/TransportManagement';   
-import ZoneManagement from './components/masters/ZoneManagement';             
+// import ZoneManagement from './components/masters/ZoneManagement';             
 
 // SubtitleManagement import is REMOVED for now as it was not found in your provided file list.
 // Please provide the correct filename/path for your Subtitle component.
@@ -240,7 +240,7 @@ function App() {
                             <Route path="/city-management" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><CityManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
                             <Route path="/language-management" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><LanguageManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
                             <Route path="/transport-management" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><TransportManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
-                            <Route path="/zone-management" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><ZoneManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
+{/*                             <Route path="/zone-management" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><ZoneManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} /> */}
 
 
                             {/* Reports Routes - showFlashMessage prop is passed */}

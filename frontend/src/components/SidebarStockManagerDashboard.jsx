@@ -125,8 +125,8 @@ const SidebarStockManagerDashboard = ({
       show: showMasterDropdown,
       items: [
         { key: 'class', icon: FaGraduationCap, label: 'Class' },
-        { key: 'zone', icon: FaGlobeAsia, label: 'Zone' },
-        { key: 'city', icon: FaCity, label: 'City' },
+        // { key: 'zone', icon: FaGlobeAsia, label: 'Zone' },
+        { key: 'city', icon: FaCity, label: 'Zone Management' },
         { key: 'publication', icon: FaBook, label: 'Publication' },
         { key: 'language', icon: FaLanguage, label: 'Language' },
         { key: 'book-catalog', icon: FaBookOpen, label: 'Book Catalog' },
