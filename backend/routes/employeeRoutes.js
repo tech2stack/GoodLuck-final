@@ -10,7 +10,7 @@ const router = express.Router();
 
 const multerStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Store all uploads in a single 'uploads' directory
+        cb(null, 'uploads/');
     },
     filename: (req, file, cb) => {
         const ext = path.extname(file.originalname);
@@ -38,6 +38,13 @@ router.get(
     authMiddleware.protect,
     authMiddleware.restrictTo('super_admin'),
     employeeController.getEmployeesByRole
+);
+
+router.get(
+    '/sales-representatives',
+    authMiddleware.protect,
+    authMiddleware.restrictTo('super_admin', 'branch_admin', 'stock_manager'),
+    employeeController.getSalesRepresentatives
 );
 
 router.route('/:id')

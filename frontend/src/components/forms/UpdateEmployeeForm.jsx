@@ -26,9 +26,27 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
     const [loading, setLoading] = useState(false);
     const [posts, setPosts] = useState([]);
     const [cities, setCities] = useState([]);
+    const [isDataReady, setIsDataReady] = useState(false);
 
     useEffect(() => {
-        // Populate fields correctly from employeeData
+        // Function to fetch posts and cities
+        const fetchPostsAndCities = async () => {
+            try {
+                const [postsResponse, citiesResponse] = await Promise.all([
+                    api.get('/posts'),
+                    api.get('/cities')
+                ]);
+                setPosts(postsResponse.data.data.posts);
+                setCities(citiesResponse.data.data.cities || []);
+                setIsDataReady(true);
+            } catch (err) {
+                console.error('Error fetching posts and cities:', err);
+                showFlashMessage('Could not load Post and City information.', 'error');
+                setIsDataReady(false); // Set to false on error to prevent form display
+            }
+        };
+
+        // Populate fields correctly from employeeData and fetch dropdown options
         if (employeeData) {
             setFormData({
                 name: employeeData.name || '',
@@ -45,27 +63,11 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                 accountNo: employeeData.accountNo || '',
                 ifscCode: employeeData.ifscCode || '',
                 status: employeeData.status || 'active',
-                passportPhoto: null, // reset file input
-                documentPDF: null,   // reset file input
+                passportPhoto: null, // Reset file input
+                documentPDF: null,   // Reset file input
             });
+            fetchPostsAndCities();
         }
-
-        // Logic to fetch posts and cities
-        const fetchPostsAndCities = async () => {
-            try {
-                const [postsResponse, citiesResponse] = await Promise.all([
-                    api.get('/posts'),
-                    api.get('/cities')
-                ]);
-                setPosts(postsResponse.data.data.posts);
-                setCities(citiesResponse.data.data.cities || []);
-            } catch (err) {
-                console.error('Error fetching posts and cities:', err);
-                showFlashMessage('Could not load post and city information.', 'error');
-            }
-        };
-
-        fetchPostsAndCities();
     }, [employeeData, showFlashMessage]);
 
     const handleChange = (e) => {
@@ -82,13 +84,35 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
         e.preventDefault();
         setLoading(true);
 
-        const data = new FormData();
-        for (const key in formData) {
-            if (formData[key] !== null) {
-                data.append(key, formData[key]);
-            }
+        // Manual validation for required fields
+        if (!formData.name || !formData.branchId || !formData.cityId || !formData.postId) {
+            showFlashMessage('Please fill in all required fields (Name, Branch, City, and Post).', 'error');
+            setLoading(false);
+            return;
         }
 
+        const data = new FormData();
+        
+        for (const key in formData) {
+            const newValue = formData[key];
+            const oldValue = employeeData[key];
+
+            // Normalize values for comparison
+            const normalizedNewValue = (newValue === null || newValue === undefined) ? '' : newValue;
+            const normalizedOldValue = (oldValue === null || oldValue === undefined) ? '' : oldValue;
+
+            // Handle file inputs separately. If a new file exists, append it.
+            if (key === 'passportPhoto' || key === 'documentPDF') {
+                if (newValue) {
+                    data.append(key, newValue);
+                }
+            } 
+            // Only append a field if its value has changed
+            else if (normalizedNewValue !== normalizedOldValue) {
+                data.append(key, newValue || '');
+            }
+        }
+        
         try {
             const response = await api.patch(`/employees/${employeeData._id}`, data, {
                 headers: {
@@ -100,18 +124,33 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
         } catch (err) {
             console.error('Error updating employee:', err.response || err);
             const rawMessage = err.response?.data?.message || 'Failed to update employee.';
-            let userMessage = 'Failed to update employee. Please check the information.';
+            let userMessage = 'Failed to update employee. Please check the information provided.';
 
+            // Duplicate key error handling
             if (rawMessage.includes('E11000 duplicate key')) {
-                if (rawMessage.includes('adharNo')) {
-                    userMessage = 'Aadhaar Number already exists. Please enter a correct Aadhaar Number.';
-                } else if (rawMessage.includes('employeeCode')) {
-                    userMessage = 'Employee Code already exists. Please enter a new code.';
+                const match = rawMessage.match(/index: (\S+)_\d+ dup key: { (\S+):/);
+                if (match) {
+                    const fieldName = match[1];
+                    let fieldNameInEnglish = '';
+                    switch (fieldName) {
+                        case 'adharNo':
+                            fieldNameInEnglish = 'Aadhar number';
+                            break;
+                        case 'employeeCode':
+                            fieldNameInEnglish = 'Employee code';
+                            break;
+                        case 'mobileNumber':
+                            fieldNameInEnglish = 'Mobile number';
+                            break;
+                        default:
+                            fieldNameInEnglish = 'this field';
+                    }
+                    userMessage = `This ${fieldNameInEnglish} already exists. Please enter the correct ${fieldNameInEnglish}.`;
                 } else {
-                    userMessage = 'The provided information already exists. Please check.';
+                    userMessage = 'The information provided already exists. Please check.';
                 }
             } else if (rawMessage.includes('Please provide the branch ID')) {
-                userMessage = 'Selecting a branch is mandatory. Please select a branch.';
+                userMessage = 'Selecting a branch is mandatory. Please choose a branch.';
             }
 
             showFlashMessage(userMessage, 'error');
@@ -119,6 +158,10 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
             setLoading(false);
         }
     };
+
+    if (!isDataReady || !employeeData) {
+        return <div className="p-4 text-center text-gray-500">Loading employee data...</div>;
+    }
 
     return (
         <div className="form-container card p-4 shadow-sm">
@@ -138,7 +181,7 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                 </div>
                 <div className="form-group">
                     <label htmlFor="branchId" className="form-label">Branch:<span className="text-red-500">*</span></label>
-                    <select id="branchId" name="branchId" className="form-select" value={formData.branchId} onChange={handleChange} required>
+                    <select id="branchId" name="branchId" className="form-select" value={formData.branchId} onChange={handleChange}>
                         <option value="">Select Branch</option>
                         {branches.map(branch => (
                             <option key={branch._id} value={branch._id}>{branch.name}</option>
@@ -147,7 +190,7 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                 </div>
                 <div className="form-group">
                     <label htmlFor="cityId" className="form-label">City:<span className="text-red-500">*</span></label>
-                    <select id="cityId" name="cityId" className="form-select" value={formData.cityId} onChange={handleChange} required>
+                    <select id="cityId" name="cityId" className="form-select" value={formData.cityId} onChange={handleChange}>
                         <option value="">Select City</option>
                         {cities.map(city => (
                             <option key={city._id} value={city._id}>{city.name}</option>
@@ -156,7 +199,7 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                 </div>
                 <div className="form-group">
                     <label htmlFor="postId" className="form-label">Post:<span className="text-red-500">*</span></label>
-                    <select id="postId" name="postId" className="form-select" value={formData.postId} onChange={handleChange} required>
+                    <select id="postId" name="postId" className="form-select" value={formData.postId} onChange={handleChange}>
                         <option value="">Select Post</option>
                         {posts.map(post => (
                             <option key={post._id} value={post._id}>{post.name}</option>
@@ -164,7 +207,8 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                     </select>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="adharNo" className="form-label">Aadhaar Number:</label>
+                    {/* The Aadhar number field is not required */}
+                    <label htmlFor="adharNo" className="form-label">Aadhar Number:</label>
                     <input type="text" id="adharNo" name="adharNo" className="form-input" value={formData.adharNo} onChange={handleChange} />
                 </div>
                 <div className="form-group">

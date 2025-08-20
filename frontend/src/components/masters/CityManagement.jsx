@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../utils/api';
 import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaSpinner, FaTimesCircle } from 'react-icons/fa';
 
-// Stylesheets
 import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
@@ -13,10 +12,12 @@ import companyLogo from '../../assets/glbs-logo.jpg';
 const CityManagement = ({ showFlashMessage }) => {
     const [cities, setCities] = useState([]);
     const [zones, setZones] = useState([]);
+    const [salesRepresentatives, setSalesRepresentatives] = useState([]); // New state for sales reps
     const [formData, setFormData] = useState({
         name: '',
         zone: '',
         status: 'active',
+        assignedSalesRepresentative: '', // New field for sales rep ID
     });
     const [loading, setLoading] = useState(false);
     const [localError, setLocalError] = useState(null);
@@ -108,13 +109,26 @@ const CityManagement = ({ showFlashMessage }) => {
         }
     }, [editingCityId]);
 
+    const fetchSalesRepresentatives = useCallback(async () => {
+        try {
+            const response = await api.get('/employees/sales-representatives');
+            if (response.data.status === 'success') {
+                setSalesRepresentatives(response.data.data.employees);
+            }
+        } catch (err) {
+            console.error('Error fetching sales representatives:', err);
+            showFlashMessage('Failed to load sales representatives.', 'error');
+        }
+    }, [showFlashMessage]);
+
     useEffect(() => {
         fetchCities();
     }, [fetchCities]);
 
     useEffect(() => {
         fetchZonesForDropdown();
-    }, [fetchZonesForDropdown]);
+        fetchSalesRepresentatives();
+    }, [fetchZonesForDropdown, fetchSalesRepresentatives]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -157,6 +171,7 @@ const CityManagement = ({ showFlashMessage }) => {
                 name: '',
                 zone: zones[0]?._id || '',
                 status: 'active',
+                assignedSalesRepresentative: '',
             });
             setEditingCityId(null);
             fetchCities(true);
@@ -173,8 +188,10 @@ const CityManagement = ({ showFlashMessage }) => {
     const handleEdit = (cityItem) => {
         setFormData({
             name: cityItem.name,
-            zone: cityItem.zone._id,
+            // Use optional chaining or a conditional check to safely access _id
+            zone: cityItem.zone?._id || '',
             status: cityItem.status,
+            assignedSalesRepresentative: cityItem.assignedSalesRepresentative?._id || '',
         });
         setEditingCityId(cityItem._id);
         setLocalError(null);
@@ -217,14 +234,15 @@ const CityManagement = ({ showFlashMessage }) => {
     };
 
     const handleCancelEdit = () => {
-        setFormData({ name: '', zone: zones[0]?._id || '', status: 'active' });
+        setFormData({ name: '', zone: zones[0]?._id || '', status: 'active', assignedSalesRepresentative: '' });
         setEditingCityId(null);
         setLocalError(null);
     };
 
     const filteredCities = cities.filter(city =>
         city.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        (city.zone && city.zone.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        (city.zone && city.zone.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (city.assignedSalesRepresentative && city.assignedSalesRepresentative.name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -275,11 +293,12 @@ const CityManagement = ({ showFlashMessage }) => {
 
             const tableStartY = startYPositionForTable + 20;
 
-            const tableColumn = ["S.No.", "City Name", "Zone", "Status", "Add Date"];
+            const tableColumn = ["S.No.", "City Name", "Zone", "Assigned Sales Rep", "Status", "Add Date"];
             const tableRows = filteredCities.map((cityItem, index) => [
                 index + 1,
                 cityItem.name,
                 cityItem.zone ? cityItem.zone.name : 'N/A',
+                cityItem.assignedSalesRepresentative ? cityItem.assignedSalesRepresentative.name : 'Not Assigned',
                 cityItem.status.charAt(0).toUpperCase() + cityItem.status.slice(1),
                 formatDateWithTime(cityItem.createdAt)
             ]);
@@ -314,8 +333,9 @@ const CityManagement = ({ showFlashMessage }) => {
                     0: { cellWidth: 15, halign: 'center' },
                     1: { cellWidth: 'auto', halign: 'left' },
                     2: { halign: 'center' },
-                    3: { halign: 'center' },
-                    4: { halign: 'center' }
+                    3: { halign: 'left' },
+                    4: { halign: 'center' },
+                    5: { halign: 'center' }
                 },
                 margin: { top: 10, right: 14, bottom: 10, left: 14 },
                 didDrawPage: function (data) {
@@ -430,20 +450,42 @@ const CityManagement = ({ showFlashMessage }) => {
                                 </select>
                             </div>
                         </div>
-                        <div className="form-group">
-                            <label htmlFor="status">Status:</label>
-                            <select
-                                id="status"
-                                name="status"
-                                value={formData.status}
-                                onChange={handleChange}
-                                disabled={loading}
-                                className="form-select"
-                                
-                            >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
+                        <div className="form-row">
+                             <div className="form-group">
+                                <label htmlFor="assignedSalesRepresentative">Assign Sales Representative:</label>
+                                <select
+                                    id="assignedSalesRepresentative"
+                                    name="assignedSalesRepresentative"
+                                    value={formData.assignedSalesRepresentative}
+                                    onChange={handleChange}
+                                    disabled={loading || salesRepresentatives.length === 0}
+                                    className="form-select"
+                                >
+                                    <option value="">-- No Sales Rep --</option>
+                                    {salesRepresentatives.length > 0 ? (
+                                        salesRepresentatives.map(rep => (
+                                            <option key={rep._id} value={rep._id}>{rep.name}</option>
+                                        ))
+                                    ) : (
+                                        <option value="" disabled>No active Sales Reps found</option>
+                                    )}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="status">Status:</label>
+                                <select
+                                    id="status"
+                                    name="status"
+                                    value={formData.status}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    className="form-select"
+                                    
+                                >
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div className="form-actions">
@@ -465,8 +507,6 @@ const CityManagement = ({ showFlashMessage }) => {
                     </form>
                 </div>
                 <div className="table-container">
-                    {/* <h3 className="table-title">Existing Cities</h3> */}
-
                     <div className="table-controls">
                         <div className="search-input-group">
                             <FaSearch className="search-icon" />
@@ -498,6 +538,7 @@ const CityManagement = ({ showFlashMessage }) => {
                                         <th>S.No.</th>
                                         <th>City Name</th>
                                         <th>Zone</th>
+                                        <th>Assigned Sales Rep</th>
                                         <th>Status</th>
                                         <th>Add Date</th>
                                         <th>Action</th>
@@ -509,6 +550,7 @@ const CityManagement = ({ showFlashMessage }) => {
                                             <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                             <td>{cityItem.name}</td>
                                             <td>{cityItem.zone?.name || 'N/A'}</td>
+                                            <td>{cityItem.assignedSalesRepresentative?.name || 'N/A'}</td>
                                             <td>
                                                 <span className={`status-badge ${cityItem.status}`}>
                                                     {cityItem.status.charAt(0).toUpperCase() + cityItem.status.slice(1)}

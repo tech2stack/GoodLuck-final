@@ -200,7 +200,7 @@ const SidebarStockManagerDashboard = ({
     left: 0,
     zIndex: 10,
     top: '85px',
-    '@media (max-width: 420px)': {
+    '@media(maxWidth: 420px)': {
       top: '68px',
     },
   }}

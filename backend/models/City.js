@@ -5,13 +5,13 @@ const CitySchema = new mongoose.Schema({
     name: {
         type: String,
         required: [true, 'City name is required'],
-        unique: true, // City names should be unique
+        unique: true,
         trim: true,
         maxlength: [50, 'City name cannot be more than 50 characters']
     },
     zone: {
-        type: mongoose.Schema.ObjectId, // Reference to the Zone model
-        ref: 'Zone', // The model name that this ObjectId refers to
+        type: mongoose.Schema.ObjectId,
+        ref: 'Zone',
         required: [true, 'City must belong to a Zone']
     },
     status: {
@@ -22,14 +22,21 @@ const CitySchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    assignedSalesRepresentative: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Employee',
+        default: null
     }
 });
 
-// Add a pre-find hook to automatically populate the 'zone' field
 CitySchema.pre(/^find/, function(next) {
     this.populate({
         path: 'zone',
-        select: 'name' // Only select the 'name' field from the Zone
+        select: 'name'
+    }).populate({
+        path: 'assignedSalesRepresentative',
+        select: 'name mobileNumber'
     });
     next();
 });

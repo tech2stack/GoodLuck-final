@@ -17,9 +17,9 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
         salary: '',
         bankName: '',
         accountNo: '',
-    ifscCode: '',
-    passportPhoto: null,
-    documentPDF: null,
+        ifscCode: '',
+        passportPhoto: null,
+        documentPDF: null,
     });
 
     const [loading, setLoading] = useState(false);
@@ -36,7 +36,7 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
             setCities(citiesResponse.data.data.cities || []);
         } catch (err) {
             console.error('Error fetching posts and cities:', err);
-            showFlashMessage('Could not load post and city information.', 'error');
+            showFlashMessage('Failed to load post and city information.', 'error');
         }
     };
 
@@ -77,19 +77,33 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
         } catch (err) {
             console.error('Error creating employee:', err.response || err);
             const rawMessage = err.response?.data?.message || 'Failed to create employee.';
-            let userMessage = 'Failed to create employee. Please check the information.';
+            let userMessage = 'Failed to create employee. Please check the information provided.';
 
-            // Specific message for E11000 error
+            // Handle duplicate key errors for any field
             if (rawMessage.includes('E11000 duplicate key')) {
-                if (rawMessage.includes('adharNo')) {
-                    userMessage = 'Aadhaar Number already exists. Please enter a correct Aadhaar Number.';
-                } else if (rawMessage.includes('employeeCode')) {
-                    userMessage = 'Employee Code already exists. Please enter a new code.';
+                const match = rawMessage.match(/index: (\S+)_\d+ dup key: { (\S+):/);
+                if (match) {
+                    const fieldName = match[1];
+                    let fieldNameInEnglish = '';
+                    switch (fieldName) {
+                        case 'adharNo':
+                            fieldNameInEnglish = 'Aadhaar Number';
+                            break;
+                        case 'employeeCode':
+                            fieldNameInEnglish = 'Employee Code';
+                            break;
+                        case 'mobileNumber':
+                            fieldNameInEnglish = 'Mobile Number';
+                            break;
+                        default:
+                            fieldNameInEnglish = 'This field';
+                    }
+                    userMessage = `This ${fieldNameInEnglish} already exists. Please enter a correct ${fieldNameInEnglish}.`;
                 } else {
                     userMessage = 'The provided information already exists. Please check.';
                 }
             } else if (rawMessage.includes('Please provide the branch ID')) {
-                userMessage = 'Selecting a branch is mandatory. Please select a branch.';
+                userMessage = 'Selecting a branch is mandatory. Please select one.';
             }
 
             showFlashMessage(userMessage, 'error');

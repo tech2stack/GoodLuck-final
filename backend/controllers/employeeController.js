@@ -9,7 +9,6 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// A function to initialize default posts
 const initializeDefaultPosts = async () => {
     const defaultPosts = [
         { name: 'Sales Representative', isDeletable: false },
@@ -36,18 +35,15 @@ const initializeDefaultPosts = async () => {
 };
 
 exports.createEmployee = catchAsync(async (req, res, next) => {
-    // Passport photo और documentPDF को req.files से अलग करें
     const { passportPhoto, documentPDF } = req.files;
-
-    // बाकी body डेटा को req.body से लें, जिसमें नए बैंक फ़ील्ड भी शामिल हैं
     const {
         name, mobileNumber, address, branchId, cityId, postId, adharNo, panCardNo,
-        employeeCode, salary, bankName, accountNo, ifscCode // नए बैंक फ़ील्ड्स
+        employeeCode, salary, bankName, accountNo, ifscCode
     } = req.body;
 
     const newEmployeeData = {
         name, mobileNumber, address, branchId, cityId, postId, adharNo, panCardNo,
-        employeeCode, salary, bankName, accountNo, ifscCode, // डेटा को नए फ़ील्ड्स में डालें
+        employeeCode, salary, bankName, accountNo, ifscCode,
         passportPhoto: passportPhoto ? passportPhoto[0].path : undefined,
         documentPDF: documentPDF ? documentPDF[0].path : undefined,
     };
@@ -72,11 +68,9 @@ exports.getEmployee = catchAsync(async (req, res, next) => {
 });
 
 exports.updateEmployee = catchAsync(async (req, res, next) => {
-    // req.files में फ़ाइलें हैं या नहीं, यह जाँचें और उन्हें req.body से अलग करें
     const { passportPhoto, documentPDF } = req.files || {};
     const { ...restOfBody } = req.body;
 
-    // यदि फ़ाइलें अपलोड की गई हैं, तो उनके पथ को restOfBody में जोड़ें
     if (passportPhoto) {
         restOfBody.passportPhoto = passportPhoto[0].path;
     }
@@ -84,7 +78,6 @@ exports.updateEmployee = catchAsync(async (req, res, next) => {
         restOfBody.documentPDF = documentPDF[0].path;
     }
 
-    // अब restOfBody के साथ सही ढंग से अपडेट करें, जिसमें नए बैंक फ़ील्ड भी शामिल हैं
     const updatedEmployee = await Employee.findByIdAndUpdate(req.params.id, restOfBody, { new: true, runValidators: true });
 
     if (!updatedEmployee) return next(new AppError('No employee found with that ID to update.', 404));
@@ -117,5 +110,24 @@ exports.getEmployeesByRole = catchAsync(async (req, res, next) => {
     });
 });
 
-// Run this function once, perhaps on server start, to ensure default posts exist
+exports.getSalesRepresentatives = catchAsync(async (req, res, next) => {
+    const post = await Post.findOne({ name: 'Sales Representative' });
+    if (!post) {
+        return next(new AppError('The "Sales Representative" post does not exist.', 404));
+    }
+    const employees = await Employee.find({ postId: post._id }).select('name mobileNumber');
+    
+    if (!employees || employees.length === 0) {
+        return next(new AppError('No employees found for the role: Sales Representative', 404));
+    }
+    
+    res.status(200).json({
+        status: 'success',
+        results: employees.length,
+        data: {
+            employees,
+        },
+    });
+});
+
 initializeDefaultPosts().catch(err => console.error("Failed to initialize default posts:", err));
