@@ -6,7 +6,6 @@ const customerSchema = new mongoose.Schema({
     customerName: {
         type: String,
         required: [true, 'Customer name is required'],
-        unique: true,
         trim: true,
         maxlength: [100, 'Customer name cannot exceed 100 characters']
     },
@@ -20,142 +19,137 @@ const customerSchema = new mongoose.Schema({
     branch: {
         type: mongoose.Schema.ObjectId,
         ref: 'Branch',
-        // 'required' validation removed from here and moved to the controller
-        // where it can be conditionally applied.
     },
     city: {
         type: mongoose.Schema.ObjectId,
         ref: 'City',
         required: [true, 'City is required']
     },
-    zone: {
-        type: String,
-        trim: true,
-        maxlength: [50, 'Zone cannot exceed 50 characters'],
-        default: null,
-    },
+   
     salesBy: {
-        type: String,
-        trim: true,
-        maxlength: [100, 'Sales By cannot exceed 100 characters'],
+        type: mongoose.Schema.ObjectId,
+        ref: 'Employee',
         default: null,
     },
-    dealer: {
-        type: String,
-        trim: true,
-        maxlength: [100, 'Dealer cannot exceed 100 characters'],
-        default: null,
-    },
-    // Updated enum to include all four customer type combinations
-    customerType: {
-        type: String,
-        trim: true,
-        enum: ['Dealer-Retail', 'Dealer-Supply', 'School-Retail', 'School-Supply'],
-        required: [true, 'Customer type is required'],
-        default: 'School-Retail'
-    },
-    contactPerson: {
-        type: String,
-        trim: true,
-        maxlength: [100, 'Contact person name cannot exceed 100 characters'],
-        default: null,
-    },
-    mobileNumber: {
-        type: String,
-        required: [true, 'Mobile number is required'],
-        trim: true,
-        validate: {
-            validator: (val) => validator.isMobilePhone(val, 'en-IN'),
-            message: 'Please provide a valid Indian mobile number.'
-        },
-    },
-    email: {
-        type: String,
-        trim: true,
-        lowercase: true,
-        validate: [validator.isEmail, 'Please provide a valid email'],
-        default: null,
-    },
-    gstNumber: {
-        type: String,
-        trim: true,
-        uppercase: true,
-        validate: {
-            validator: function (val) {
-                return val === null || val === '' || /^([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1})$/.test(val);
-            },
-            message: 'Please provide a valid GSTIN.'
-        },
-        default: null,
-    },
+   
     discount: {
         type: Number,
-        min: [0, 'Discount must be a positive number'],
         default: 0,
+        min: [0, 'Discount cannot be less than 0'],
+        max: [100, 'Discount cannot exceed 100'],
     },
     returnTime: {
         type: String,
         trim: true,
-        maxlength: [50, 'Return time cannot exceed 50 characters'],
+        maxlength: [100, 'Return time cannot exceed 100 characters'],
         default: null,
     },
     bankName: {
         type: String,
         trim: true,
-        default: null,
+        maxlength: [100, 'Bank name cannot exceed 100 characters'],
+        default: null
     },
     accountNumber: {
         type: String,
         trim: true,
-        default: null,
+        maxlength: [50, 'Account number cannot exceed 50 characters'],
+        default: null
     },
     ifscCode: {
         type: String,
         trim: true,
-        default: null,
+        maxlength: [20, 'IFSC code cannot exceed 20 characters'],
+        default: null
     },
     openingBalance: {
         type: Number,
-        default: 0,
+        default: 0
     },
     balanceType: {
         type: String,
         enum: ['Dr.', 'Cr.'],
-        default: 'Dr.',
+        default: 'Dr.'
     },
-    chequeImage: {
+    customerType: {
         type: String,
-        default: null,
+        required: [true, 'Customer type is required'],
+        enum: [
+            'Dealer-Retail',
+            'Dealer-Supply',
+            'School-Retail',
+            'School-Supply',
+            'School-Both'
+            
+        ],
+        trim: true
     },
-    passportImage: {
+    contactPerson: {
         type: String,
-        default: null,
+        trim: true,
+        maxlength: [100, 'Contact person name cannot exceed 100 characters'],
+        default: null
     },
-    // New field for other attachments
-    otherAttachment: {
+    mobileNumber: {
         type: String,
-        default: null,
+        // required: [true, 'Mobile number is required'],
+        unique: true,
+        trim: true,
+        validate: {
+            validator: function(v) {
+                // Allow up to 15 characters to match the frontend,
+                // and a check for null or empty string
+                return (v === null || v === '') || (v.length >= 10 && v.length <= 15);
+            },
+            message: props => `${props.value} is not a valid mobile number! It must be between 10 and 15 digits.`
+        },
+        default: null
+    },
+    email: {
+        type: String,
+        unique: true,
+        trim: true,
+        lowercase: true,
+        validate: {
+            validator: function(v) {
+                return v === null || v === '' || validator.isEmail(v);
+            },
+            message: 'Please provide a valid email'
+        },
+        default: null
+    },
+    gstNumber: {
+        type: String,
+        trim: true,
+        unique: true,
+        maxlength: [15, 'GST number cannot exceed 15 characters'],
+        default: null
     },
     aadharNumber: {
         type: String,
         trim: true,
+        unique: true,
+        maxlength: [16, 'Aadhar number cannot exceed 16 characters'],
         validate: {
-            validator: function(val) {
-                return val === null || val === '' || (val.length === 12);
+            // Updated validation to allow up to 16 digits
+            validator: function(v) {
+                return (v === null || v === '') || /^\d{12,16}$/.test(v);
             },
-            message: 'Aadhar number must be 12 digits if specified'
+            message: props => `${props.value} is not a valid aadhar number! It must be between 12 and 16 characters.`
         },
         default: null
     },
     panNumber: {
         type: String,
         trim: true,
-        uppercase: true,
+        unique: true,
+        maxlength: [10, 'PAN number cannot exceed 10 characters'],
         validate: {
-            validator: function(val) {
-                return val === null || val === '' || (val.length === 10);
+            // Simplified PAN validation
+            validator: function(v) {
+                return (v === null || v === '') || /^[A-Z]{5}\d{4}[A-Z]{1}$/.test(v);
             },
-            message: 'PAN number must be 10 characters if specified'
+            message: props => `${props.value} is not a valid PAN number! It must be 10 characters if specified`
         },
         default: null
     },
@@ -176,6 +170,18 @@ const customerSchema = new mongoose.Schema({
         enum: ['active', 'inactive'],
         default: 'active'
     },
+    chequeImage: {
+        type: String,
+        default: null,
+    },
+    passportImage: {
+        type: String,
+        default: null,
+    },
+    otherAttachment: {
+        type: String,
+        default: null,
+    },
     createdAt: {
         type: Date,
         default: Date.now
@@ -185,26 +191,15 @@ const customerSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-customerSchema.index({ customerName: 1, customerType: 1 }, { unique: true });
+// REMOVED: The unique index on customerName and customerType because it can cause issues on updates.
+// customerSchema.index({ customerName: 1, customerType: 1 }, { unique: true });
+
+// Existing unique indexes with sparse: true for optional fields
 customerSchema.index({ mobileNumber: 1 }, { unique: true, sparse: true });
 customerSchema.index({ email: 1 }, { unique: true, sparse: true });
 customerSchema.index({ gstNumber: 1 }, { unique: true, sparse: true });
 customerSchema.index({ aadharNumber: 1 }, { unique: true, sparse: true });
 customerSchema.index({ panNumber: 1 }, { unique: true, sparse: true });
-
-customerSchema.virtual('branchDetail', {
-    ref: 'Branch',
-    localField: 'branch',
-    foreignField: '_id',
-    justOne: true
-});
-
-customerSchema.virtual('cityDetail', {
-    ref: 'City',
-    localField: 'city',
-    foreignField: '_id',
-    justOne: true
-});
 
 const Customer = mongoose.model('Customer', customerSchema);
 

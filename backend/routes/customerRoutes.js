@@ -32,10 +32,11 @@ const uploadCustomerImages = multer({
     storage: customerStorage,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit per file
     fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
+        // Updated file filter to allow images and common document types
+        if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf' || file.mimetype === 'application/msword' || file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
             cb(null, true);
         } else {
-            cb(new Error('Only image files are allowed!'), false);
+            cb(new Error('Only images and document files (PDF, DOC, DOCX) are allowed!'), false);
         }
     }
 });
@@ -55,9 +56,9 @@ router
     // Corrected function name from getCustomerById to getCustomer
     .get(customerController.getCustomer)
     .patch(uploadCustomerImages.fields([
-        { name: 'chequeImage', maxCount: 1 }, 
+        { name: 'chequeImage', maxCount: 1 },
         { name: 'passportImage', maxCount: 1 },
-        { name: 'otherAttachment', maxCount: 1 } // New attachment field
+        { name: 'otherAttachment', maxCount: 1 }
     ]), customerController.updateCustomer)
     .delete(customerController.deleteCustomer);
 
