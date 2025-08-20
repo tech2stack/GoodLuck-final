@@ -56,7 +56,7 @@ const TransportManagement = ({ showFlashMessage }) => {
             const response = await api.get('/transports');
             if (response.data.status === 'success' && Array.isArray(response.data.data.transports)) {
                 setTransports(response.data.data.transports);
-                
+
                 const totalPagesCalculated = Math.ceil(response.data.data.transports.length / itemsPerPage);
                 if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
                     setCurrentPage(totalPagesCalculated);
@@ -68,14 +68,14 @@ const TransportManagement = ({ showFlashMessage }) => {
                     setTimeout(() => {
                         const lastPageIndex = Math.ceil(response.data.data.transports.length / itemsPerPage);
                         if (currentPage !== lastPageIndex) {
-                           setCurrentPage(lastPageIndex);
-                           setTimeout(() => {
+                            setCurrentPage(lastPageIndex);
+                            setTimeout(() => {
                                 if (tableBodyRef.current.lastElementChild) {
                                     tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
                                 } else {
                                     tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
                                 }
-                           }, 50);
+                            }, 50);
                         } else {
                             if (tableBodyRef.current.lastElementChild) {
                                 tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -232,7 +232,7 @@ const TransportManagement = ({ showFlashMessage }) => {
             setCurrentPage(prev => prev - 1);
         }
     };
-    
+
     const downloadPdf = () => {
         if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF !== 'function') {
             showFlashMessage('PDF generation failed: Core libraries are not loaded. Please check your script links.', 'error');
@@ -288,8 +288,8 @@ const TransportManagement = ({ showFlashMessage }) => {
                     halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [240, 240, 240],
-                    textColor: [51, 51, 51],
+                    fillColor: [60, 141, 188], // Change this line
+                    textColor: [255, 255, 255], // Optional: Change text color to white for contrast
                     fontStyle: 'bold',
                     halign: 'center',
                     valign: 'middle',
@@ -478,7 +478,7 @@ const TransportManagement = ({ showFlashMessage }) => {
                     </form>
                 </div>
 
-                                <div className="table-container">
+                <div className="table-container">
                     {/* <h3 className="table-title">Existing Transports</h3> */}
 
                     <div className="table-controls">

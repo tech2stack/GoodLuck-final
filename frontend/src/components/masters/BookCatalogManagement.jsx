@@ -1,56 +1,50 @@
-// src/components/masters/BookCatalogManagement.jsx
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import api from '../../utils/api'; // API utility for backend calls
-import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaSpinner, FaTimesCircle, FaChevronDown, FaChevronUp } from 'react-icons/fa'; // Icons for UI
+import api from '../../utils/api';
+import {
+  FaEdit,
+  FaTrashAlt,
+  FaPlusCircle,
+  FaSearch,
+  FaFilePdf,
+  FaChevronLeft,
+  FaChevronRight,
+  FaSpinner,
+  FaTimesCircle,
+} from 'react-icons/fa';
 
-// Stylesheets (assuming these are already present and styled for consistency)
 import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
-// Import the new BookCatalogManagement specific styles
 import '../../styles/BookCatalogManagement.css';
 
-// NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
-// If you are using npm, you'd do: npm install jspdf jspdf-autotable
-// Then import them here:
-// import { jsPDF } from 'jspdf';
-// import 'jspdf-autotable';
-
-// Import the logo image directly (assuming it exists at this path)
 import companyLogo from '../../assets/glbs-logo.jpg';
 
-
 const BookCatalogManagement = ({ showFlashMessage }) => {
-    // State for managing list of book catalogs
-    const [bookCatalogs, setBookCatalogs] = useState([]);
-    // States for dropdown data
-    const [publications, setPublications] = useState([]);
-    const [subtitles, setSubtitles] = useState([]); // Subtitles for the selected publication
-    const [languages, setLanguages] = useState([]);
-    const [classes, setClasses] = useState([]); // For dynamic price fields
+  const [bookCatalogs, setBookCatalogs] = useState([]);
+  const [publications, setPublications] = useState([]);
+  const [subtitles, setSubtitles] = useState([]);
+  const [languages, setLanguages] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [isbnVisible, setIsbnVisible] = useState({});
 
-    // State for form inputs (for creating new or editing existing book catalog)
-    const [formData, setFormData] = useState({
-        bookName: '', // Changed from 'name' to 'bookName'
-        publication: '',
-        subtitle: '', // Can be null
-        language: '', // Can be null
-        bookType: 'default', // 'default' or 'common_price'
-        commonPrice: 0,
-        pricesByClass: {}, // Object to store prices per class { 'Class 1': 100, 'Class 2': 120 }
-        commonIsbn: '', // New field for Common ISBN
-        isbnByClass: {}, // New field for ISBNs per class
-        // discountPercentage: 0, // REMOVED
-        // gstPercentage: 0, // REMOVED
-        status: 'active',
-    });
 
-    // State for loading indicators
-    const [loading, setLoading] = useState(false);
-    // State for managing local errors (e.g., form validation)
-    const [localError, setLocalError] = useState(null);
-    // State to track if we are in edit mode and which book catalog is being edited
-    const [editingBookCatalogId, setEditingBookCatalogId] = useState(null);
+  const [formData, setFormData] = useState({
+    bookName: '',
+    publication: '',
+    subtitle: '',
+    language: '',
+    bookType: 'default',
+    commonPrice: 0,
+    pricesByClass: {},
+    isbnByClass: {},
+    status: 'active',
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [localError, setLocalError] = useState(null);
+  const [editingBookCatalogId, setEditingBookCatalogId] = useState(null);
+
+  const [currentClassIndex, setCurrentClassIndex] = useState(0); // 🔹 for swipe navigation
 
     // States for confirmation modal
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -229,52 +223,41 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
 
     // --- Form Handling ---
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
+ const handleChange = (e) => {
+    const { name, value, type } = e.target;
 
-        if (name === 'bookType') {
-            setFormData(prev => ({
-                ...prev,
-                bookType: value,
-                commonPrice: value === 'default' ? 0 : prev.commonPrice, // Clear commonPrice if switching to default
-                pricesByClass: value === 'common_price' ? {} : prev.pricesByClass, // Clear pricesByClass if switching to common
-                commonIsbn: value === 'default' ? '' : prev.commonIsbn, // Clear commonIsbn if switching to default
-                isbnByClass: value === 'common_price' ? {} : prev.isbnByClass, // Clear isbnByClass if switching to common
-            }));
-        } else if (name.startsWith('price_')) { // Handle dynamic class prices
-            const classId = name.split('_')[1];
-            // Fix for NaN warning: Ensure value is a number or empty string
-            const numericValue = parseFloat(value);
-            setFormData(prev => ({
-                ...prev,
-                pricesByClass: {
-                    ...prev.pricesByClass,
-                    [classId]: isNaN(numericValue) ? '' : numericValue // Store as number, or empty string if invalid
-                }
-            }));
-        } else if (name.startsWith('isbn_')) { // Handle dynamic class ISBNs
-            const classId = name.split('_')[1];
-            setFormData(prev => ({
-                ...prev,
-                isbnByClass: {
-                    ...prev.isbnByClass,
-                    [classId]: value
-                }
-            }));
-        } else if (type === 'number') {
-            const numericValue = parseFloat(value);
-            setFormData(prev => ({
-                ...prev,
-                [name]: isNaN(numericValue) ? '' : numericValue // Ensure numbers are stored as numbers, or empty string if invalid
-            }));
-        }
-        else {
-            setFormData(prev => ({
-                ...prev,
-                [name]: type === 'checkbox' ? checked : value
-            }));
-        }
-    };
+    if (name.startsWith('price_')) {
+      const classId = name.split('_')[1];
+      const numericValue = parseFloat(value);
+      setFormData((prev) => ({
+        ...prev,
+        pricesByClass: {
+          ...prev.pricesByClass,
+          [classId]: isNaN(numericValue) ? '' : numericValue,
+        },
+      }));
+    } else if (name.startsWith('isbn_')) {
+      const classId = name.split('_')[1];
+      setFormData((prev) => ({
+        ...prev,
+        isbnByClass: {
+          ...prev.isbnByClass,
+          [classId]: value,
+        },
+      }));
+    } else if (type === 'number') {
+      const numericValue = parseFloat(value);
+      setFormData((prev) => ({
+        ...prev,
+        [name]: isNaN(numericValue) ? '' : numericValue,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -579,7 +562,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             // Generate table data
             const tableColumn = [
                 "S.No.", "Name", "Publisher", "Subtitle", "Language", "Price",
-                "ISBN", "Add Date", "Status"
+                "ISBN", "Status"
             ];
             const tableRows = filteredBookCatalogs.map((bookItem, index) => [
                 // S.No. is always index + 1 for the filtered data for PDF
@@ -589,12 +572,12 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 String(bookItem.subtitle?.name || bookItem.subtitle || '').trim(),
                 String(bookItem.language?.name || bookItem.language || '').trim(), // Ensure language is displayed
                 bookItem.bookType === 'common_price'
-                    ? `Rs${bookItem.commonPrice?.toFixed(2) || '0.00'}`
-                    : Object.entries(bookItem.pricesByClass).map(([classId, price]) => `${classes.find(c => c._id === classId)?.name || 'Unknown'}: Rs${price?.toFixed(2) || '0.00'}`).join(', '),
+                    ? `${bookItem.commonPrice?.toFixed(2) || '0.00'}`
+                    : Object.entries(bookItem.pricesByClass).map(([classId, price]) => `${classes.find(c => c._id === classId)?.name || 'Unknown'}/${price?.toFixed(2) || '0.00'}`).join(', '),
                 bookItem.bookType === 'common_price'
                     ? bookItem.commonIsbn || 'N/A'
                     : Object.entries(bookItem.isbnByClass).map(([classId, isbn]) => `${classes.find(c => c._id === classId)?.name || 'Unknown'}: ${isbn || 'N/A'}`).join(', '),
-                bookItem.createdAt ? formatDateWithTime(bookItem.createdAt) : 'N/A',
+                // bookItem.createdAt ? formatDateWithTime(bookItem.createdAt) : 'N/A',
                 (bookItem.status?.charAt(0).toUpperCase() + bookItem.status?.slice(1)) || 'N/A'
             ]);
 
@@ -613,8 +596,8 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                     halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [240, 240, 240], // Light gray header
-                    textColor: [51, 51, 51], // Dark text for header
+                    fillColor: [60, 141, 188], // Change this line
+        textColor: [255, 255, 255], // Optional: Change text color to white for contrast
                     fontStyle: 'bold',
                     halign: 'center', // Center align header text
                     valign: 'middle', // Vertically align header text
@@ -883,48 +866,100 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                             </div>
                         )}
 
-                        {formData.bookType === 'default' && (
-                            <div className="prices-by-class-section">
-                                <h4 className="sub-section-title">Prices & ISBNs by Class:</h4>
-                                <div className="form-grid-2-cols">
-                                    {classes.length === 0 ? (
-                                        <p className="loading-state">Loading classes for prices...</p>
-                                    ) : (
-                                        classes.map(_class => (
-                                            <div className="class-fields-group" key={_class._id}>
-                                                <div className="form-group">
-                                                    <label htmlFor={`price_${_class._id}`}>Class {_class.name}:</label>
-                                                    <input
-                                                        type="number"
-                                                        id={`price_${_class._id}`}
-                                                        name={`price_${_class._id}`}
-                                                        value={formData.pricesByClass[_class._id] || ''}
-                                                        onChange={handleChange}
-                                                        placeholder="Price : Rs. 100"
-                                                        min="0"
-                                                        disabled={loading}
-                                                        className="form-input"
-                                                    />
-                                                </div>
-                                                <div className="form-group">
-                                                    {/* <label htmlFor={`isbn_${_class._id}`}>{_class.name} ISBN:</label>    */}
-                                                    <input
-                                                        type="text"
-                                                        id={`isbn_${_class._id}`}
-                                                        name={`isbn_${_class._id}`}
-                                                        value={formData.isbnByClass[_class._id] || ''}
-                                                        onChange={handleChange}
-                                                        placeholder="ISBN : 123-456-789-0"
-                                                        disabled={loading}
-                                                        className="form-input"
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        )}
+            {/* 🔹 Prices & ISBNs (swipe navigation) */}
+{formData.bookType === 'default' && (
+  <div className="prices-by-class-section">
+    <h4 className="sub-section-title">Prices & ISBNs by Class:</h4>
+
+    {classes.length === 0 ? (
+      <p className="loading-state">Loading classes...</p>
+    ) : (
+      <div className="class-price-container">
+        {/* Left Button */}
+        <button
+          type="button"
+          className="nav-btn"
+          onClick={() =>
+            setCurrentClassIndex((prev) =>
+              prev > 0 ? prev - 1 : classes.length - 1
+            )
+          }
+        >
+          <FaChevronLeft />
+        </button>
+
+        {/* Single Class Input */}
+        <div className="form-group class-card">
+          <h5>Class : {classes[currentClassIndex]?.name}</h5>
+
+          {/* Price input */}
+          <label htmlFor={`price_${classes[currentClassIndex]._id}`}>
+            Price:
+          </label>
+          <input
+            type="number"
+            id={`price_${classes[currentClassIndex]._id}`}
+            name={`price_${classes[currentClassIndex]._id}`}
+            value={
+              formData.pricesByClass[classes[currentClassIndex]._id] || ''
+            }
+            onChange={handleChange}
+            min="0"
+            step="0.01"
+            className="form-input"
+          />
+
+          {/* Toggle Button for ISBN */}
+          <button
+            type="button"
+            className="toggle-isbn-btn"
+            onClick={() =>
+              setIsbnVisible((prev) => ({
+                ...prev,
+                [classes[currentClassIndex]._id]: !prev[classes[currentClassIndex]._id],
+              }))
+            }
+          >
+            {isbnVisible[classes[currentClassIndex]._id] ? 'Hide ISBN' : 'Add ISBN'}
+          </button>
+
+          {/* ISBN input (only shown when toggled) */}
+          {isbnVisible[classes[currentClassIndex]._id] && (
+            <>
+              <label htmlFor={`isbn_${classes[currentClassIndex]._id}`}>
+                ISBN:
+              </label>
+              <input
+                type="text"
+                id={`isbn_${classes[currentClassIndex]._id}`}
+                name={`isbn_${classes[currentClassIndex]._id}`}
+                value={
+                  formData.isbnByClass[classes[currentClassIndex]._id] || ''
+                }
+                onChange={handleChange}
+                className="form-input"
+              />
+            </>
+          )}
+        </div>
+
+        {/* Right Button */}
+        <button
+          type="button"
+          className="nav-btn"
+          onClick={() =>
+            setCurrentClassIndex((prev) =>
+              prev < classes.length - 1 ? prev + 1 : 0
+            )
+          }
+        >
+          <FaChevronRight />
+        </button>
+      </div>
+    )}
+  </div>
+)}
+
 
                         {/* REMOVED: Discount and GST fields */}
                         {/* <div className="form-row">

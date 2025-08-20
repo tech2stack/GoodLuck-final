@@ -94,14 +94,14 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                     setTimeout(() => {
                         const lastPageIndex = Math.ceil(response.data.data.stationeryItems.length / itemsPerPage);
                         if (currentPage !== lastPageIndex) {
-                           setCurrentPage(lastPageIndex);
-                           setTimeout(() => {
-                               if (tableBodyRef.current.lastElementChild) {
-                                   tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                               } else {
-                                   tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                               }
-                           }, 50);
+                            setCurrentPage(lastPageIndex);
+                            setTimeout(() => {
+                                if (tableBodyRef.current.lastElementChild) {
+                                    tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                                } else {
+                                    tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
+                                }
+                            }, 50);
                         } else {
                             if (tableBodyRef.current.lastElementChild) {
                                 tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -353,17 +353,14 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
 
             filteredItems.forEach((item, index) => {
                 const formattedPrice = typeof item.price === 'number' && !isNaN(item.price)
-                                        ? `Rs ${item.price.toFixed(2)}`
-                                        : 'N/A';
-                const formattedMargin = typeof item.marginPercentage === 'number' && !isNaN(item.marginPercentage)
-                                        ? `${item.marginPercentage.toFixed(2)}%`
-                                        : 'N/A';
+                    ? `Rs ${item.price.toFixed(2)}`
+                    : 'N/A';
                 const itemData = [
                     String(index + 1),
                     String(item.itemName || '').trim(),
                     String(item.category || '').trim(),
                     formattedPrice,
-                    formattedMargin, // NEW: Add marginPercentage to row data
+                   // formattedMargin, // NEW: Add marginPercentage to row data
                     formatDateWithTime(item.createdAt),
                     String(item.status || '').trim().charAt(0).toUpperCase() + String(item.status || '').trim().slice(1)
                 ];
@@ -384,8 +381,8 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                     halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [240, 240, 240],
-                    textColor: [51, 51, 51],
+                    fillColor: [60, 141, 188], // Change this line
+                    textColor: [255, 255, 255], // Optional: Change text color to white for contrast
                     fontStyle: 'bold',
                     halign: 'center',
                     valign: 'middle',
@@ -486,8 +483,8 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                 <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
                         <h3 className="form-title">{editingItemId ? 'Edit Stationery Item' : 'Add New Stationery Item'}</h3>
-                         {/* Category Filter Dropdown, with a cleaner design that aligns with the search input */}
-                         <div className="form-group">
+                        {/* Category Filter Dropdown, with a cleaner design that aligns with the search input */}
+                        <div className="form-group">
                             <select
                                 id="category-filter"
                                 value={selectedCategory}
@@ -589,7 +586,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                     </form>
                 </div>
 
-                                <div className="table-container">
+                <div className="table-container">
                     {/* <h3 className="table-title">Existing Stationery Items</h3> */}
 
                     {/* Filter and controls section, now with improved alignment */}

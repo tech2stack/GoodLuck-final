@@ -313,8 +313,8 @@ const LanguageManagement = ({ showFlashMessage }) => {
                     halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [240, 240, 240],
-                    textColor: [51, 51, 51],
+                    fillColor: [60, 141, 188], // Change this line
+        textColor: [255, 255, 255], // Optional: Change text color to white for contrast
                     fontStyle: 'bold',
                     halign: 'center',
                     valign: 'middle',
