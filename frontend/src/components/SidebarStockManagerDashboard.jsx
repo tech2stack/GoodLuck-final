@@ -194,7 +194,6 @@ const SidebarStockManagerDashboard = ({
       {/* Sidebar */}
       <aside
   ref={sidebarRef}
-<<<<<<< HEAD
   style={{
     position: 'fixed',
     bottom: 0,
@@ -208,15 +207,6 @@ const SidebarStockManagerDashboard = ({
   className={`bg-[#2c3e50] text-gray-200 transition-transform duration-300 ease-in-out
     ${isSidebarCollapsed ? '-translate-x-full' : 'translate-x-0 w-72'}
     overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-transparent`}
-=======
-  className={`fixed left-0 bottom-0 z-10 
-              top-[72px] sm:top-[85px] 
-              bg-[#2c3e50] text-gray-200 
-              transition-transform duration-300 ease-in-out
-              ${isSidebarCollapsed ? '-translate-x-full' : 'translate-x-0 w-72'}
-              overflow-y-auto overflow-x-hidden 
-              scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-transparent`}
->>>>>>> 73eb803 (my local changes)
 >
   <div className="flex items-center justify-between p-4 border-b border-gray-600">
     <div className="flex flex-col overflow-hidden whitespace-nowrap">
@@ -259,7 +249,6 @@ const SidebarStockManagerDashboard = ({
     </ul>
   </nav>
 </aside>
-
     </>
   );
 };
