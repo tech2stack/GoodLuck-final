@@ -461,7 +461,7 @@ const CityManagement = ({ showFlashMessage }) => {
                                     disabled={loading || salesRepresentatives.length === 0}
                                     className="form-select"
                                 >
-                                    <option value="">-- No Sales Rep --</option>
+                                    <option value="">-- Select Sales Rep --</option>
                                     {salesRepresentatives.length > 0 ? (
                                         salesRepresentatives.map(rep => (
                                             <option key={rep._id} value={rep._id}>{rep.name}</option>

@@ -108,6 +108,7 @@ const SuperAdminDashboard = () => {
     const [customers, setCustomers] = useState([]);
     const [transports, setTransports] = useState([]);
     const [users, setUsers] = useState([]);
+    const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
 
     // Flash Message State
     const [flashMessage, setFlashMessage] = useState(null);
@@ -1120,20 +1121,31 @@ const SuperAdminDashboard = () => {
                                             </td>
                                             <td className="table-td">
                                                 {employee.passportPhoto ? (
-                                                    <a href={`http://localhost:5000/${employee.passportPhoto}`} target="_blank" rel="noopener noreferrer" className="action-icon-button view-file-button">
+                                                    <a
+                                                        href={`${API_BASE_URL}/${employee.passportPhoto}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="action-icon-button view-file-button"
+                                                    >
                                                         <FaImage />
                                                     </a>
                                                 ) : (
-                                                    'N/A'
+                                                    "N/A"
                                                 )}
                                             </td>
+
                                             <td className="table-td">
                                                 {employee.documentPDF ? (
-                                                    <a href={`http://localhost:5000/${employee.documentPDF}`} target="_blank" rel="noopener noreferrer" className="action-icon-button view-file-button">
+                                                    <a
+                                                        href={`${API_BASE_URL}/${employee.documentPDF}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="action-icon-button view-file-button"
+                                                    >
                                                         <FaFilePdf />
                                                     </a>
                                                 ) : (
-                                                    'N/A'
+                                                    "N/A"
                                                 )}
                                             </td>
                                             <td className="table-td action-buttons">

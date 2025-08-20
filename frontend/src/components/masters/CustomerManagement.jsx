@@ -1,7 +1,7 @@
 // src/components/masters/CustomerManagement.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../utils/api'; // API utility for backend calls
-import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaSpinner, FaTimesCircle } from 'react-icons/fa'; // Icons for UI
+import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaSpinner, FaTimesCircle, FaEye, FaDownload } from 'react-icons/fa'; // Icons for UI
 
 // Stylesheets (assuming these are already present and styled for consistency)
 import '../../styles/Form.css';
@@ -28,6 +28,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
     // States for dropdown data (Branches and Cities)
     const [branches, setBranches] = useState([]);
     const [cities, setCities] = useState([]);
+    // NEW STATE: State for sales representatives
+    const [salesRepresentatives, setSalesRepresentatives] = useState([]);
 
     // Initial form data state
     const initialFormData = {
@@ -47,9 +49,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
         status: 'active', // Default status
         primaryCustomerType: null, // Change: Default to null, no radio button selected
         secondaryCustomerType: null, // Change: Secondary type is initially null
-        zone: '',
-        salesBy: '',
-        dealer: '',
+        // zone: '',
+        salesBy: '', // This will now store Sales Representative ID
         discount: 0,
         returnTime: '',
         bankName: '',
@@ -58,7 +59,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
         openingBalance: 0,
         balanceType: 'Dr.',
     };
-    
+
     // State for form inputs
     const [formData, setFormData] = useState(initialFormData);
     const [selectedChequeFile, setSelectedChequeFile] = useState(null);
@@ -67,6 +68,10 @@ const CustomerManagement = ({ showFlashMessage }) => {
     const [chequeImagePreviewUrl, setChequeImagePreviewUrl] = useState('');
     const [passportImagePreviewUrl, setPassportImagePreviewUrl] = useState('');
     const [otherAttachmentPreviewUrl, setOtherAttachmentPreviewUrl] = useState(''); // NEW: Other attachment preview state
+    // New state to hold current attachment URLs for viewing
+    const [currentAttachmentUrls, setCurrentAttachmentUrls] = useState({});
+    const [showAttachmentModal, setShowAttachmentModal] = useState(false);
+
 
     // State for loading indicators
     const [loading, setLoading] = useState(false);
@@ -194,28 +199,29 @@ const CustomerManagement = ({ showFlashMessage }) => {
         }
     }, [currentPage, itemsPerPage, selectedBranchFilter, searchTerm]); // Added selectedBranchFilter and searchTerm to dependencies
 
-    // --- Fetch Branches and Cities for Dropdowns ---
+    // --- Fetch Branches, Cities, and Sales Representatives for Dropdowns ---
+    // --- Fetch Branches, Cities, and Sales Representatives for Dropdowns ---
     const fetchDropdownData = useCallback(async () => {
         setLoading(true); // Set loading true for dropdowns
         try {
-            const [branchesRes, citiesRes] = await Promise.all([
+            const [branchesRes, citiesRes, salesRepsRes] = await Promise.all([
                 api.get('/branches'),
-                api.get('/cities')
+                api.get('/cities'),
+                // NEW: Fetch sales representatives from the dedicated API endpoint
+                api.get('/employees/sales-representatives')
+
             ]);
 
+            // Existing logic to handle branches
             let fetchedBranches = [];
-            console.log('DEBUG: branchesRes.data received:', branchesRes.data); // Log full response data for branches
-            // Refined check for branches array based on the 'success' boolean field
+            console.log('DEBUG: branchesRes.data received:', branchesRes.data);
             if (branchesRes.data && branchesRes.data.success) {
-                if (Array.isArray(branchesRes.data.data)) { // Prioritize: if array is directly under 'data'
+                if (Array.isArray(branchesRes.data.data)) {
                     fetchedBranches = branchesRes.data.data;
-                    console.log('DEBUG: Branches found directly under data.data');
-                } else if (branchesRes.data.data && Array.isArray(branchesRes.data.data.branches)) { // Fallback: if array is under 'data.branches'
+                } else if (branchesRes.data.data && Array.isArray(branchesRes.data.data.branches)) {
                     fetchedBranches = branchesRes.data.data.branches;
-                    console.log('DEBUG: Branches found under data.data.branches');
-                } else if (Array.isArray(branchesRes.data)) { // Fallback: if array is directly under the root response.data
+                } else if (Array.isArray(branchesRes.data)) {
                     fetchedBranches = branchesRes.data;
-                    console.log('DEBUG: Branches found directly under response.data');
                 } else {
                     console.warn('DEBUG: Branches data array not found in expected paths within branchesRes.data');
                 }
@@ -225,19 +231,16 @@ const CustomerManagement = ({ showFlashMessage }) => {
                 showFlashMessage(branchesRes.data?.message || 'Failed to load branches for dropdown.', 'error');
             }
 
+            // Existing logic to handle cities
             let fetchedCities = [];
-            console.log('DEBUG: citiesRes.data received:', citiesRes.data); // Log full response data for cities
-            // Check for cities array based on the 'status' string field
+            console.log('DEBUG: citiesRes.data received:', citiesRes.data);
             if (citiesRes.data && citiesRes.data.status === 'success') {
                 if (citiesRes.data.data && Array.isArray(citiesRes.data.data.cities)) {
                     fetchedCities = citiesRes.data.data.cities;
-                    console.log('DEBUG: Cities found under data.data.cities');
-                } else if (citiesRes.data.data && Array.isArray(citiesRes.data.data)) { // Fallback: if array is directly under 'data'
+                } else if (citiesRes.data.data && Array.isArray(citiesRes.data.data)) {
                     fetchedCities = citiesRes.data.data;
-                    console.log('DEBUG: Cities found directly under data.data');
-                } else if (Array.isArray(citiesRes.data)) { // Fallback: if array is directly under the root response.data
+                } else if (Array.isArray(citiesRes.data)) {
                     fetchedCities = citiesRes.data;
-                    console.log('DEBUG: Cities found directly under response.data');
                 } else {
                     console.warn('DEBUG: Cities data array not found in expected nested paths within citiesRes.data');
                 }
@@ -247,18 +250,30 @@ const CustomerManagement = ({ showFlashMessage }) => {
                 showFlashMessage(citiesRes.data?.message || 'Failed to load cities for dropdown.', 'error');
             }
 
+            // NEW LOGIC: Handle sales representatives response
+            let fetchedSalesReps = [];
+            console.log('DEBUG: salesRepsRes.data received:', salesRepsRes.data);
+            if (salesRepsRes.data && salesRepsRes.data.status === 'success' && Array.isArray(salesRepsRes.data.data.employees)) {
+                fetchedSalesReps = salesRepsRes.data.data.employees;
+                setSalesRepresentatives(fetchedSalesReps);
+            } else {
+                console.error('Failed to fetch sales representatives: Unexpected response structure or status not success.', salesRepsRes.data);
+                showFlashMessage(salesRepsRes.data?.message || 'Failed to load sales representatives for dropdown.', 'error');
+            }
+
             // Set initial dropdown values if not in edit mode and data is available
             if (!editingCustomerId) {
                 setFormData(prev => ({
                     ...prev,
-                    city: fetchedCities.length > 0 ? fetchedCities[0]._id : ''
+                    city: fetchedCities.length > 0 ? fetchedCities[0]._id : '',
+                    salesBy: fetchedSalesReps.length > 0 ? fetchedSalesReps[0]._id : '' // NEW: Set initial salesBy value
                 }));
             }
 
         } catch (err) {
             console.error('Error fetching dropdown data:', err);
             // More specific error message for network/API issues
-            const errorMessage = err.response?.data?.message || 'Network error fetching dropdown data (Branches/Cities). Please ensure backend is running and accessible.';
+            const errorMessage = err.response?.data?.message || 'Network error fetching dropdown data (Branches/Cities/Sales Reps). Please ensure backend is running and accessible.';
             showFlashMessage(errorMessage, 'error');
         } finally {
             setLoading(false);
@@ -272,28 +287,34 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
     useEffect(() => {
         fetchDropdownData();
-    }, [fetchDropdownData]); // This fetches branches and cities once or when editingCustomerId changes
+    }, [fetchDropdownData]); // This fetches branches, cities, and sales reps once or when editingCustomerId changes
 
 
     // --- Form Handling ---
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        
+
         setFormData(prev => {
             const newState = { ...prev };
-    
+
             if (name === 'primaryCustomerType') {
                 newState.primaryCustomerType = value;
                 // Change: Secondary type reset when primary changes
                 if (value === 'School') {
                     // Set default secondary type for 'School'
-                    newState.secondaryCustomerType = 'Retail'; 
+                    newState.secondaryCustomerType = 'Both';
                     // Set default branch and school code if available
                     newState.branch = branches.length > 0 ? branches[0]._id : '';
                     newState.schoolCode = ''; // Default to empty
-                } else {
+                } else if (value === 'Dealer') {
+                    // Set default secondary type for 'Dealer' to 'Retail'
+                    newState.secondaryCustomerType = 'Retail';
                     // Reset fields not relevant for 'Dealer'
-                    newState.secondaryCustomerType = 'Retail'; // Change: Default to 'Retail' when 'Dealer' is selected
+                    newState.branch = '';
+                    newState.schoolCode = '';
+                } else {
+                    // This handles the case where no primary type is selected
+                    newState.secondaryCustomerType = null;
                     newState.branch = '';
                     newState.schoolCode = '';
                 }
@@ -305,7 +326,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
             return newState;
         });
     };
-    
+
     // --- Handle Image File Change ---
     const handleFileChange = (e, fieldName) => {
         const file = e.target.files[0];
@@ -372,7 +393,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                 } else if (fieldName === 'passportImage') {
                     setSelectedPassportFile(null);
                     setPassportImagePreviewUrl('');
-                } else if (fieldName === 'otherAttachment') { // NEW: Handle other attachment file
+                } else if (fieldName === 'otherAttachment') {
                     setSelectedOtherFile(null);
                     setOtherAttachmentPreviewUrl('');
                 }
@@ -405,7 +426,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
             : formData.primaryCustomerType === 'Dealer'
                 ? `Dealer-${formData.secondaryCustomerType || 'Retail'}`
                 : '';
-        
+
         // Basic validation
         // email is no longer required
         if (!formData.customerName || !formData.city || !formData.mobileNumber) {
@@ -415,15 +436,19 @@ const CustomerManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        // Conditional validation for School-Retail
+        // Conditional validation for School-Retail, School-Supply, and School-Both
         // NOTE: The backend already has this validation, but good to have it on the frontend too
-        if (finalCustomerType === 'School-Retail' || finalCustomerType === 'School-Supply') {
-            if (!formData.branch || !formData.schoolCode) {
-                setLocalError('For School customers, Branch and School Code are required fields.');
-                showFlashMessage('For School customers, Branch and School Code are required fields.', 'error');
-                setLoading(false);
-                return;
-            }
+        if (formData.primaryCustomerType === 'School' && !formData.branch) {
+            setLocalError('For School customers, Branch is a required field.');
+            showFlashMessage('For School customers, Branch is a required field.', 'error');
+            setLoading(false);
+            return;
+        }
+        if (formData.primaryCustomerType === 'School' && !formData.schoolCode) {
+            setLocalError('For School customers, School Code is a required field.');
+            showFlashMessage('For School customers, School Code is a required field.', 'error');
+            setLoading(false);
+            return;
         }
 
         const dataToSend = new FormData();
@@ -431,11 +456,15 @@ const CustomerManagement = ({ showFlashMessage }) => {
         for (const key in formData) {
             const value = formData[key];
             if (value !== null && value !== undefined) {
+                // For the `salesBy` field, we will send the selected ID
                 dataToSend.append(key, String(value));
             }
         }
         // IMPORTANT: Append the combined customerType field for the backend
-        dataToSend.append('customerType', finalCustomerType);
+        if (finalCustomerType) {
+            dataToSend.append('customerType', finalCustomerType);
+        }
+
 
         // Append image files
         if (selectedChequeFile) {
@@ -494,16 +523,17 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
     // --- Edit and Delete Operations ---
     const handleEdit = (customerItem) => {
-        let primaryType = customerItem.customerType;
-        let secondaryType = '';
+        let primaryType = null;
+        let secondaryType = null;
 
-        if (customerItem.customerType.includes('-')) {
+        if (customerItem.customerType) {
             const parts = customerItem.customerType.split('-');
             primaryType = parts[0];
             secondaryType = parts[1];
         }
 
         setFormData({
+            ...initialFormData, // Use spread operator to ensure all fields are reset
             customerName: customerItem.customerName || '',
             schoolCode: customerItem.schoolCode || '',
             branch: customerItem.branch?._id || '', // Set branch ID
@@ -519,9 +549,9 @@ const CustomerManagement = ({ showFlashMessage }) => {
             status: customerItem.status || 'active',
             primaryCustomerType: primaryType,
             secondaryCustomerType: secondaryType,
-            zone: customerItem.zone || '',
-            salesBy: customerItem.salesBy || '',
-            dealer: customerItem.dealer || '',
+            // zone: customerItem.zone || '',
+            // NEW: Set the salesBy field to the ID of the sales representative
+            salesBy: customerItem.salesBy?._id || '',
             discount: customerItem.discount || 0,
             returnTime: customerItem.returnTime || '',
             bankName: customerItem.bankName || '',
@@ -539,6 +569,21 @@ const CustomerManagement = ({ showFlashMessage }) => {
         setEditingCustomerId(customerItem._id);
         setLocalError(null);
         window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to form
+    };
+
+    // --- Attachment Modal Functions ---
+    const openAttachmentModal = (customerItem) => {
+        setCurrentAttachmentUrls({
+            cheque: customerItem.chequeImage ? `${BACKEND_BASE_URL}/uploads/customer-logos/${customerItem.chequeImage}` : null,
+            passport: customerItem.passportImage ? `${BACKEND_BASE_URL}/uploads/customer-logos/${customerItem.passportImage}` : null,
+            other: customerItem.otherAttachment ? `${BACKEND_BASE_URL}/uploads/customer-logos/${customerItem.otherAttachment}` : null
+        });
+        setShowAttachmentModal(true);
+    };
+
+    const closeAttachmentModal = () => {
+        setShowAttachmentModal(false);
+        setCurrentAttachmentUrls({});
     };
 
     const openConfirmModal = (customerItem) => {
@@ -624,7 +669,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
             showFlashMessage('No customer data to download.', 'warning');
             return;
         }
-        
+
         // Changed: Set PDF to A4 portrait
         const doc = new window.jspdf.jsPDF('portrait', 'mm', 'a4');
         if (typeof doc.autoTable !== 'function') {
@@ -670,7 +715,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     getStringValue(customer.gstNumber),
                     getStringValue(customer.discount),
                     getStringValue(customer.openingBalance),
-                    getStringValue(customer.salesBy),
+                    // NEW: Use the populated salesBy name for the PDF
+                    customer.salesBy ? getStringValue(customer.salesBy.name) : 'N/A',
                     getStringValue(customer.returnTime)
                 ];
                 tableRows.push(customerData);
@@ -691,8 +737,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [60, 141, 188], // Change this line
-                    textColor: [255, 255, 255], // Optional: Change text color to white for contrast
+                    fillColor: [240, 240, 240], // Light gray header
+                    textColor: [51, 51, 51], // Dark text for header
                     fontStyle: 'bold',
                     halign: 'center', // Center align header text
                     valign: 'middle', // Vertically align header text
@@ -788,13 +834,80 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     <FaTimesCircle className="icon error-icon mr-2" /> {localError}
                 </p>
             )}
-
-
             <div className="main-content-layout">
-
-                <div className="form-container-card">
-                    <form onSubmit={handleSubmit} className="app-form">
-                        <h3 className="form-title">{editingCustomerId ? 'Edit Customer' : 'Add New Customer'}</h3>
+                {/* Customer Form - SECOND CHILD */}
+                <div className="form-container">
+                    <h3>{editingCustomerId ? 'Update Customer' : 'Add New Customer'}</h3>
+                    <form onSubmit={handleSubmit} className="customer-form">
+                        <div className="form-row">
+                            <div className="form-group customer-type-group">
+                                <label>Customer Type (Primary):</label>
+                                <div className="radio-group">
+                                    <label>
+                                        <input
+                                            type="radio"
+                                            name="primaryCustomerType"
+                                            value="Dealer"
+                                            checked={formData.primaryCustomerType === 'Dealer'}
+                                            onChange={handleChange}
+                                            disabled={loading}
+                                        /> Dealer
+                                    </label>
+                                    <label>
+                                        <input
+                                            type="radio"
+                                            name="primaryCustomerType"
+                                            value="School"
+                                            checked={formData.primaryCustomerType === 'School'}
+                                            onChange={handleChange}
+                                            disabled={loading}
+                                        /> School
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        {/* Conditional rendering for secondary customer types */}
+                        {formData.primaryCustomerType && (
+                            <div className="form-row">
+                                <div className="form-group customer-type-group">
+                                    <label>Customer Type (Secondary):</label>
+                                    <div className="radio-group">
+                                        <label>
+                                            <input
+                                                type="radio"
+                                                name="secondaryCustomerType"
+                                                value="Retail"
+                                                checked={formData.secondaryCustomerType === 'Retail'}
+                                                onChange={handleChange}
+                                                disabled={loading}
+                                            /> Retail
+                                        </label>
+                                        <label>
+                                            <input
+                                                type="radio"
+                                                name="secondaryCustomerType"
+                                                value="Supply"
+                                                checked={formData.secondaryCustomerType === 'Supply'}
+                                                onChange={handleChange}
+                                                disabled={loading}
+                                            /> Supply
+                                        </label>
+                                        {formData.primaryCustomerType === 'School' && (
+                                            <label>
+                                                <input
+                                                    type="radio"
+                                                    name="secondaryCustomerType"
+                                                    value="Both"
+                                                    checked={formData.secondaryCustomerType === 'Both'}
+                                                    onChange={handleChange}
+                                                    disabled={loading}
+                                                /> Both
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="form-row">
                             <div className="form-group">
@@ -839,7 +952,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                         </div>
 
                         {/* Conditional rendering for School/Retail fields */}
-                        {(formData.primaryCustomerType === 'School' && formData.secondaryCustomerType) && (
+                        {formData.primaryCustomerType === 'School' && (
                             <div className="form-row">
                                 <div className="form-group">
                                     <label htmlFor="schoolCode">School Code:</label>
@@ -881,7 +994,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 </div>
                             </div>
                         )}
-                        
+
                         <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="mobileNumber">Mobile Number:</label>
@@ -973,34 +1086,55 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="zone">Zone:</label>
-                                <input
-                                    type="text"
-                                    id="zone"
-                                    name="zone"
-                                    value={formData.zone}
+                                <label htmlFor="shopAddress">Shop Address:</label>
+                                <textarea
+                                    id="shopAddress"
+                                    name="shopAddress"
+                                    value={formData.shopAddress}
                                     onChange={handleChange}
-                                    placeholder="e.g., North"
+                                    placeholder="Full Shop Address"
                                     disabled={loading}
-                                    className="form-input"
-                                />
+                                    className="form-textarea"
+                                ></textarea>
                             </div>
                             <div className="form-group">
-                                <label htmlFor="salesBy">Sales By:</label>
-                                <input
-                                    type="text"
+                                <label htmlFor="homeAddress">Home Address:</label>
+                                <textarea
+                                    id="homeAddress"
+                                    name="homeAddress"
+                                    value={formData.homeAddress}
+                                    onChange={handleChange}
+                                    placeholder="Full Home Address"
+                                    disabled={loading}
+                                    className="form-textarea"
+                                ></textarea>
+                            </div>
+                        </div>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="salesBy">Sales Representative:</label>
+                                <select
                                     id="salesBy"
                                     name="salesBy"
                                     value={formData.salesBy}
                                     onChange={handleChange}
-                                    placeholder="e.g., Piyush Goyal"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
+                                    disabled={loading || salesRepresentatives.length === 0}
+                                    className="form-select"
+                                >
+                                    {salesRepresentatives.length === 0 ? (
+                                        <option value="">Loading Sales Reps...</option>
+                                    ) : (
+                                        <>
+                                            <option value="">-- SELECT SALES REP --</option>
+                                            {salesRepresentatives.map(rep => (
+                                                <option key={rep._id} value={rep._id}>
+                                                    {rep.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    )}
+                                </select>
                             </div>
-                        </div>
-
-                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="discount">Discount:</label>
                                 <input
@@ -1014,6 +1148,9 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
+                        </div>
+
+                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="returnTime">Return Time:</label>
                                 <input
@@ -1027,9 +1164,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-                        </div>
-
-                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="bankName">Bank Name:</label>
                                 <input
@@ -1043,6 +1177,9 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
+                        </div>
+
+                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="accountNumber">Account Number:</label>
                                 <input
@@ -1056,9 +1193,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-                        </div>
-
-                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="ifscCode">IFSC Code:</label>
                                 <input
@@ -1072,6 +1206,9 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
+                        </div>
+
+                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="openingBalance">Opening Balance:</label>
                                 <input
@@ -1085,9 +1222,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-                        </div>
-                        <div className="form-row">
-                             <div className="form-group full-width-group">
+                            <div className="form-group">
                                 <label htmlFor="balanceType">Balance Type:</label>
                                 <select
                                     id="balanceType"
@@ -1102,31 +1237,38 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 </select>
                             </div>
                         </div>
-                        <div className="form-group full-width-group">
-                            <label htmlFor="shopAddress">Shop Address:</label>
-                            <textarea
-                                id="shopAddress"
-                                name="shopAddress"
-                                value={formData.shopAddress}
-                                onChange={handleChange}
-                                placeholder="Full Shop Address"
-                                disabled={loading}
-                                className="form-textarea"
-                            ></textarea>
-                        </div>
-                        <div className="form-group full-width-group">
-                            <label htmlFor="homeAddress">Home Address:</label>
-                            <textarea
-                                id="homeAddress"
-                                name="homeAddress"
-                                value={formData.homeAddress}
-                                onChange={handleChange}
-                                placeholder="Full Home Address"
-                                disabled={loading}
-                                className="form-textarea"
-                            ></textarea>
-                        </div>
                         <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="status">Status:</label>
+                                <select
+                                    id="status"
+                                    name="status"
+                                    value={formData.status}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    className="form-select"
+                                >
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                            {/* <div className="form-group">
+                                <label htmlFor="zone">Zone:</label>
+                                <input
+                                    type="text"
+                                    id="zone"
+                                    name="zone"
+                                    value={formData.zone}
+                                    onChange={handleChange}
+                                    placeholder="e.g., North"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div> */}
+                        </div>
+
+                        <div className="form-section-heading">Document Attachments</div>
+                        <div className="form-row file-upload-section">
                             <div className="form-group">
                                 <label htmlFor="chequeImage">Cheque Image:</label>
                                 <input
@@ -1163,42 +1305,31 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     </div>
                                 )}
                             </div>
-                        </div>
-
-
-                        <h3 className="form-title">{editingCustomerId ? 'Edit Bank Details' : 'Add bank Details'}</h3>
-
-                        {/* Bank Name , Account No , IFSC Code  */}
-
-                        <h3 className="form-title">{editingCustomerId ? 'Edit Attachments' : 'Add Attachments'}</h3>
-
-                        {/* Bank Cheque Image , Passport Size photo , other document.. */}
-
-                        <div className="form-group">
-                            <label htmlFor="status">Status:</label>
-                            <select
-                                id="status"
-                                name="status"
-                                value={formData.status}
-                                onChange={handleChange}
-                                disabled={loading}
-                                className="form-select"
-                            >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
+                            <div className="form-group">
+                                <label htmlFor="otherAttachment">Other Document:</label>
+                                <input
+                                    type="file"
+                                    id="otherAttachment"
+                                    name="otherAttachment"
+                                    accept="image/*, .pdf, .doc, .docx"
+                                    onChange={(e) => handleFileChange(e, 'otherAttachment')}
+                                    disabled={loading}
+                                    className="form-input-file"
+                                />
+                                {otherAttachmentPreviewUrl && (
+                                    <div className="image-preview">
+                                        <img src={otherAttachmentPreviewUrl} alt="Other Document Preview" />
+                                        <button type="button" onClick={() => setOtherAttachmentPreviewUrl('')} className="remove-image-btn">Remove</button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="form-actions">
                             <button type="submit" className="btn-primary" disabled={loading}>
                                 {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : editingCustomerId ? 'Update' : 'Add'}
                             </button>
                             {editingCustomerId && (
-                                <button
-                                    type="button"
-                                    className="btn-secondary ml-2"
-                                    onClick={handleCancelEdit}
-                                    disabled={loading}
-                                >
+                                <button type="button" className="btn-secondary ml-2" onClick={handleCancelEdit} disabled={loading}>
                                     Cancel Edit
                                 </button>
                             )}
@@ -1250,37 +1381,51 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     </div>
                     {loading && customers.length === 0 ? (
                         <p className="loading-state text-center">
-                            <FaSpinner className="icon animate-spin mr-2" /> Loading customers...
+                            <FaSpinner className="icon animate-spin" /> Fetching customer data...
                         </p>
                     ) : customers.length === 0 ? (
                         <p className="no-records-found">No customers found.</p>
                     ) : (
-                        <div className="table-scroll-wrapper">
+                        <div className="table-scroll-container">
                             <table className="app-table">
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>
-                                        <th>Name</th>
+                                        <th>Name (Type)</th>
                                         <th>Contact Person</th>
                                         <th>Mobile No.</th>
                                         <th>Address</th>
                                         <th>City</th>
+                                        <th>Branch</th>
+                                        <th>School Code</th>
+                                        <th>Sales Rep</th>
+                                        <th>Discount</th>
                                         <th>Status</th>
-                                        <th>Action</th>
-
+                                        <th>Attachments</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody ref={tableBodyRef}>
                                     {currentItems.map((customer, index) => (
                                         <tr key={customer._id}>
                                             <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                            <td>{customer.customerName} ({customer.customerType})</td>
+                                            <td>{customer.customerName} ({customer.customerType || 'N/A'})</td>
                                             <td>{customer.contactPerson || 'N/A'}</td>
                                             <td>{customer.mobileNumber || 'N/A'}</td>
                                             <td>{customer.shopAddress || customer.homeAddress || 'N/A'}</td>
                                             <td>{customer.city ? customer.city.name : 'N/A'}</td>
+                                            <td>{customer.branch ? customer.branch.name : 'N/A'}</td>
+                                            <td>{customer.schoolCode || 'N/A'}</td>
+                                            <td>{customer.salesBy ? customer.salesBy.name : 'N/A'}</td>
+                                            <td>{customer.discount || 0}%</td>
                                             <td>{customer.status}</td>
-                                            <td>{formatDateWithTime(customer.createdAt)}</td>
+                                            <td className="actions-column">
+                                                {(customer.chequeImage || customer.passportImage || customer.otherAttachment) && (
+                                                    <button onClick={() => openAttachmentModal(customer)} className="btn-action view">
+                                                        <FaEye />
+                                                    </button>
+                                                )}
+                                            </td>
                                             <td className="actions-column">
                                                 <button onClick={() => handleEdit(customer)} className="btn-action edit">
                                                     <FaEdit />
@@ -1312,8 +1457,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     )}
                 </div>
 
-
-
             </div> {/* End of main-content-layout */}
 
             {/* Confirmation Modal */}
@@ -1327,6 +1470,56 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : 'Delete'}
                             </button>
                             <button onClick={closeConfirmModal} className="btn-secondary" disabled={loading}>Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Attachment Modal */}
+            {showAttachmentModal && (
+                <div className="modal-backdrop">
+                    <div className="modal-content">
+                        <h3>Customer Attachments</h3>
+                        <div className="attachment-list">
+                            {currentAttachmentUrls.cheque && (
+                                <div className="attachment-item">
+                                    <h4>Cheque Image</h4>
+                                    <a href={currentAttachmentUrls.cheque} target="_blank" rel="noopener noreferrer">
+                                        <img src={currentAttachmentUrls.cheque} alt="Cheque" />
+                                    </a>
+                                    <a href={currentAttachmentUrls.cheque} download className="btn-download">
+                                        <FaDownload /> Download
+                                    </a>
+                                </div>
+                            )}
+                            {currentAttachmentUrls.passport && (
+                                <div className="attachment-item">
+                                    <h4>Passport Image</h4>
+                                    <a href={currentAttachmentUrls.passport} target="_blank" rel="noopener noreferrer">
+                                        <img src={currentAttachmentUrls.passport} alt="Passport" />
+                                    </a>
+                                    <a href={currentAttachmentUrls.passport} download className="btn-download">
+                                        <FaDownload /> Download
+                                    </a>
+                                </div>
+                            )}
+                            {currentAttachmentUrls.other && (
+                                <div className="attachment-item">
+                                    <h4>Other Document</h4>
+                                    <a href={currentAttachmentUrls.other} target="_blank" rel="noopener noreferrer">
+                                        <img src={currentAttachmentUrls.other} alt="Other Document" />
+                                    </a>
+                                    <a href={currentAttachmentUrls.other} download className="btn-download">
+                                        <FaDownload /> Download
+                                    </a>
+                                </div>
+                            )}
+                            {(!currentAttachmentUrls.cheque && !currentAttachmentUrls.passport && !currentAttachmentUrls.other) && (
+                                <p>No attachments found for this customer.</p>
+                            )}
+                        </div>
+                        <div className="modal-actions mt-4">
+                            <button onClick={closeAttachmentModal} className="btn-secondary">Close</button>
                         </div>
                     </div>
                 </div>
