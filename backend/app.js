@@ -25,55 +25,51 @@ const app = express();
 let allowedOrigins = [];
 
 if (process.env.NODE_ENV === 'production') {
-  if (process.env.FRONTEND_PROD_URL) {
-    allowedOrigins.push(process.env.FRONTEND_PROD_URL);
-  }
+    if (process.env.FRONTEND_PROD_URL) {
+        allowedOrigins.push(process.env.FRONTEND_PROD_URL);
+    }
 } else {
-  if (process.env.FRONTEND_DEV_URL) {
-    allowedOrigins.push(process.env.FRONTEND_DEV_URL);
-  }
+    if (process.env.FRONTEND_DEV_URL) {
+        allowedOrigins.push(process.env.FRONTEND_DEV_URL);
+    }
 
-  // Common development and preview URLs
-  allowedOrigins.push('http://localhost:3000'); // React
-  allowedOrigins.push('http://localhost:5173'); // Vite
-  allowedOrigins.push('https://goodluckstore.tech2stack.com'); // ✅ Production
+    // Common development and preview URLs
+    allowedOrigins.push('http://localhost:3000'); // React
+    allowedOrigins.push('http://localhost:5173'); // Vite
+    allowedOrigins.push('https://goodluckstore.tech2stack.com'); // ✅ No trailing slash
 }
 
-console.log('✅ Allowed Origins:', allowedOrigins);
+console.log("✅ Allowed Origins:", allowedOrigins);
 
-app.use(
-  cors({
+app.use(cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      console.warn(
-        `CORS Error: Origin ${origin} not allowed. Allowed: ${allowedOrigins.join(', ')}`
-      );
-      callback(new Error(`Not allowed by CORS: ${origin}`));
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        console.warn(`CORS Error: Origin ${origin} not allowed. Allowed: ${allowedOrigins.join(', ')}`);
+        callback(new Error(`Not allowed by CORS: ${origin}`));
     },
-    credentials: true,
-  })
-);
+    credentials: true
+}));
 
 // Log incoming request origins
 app.use((req, res, next) => {
-  console.log('🔍 Request Origin:', req.headers.origin || 'No Origin Header');
-  next();
+    console.log('🔍 Request Origin:', req.headers.origin || 'No Origin Header');
+    next();
 });
 
 // --- Security Middleware ---
 app.use(helmet());
 
 if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
+    app.use(morgan('dev'));
 }
 
 const limiter = rateLimit({
-  max: 1000,
-  windowMs: 60 * 60 * 1000,
-  message: 'Too many requests from this IP, please try again in an hour!',
+    max: 1000,
+    windowMs: 60 * 60 * 1000,
+    message: 'Too many requests from this IP, please try again in an hour!'
 });
 app.use('/api', limiter);
 
@@ -85,35 +81,29 @@ app.use(mongoSanitize());
 app.use(xss());
 app.use(hpp());
 
-// ✅ Serve static files (uploads for images, PDFs, etc.)
-app.use(
-  '/uploads',
-  express.static(path.join(__dirname, 'uploads'), {
+// Serve static files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
     setHeaders: (res) => {
-      res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    },
-  })
-);
+        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+}));
 
 // --- API Routes ---
 app.use('/api/v1', mainRouter);
 
-// --- Root Routes ---
 app.get('/', (req, res) => {
-  res
-    .status(200)
-    .json({ status: 'success', message: '✅ GoodLuck API is running.' });
+    res.status(200).json({ status: 'success', message: '✅ GoodLuck API is running.' });
 });
 
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 app.get('/cors-check', (req, res) => {
-  res.status(200).json({ msg: 'CORS check passed for this endpoint.' });
+    res.status(200).json({ msg: 'CORS check passed for this endpoint.' });
 });
 
 // --- Error Handling ---
 app.all('*', (req, res, next) => {
-  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
+    next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 
 app.use(globalErrorHandler);
