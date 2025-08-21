@@ -840,6 +840,55 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     <h3 className="form-title">{editingCustomerId ? 'Update Customer' : 'Add New Customer'}</h3>
                     <form onSubmit={handleSubmit} className="customer-form">
                         <div className="form-row two-cols">
+                            <div className="form-group">
+                                <label htmlFor="city">City:</label>
+                                <select
+                                    id="city"
+                                    name="city"
+                                    value={formData.city}
+                                    onChange={handleChange}
+                                    required
+                                    disabled={loading || cities.length === 0}
+                                    className="form-select"
+                                >
+                                    {cities.length === 0 ? (
+                                        <option value="">Loading Cities...</option>
+                                    ) : (
+                                        <>
+                                            <option value="">-- SELECT CITY --</option>
+                                            {cities.map(city => (
+                                                <option key={city._id} value={city._id}>
+                                                    {city.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    )}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="salesBy">Sales Representative:</label>
+                                <select
+                                    id="salesBy"
+                                    name="salesBy"
+                                    value={formData.salesBy}
+                                    onChange={handleChange}
+                                    disabled={loading || salesRepresentatives.length === 0}
+                                    className="form-select"
+                                >
+                                    {salesRepresentatives.length === 0 ? (
+                                        <option value="">Loading Sales Reps...</option>
+                                    ) : (
+                                        <>
+                                            <option value="">-- SELECT SALES REP --</option>
+                                            {salesRepresentatives.map(rep => (
+                                                <option key={rep._id} value={rep._id}>
+                                                    {rep.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    )}
+                                </select>
+                            </div>
                             <div className="form-group customer-type-group">
                                 <label>Customer Type (Primary):</label>
                                 <select
@@ -898,32 +947,61 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="city">City:</label>
-                                <select
-                                    id="city"
-                                    name="city"
-                                    value={formData.city}
+                                <label htmlFor="contactPerson">Contact Person:</label>
+                                <input
+                                    type="text"
+                                    id="contactPerson"
+                                    name="contactPerson"
+                                    value={formData.contactPerson}
                                     onChange={handleChange}
-                                    required
-                                    disabled={loading || cities.length === 0}
-                                    className="form-select"
-                                >
-                                    {cities.length === 0 ? (
-                                        <option value="">Loading Cities...</option>
-                                    ) : (
-                                        <>
-                                            <option value="">-- SELECT CITY --</option>
-                                            {cities.map(city => (
-                                                <option key={city._id} value={city._id}>
-                                                    {city.name}
-                                                </option>
-                                            ))}
-                                        </>
-                                    )}
-                                </select>
+                                    placeholder="e.g., Jane Doe"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
                             </div>
-                        </div>
 
+                        </div>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="shopAddress">Shop Address:</label>
+                                <textarea
+                                    id="shopAddress"
+                                    name="shopAddress"
+                                    value={formData.shopAddress}
+                                    onChange={handleChange}
+                                    placeholder="Full Shop Address"
+                                    disabled={loading}
+                                    className="form-textarea"
+                                ></textarea>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="homeAddress">Home Address:</label>
+                                <textarea
+                                    id="homeAddress"
+                                    name="homeAddress"
+                                    value={formData.homeAddress}
+                                    onChange={handleChange}
+                                    placeholder="Full Home Address"
+                                    disabled={loading}
+                                    className="form-textarea"
+                                ></textarea>
+                            </div>
+           
+                        </div>
+<div className="form-group">
+                                    <label htmlFor="mobileNumber">Mobile Number:</label>
+                                    <input
+                                        type="text"
+                                        id="mobileNumber"
+                                        name="mobileNumber"
+                                        value={formData.mobileNumber}
+                                        onChange={handleChange}
+                                        placeholder="e.g., 9876543210"
+                                        required
+                                        disabled={loading}
+                                        className="form-input"
+                                    />
+                                </div>
                         {/* Conditional rendering for School/Retail fields */}
                         {formData.primaryCustomerType === 'School' && (
                             <div className="form-row">
@@ -968,35 +1046,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             </div>
                         )}
 
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="mobileNumber">Mobile Number:</label>
-                                <input
-                                    type="text"
-                                    id="mobileNumber"
-                                    name="mobileNumber"
-                                    value={formData.mobileNumber}
-                                    onChange={handleChange}
-                                    placeholder="e.g., 9876543210"
-                                    required
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="contactPerson">Contact Person:</label>
-                                <input
-                                    type="text"
-                                    id="contactPerson"
-                                    name="contactPerson"
-                                    value={formData.contactPerson}
-                                    onChange={handleChange}
-                                    placeholder="e.g., Jane Doe"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                        </div>
+
 
                         <div className="form-row">
                             <div className="form-group">
@@ -1057,57 +1107,9 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             </div>
                         </div>
 
+
                         <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="shopAddress">Shop Address:</label>
-                                <textarea
-                                    id="shopAddress"
-                                    name="shopAddress"
-                                    value={formData.shopAddress}
-                                    onChange={handleChange}
-                                    placeholder="Full Shop Address"
-                                    disabled={loading}
-                                    className="form-textarea"
-                                ></textarea>
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="homeAddress">Home Address:</label>
-                                <textarea
-                                    id="homeAddress"
-                                    name="homeAddress"
-                                    value={formData.homeAddress}
-                                    onChange={handleChange}
-                                    placeholder="Full Home Address"
-                                    disabled={loading}
-                                    className="form-textarea"
-                                ></textarea>
-                            </div>
-                        </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="salesBy">Sales Representative:</label>
-                                <select
-                                    id="salesBy"
-                                    name="salesBy"
-                                    value={formData.salesBy}
-                                    onChange={handleChange}
-                                    disabled={loading || salesRepresentatives.length === 0}
-                                    className="form-select"
-                                >
-                                    {salesRepresentatives.length === 0 ? (
-                                        <option value="">Loading Sales Reps...</option>
-                                    ) : (
-                                        <>
-                                            <option value="">-- SELECT SALES REP --</option>
-                                            {salesRepresentatives.map(rep => (
-                                                <option key={rep._id} value={rep._id}>
-                                                    {rep.name}
-                                                </option>
-                                            ))}
-                                        </>
-                                    )}
-                                </select>
-                            </div>
+
                             <div className="form-group">
                                 <label htmlFor="discount">Discount:</label>
                                 <input
@@ -1121,9 +1123,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-                        </div>
-
-                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="returnTime">Return Time:</label>
                                 <input
@@ -1137,7 +1136,36 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
+                        </div>
 
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="openingBalance">Opening Balance:</label>
+                                <input
+                                    type="number"
+                                    id="openingBalance"
+                                    name="openingBalance"
+                                    value={formData.openingBalance}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 5000"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="balanceType">Balance Type:</label>
+                                <select
+                                    id="balanceType"
+                                    name="balanceType"
+                                    value={formData.balanceType}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    className="form-select"
+                                >
+                                    <option value="Dr.">Dr.</option>
+                                    <option value="Cr.">Cr.</option>
+                                </select>
+                            </div>
                         </div>
                         <h3 className="form-title">Add Bank Details</h3>
                         <div className="form-row">
@@ -1180,78 +1208,23 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
+                            <div className="form-actions">
+                                <button
+                                    type="button"
+                                    className="toggle-isbn-btn"
+                                    onClick={() => {
+                                        // your logic here (example: open modal, add extra fields, etc.)
+                                        alert("Add Other Details button clicked!");
+                                    }}
+                                >
+                                    Add Other Details
+                                </button>
+                            </div>
                         </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="openingBalance">Opening Balance:</label>
-                                <input
-                                    type="number"
-                                    id="openingBalance"
-                                    name="openingBalance"
-                                    value={formData.openingBalance}
-                                    onChange={handleChange}
-                                    placeholder="e.g., 5000"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="balanceType">Balance Type:</label>
-                                <select
-                                    id="balanceType"
-                                    name="balanceType"
-                                    value={formData.balanceType}
-                                    onChange={handleChange}
-                                    disabled={loading}
-                                    className="form-select"
-                                >
-                                    <option value="Dr.">Dr.</option>
-                                    <option value="Cr.">Cr.</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="status">Status:</label>
-                                <select
-                                    id="status"
-                                    name="status"
-                                    value={formData.status}
-                                    onChange={handleChange}
-                                    disabled={loading}
-                                    className="form-select"
-                                >
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                            </div>
-                            {/* <div className="form-group">
-                                <label htmlFor="zone">Zone:</label>
-                                <input
-                                    type="text"
-                                    id="zone"
-                                    name="zone"
-                                    value={formData.zone}
-                                    onChange={handleChange}
-                                    placeholder="e.g., North"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div> */}
-                        </div>
-                        <div className="form-actions">
-                            <button
-                                type="button"
-                                className="toggle-isbn-btn"
-                                onClick={() => {
-                                    // your logic here (example: open modal, add extra fields, etc.)
-                                    alert("Add Other Details button clicked!");
-                                }}
-                            >
-                                Add Other Details
-                            </button>
-                        </div>
+
+
+
                         <div className="form-section-heading"><h3 className="form-title">Document Attachments</h3></div>
                         <div className="form-row file-upload-section">
                             <div className="form-group">
@@ -1308,7 +1281,38 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     </div>
                                 )}
                             </div>
+
                         </div>
+                        {/* <div className="form-row"> */}
+                            <div className="form-group">
+                                <label htmlFor="status">Status:</label>
+                                <select
+                                    id="status"
+                                    name="status"
+                                    value={formData.status}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    className="form-select"
+                                >
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                            {/* <div className="form-group">
+                                <label htmlFor="zone">Zone:</label>
+                                <input
+                                    type="text"
+                                    id="zone"
+                                    name="zone"
+                                    value={formData.zone}
+                                    onChange={handleChange}
+                                    placeholder="e.g., North"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div> */}
+
+                        {/* </div> */}
                         <div className="form-actions">
                             <button type="submit" className="btn-primary" disabled={loading}>
                                 {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : editingCustomerId ? 'Update' : ' +  Add'}
@@ -1319,6 +1323,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 </button>
                             )}
                         </div>
+
                     </form>
                 </div>
                 {/* Customer List Table - FIRST CHILD */}
