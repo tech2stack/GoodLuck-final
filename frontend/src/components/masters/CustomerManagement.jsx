@@ -986,22 +986,22 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-textarea"
                                 ></textarea>
                             </div>
-           
+
                         </div>
-<div className="form-group">
-                                    <label htmlFor="mobileNumber">Mobile Number:</label>
-                                    <input
-                                        type="text"
-                                        id="mobileNumber"
-                                        name="mobileNumber"
-                                        value={formData.mobileNumber}
-                                        onChange={handleChange}
-                                        placeholder="e.g., 9876543210"
-                                        required
-                                        disabled={loading}
-                                        className="form-input"
-                                    />
-                                </div>
+                        <div className="form-group">
+                            <label htmlFor="mobileNumber">Mobile Number:</label>
+                            <input
+                                type="text"
+                                id="mobileNumber"
+                                name="mobileNumber"
+                                value={formData.mobileNumber}
+                                onChange={handleChange}
+                                placeholder="e.g., 9876543210"
+                                required
+                                disabled={loading}
+                                className="form-input"
+                            />
+                        </div>
                         {/* Conditional rendering for School/Retail fields */}
                         {formData.primaryCustomerType === 'School' && (
                             <div className="form-row">
@@ -1284,21 +1284,21 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
                         </div>
                         {/* <div className="form-row"> */}
-                            <div className="form-group">
-                                <label htmlFor="status">Status:</label>
-                                <select
-                                    id="status"
-                                    name="status"
-                                    value={formData.status}
-                                    onChange={handleChange}
-                                    disabled={loading}
-                                    className="form-select"
-                                >
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                            </div>
-                            {/* <div className="form-group">
+                        <div className="form-group">
+                            <label htmlFor="status">Status:</label>
+                            <select
+                                id="status"
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                disabled={loading}
+                                className="form-select"
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        {/* <div className="form-group">
                                 <label htmlFor="zone">Zone:</label>
                                 <input
                                     type="text"
@@ -1411,16 +1411,21 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                             <td>{customer.status}</td>
                                             <td className="actions-column">
                                                 {(customer.chequeImage || customer.passportImage || customer.otherAttachment) && (
-                                                    <button onClick={() => openAttachmentModal(customer)} className="btn-action view">
-                                                        <FaEye />
+                                                    <button
+                                                        onClick={() => openAttachmentModal(customer)}
+                                                        className="action-icon-button view-button"
+                                                        title="View Attachment"
+                                                    >
+                                                        <FaEye className="icon" />
                                                     </button>
                                                 )}
+
                                             </td>
                                             <td className="actions-column">
-                                                <button onClick={() => handleEdit(customer)} className="btn-action edit">
+                                                <button onClick={() => handleEdit(customer)} className="action-icon-button edit-button">
                                                     <FaEdit />
                                                 </button>
-                                                <button onClick={() => openConfirmModal(customer)} className="btn-action delete">
+                                                <button onClick={() => openConfirmModal(customer)} className="action-icon-button delete-button">
                                                     <FaTrashAlt />
                                                 </button>
                                             </td>
@@ -1466,54 +1471,120 @@ const CustomerManagement = ({ showFlashMessage }) => {
             )}
 
             {/* Attachment Modal */}
-            {showAttachmentModal && (
-                <div className="modal-backdrop">
-                    <div className="modal-content">
-                        <h3>Customer Attachments</h3>
-                        <div className="attachment-list">
-                            {currentAttachmentUrls.cheque && (
-                                <div className="attachment-item">
-                                    <h4>Cheque Image</h4>
-                                    <a href={currentAttachmentUrls.cheque} target="_blank" rel="noopener noreferrer">
-                                        <img src={currentAttachmentUrls.cheque} alt="Cheque" />
-                                    </a>
-                                    <a href={currentAttachmentUrls.cheque} download className="btn-download">
-                                        <FaDownload /> Download
-                                    </a>
-                                </div>
-                            )}
-                            {currentAttachmentUrls.passport && (
-                                <div className="attachment-item">
-                                    <h4>Passport Image</h4>
-                                    <a href={currentAttachmentUrls.passport} target="_blank" rel="noopener noreferrer">
-                                        <img src={currentAttachmentUrls.passport} alt="Passport" />
-                                    </a>
-                                    <a href={currentAttachmentUrls.passport} download className="btn-download">
-                                        <FaDownload /> Download
-                                    </a>
-                                </div>
-                            )}
-                            {currentAttachmentUrls.other && (
-                                <div className="attachment-item">
-                                    <h4>Other Document</h4>
-                                    <a href={currentAttachmentUrls.other} target="_blank" rel="noopener noreferrer">
-                                        <img src={currentAttachmentUrls.other} alt="Other Document" />
-                                    </a>
-                                    <a href={currentAttachmentUrls.other} download className="btn-download">
-                                        <FaDownload /> Download
-                                    </a>
-                                </div>
-                            )}
-                            {(!currentAttachmentUrls.cheque && !currentAttachmentUrls.passport && !currentAttachmentUrls.other) && (
-                                <p>No attachments found for this customer.</p>
-                            )}
-                        </div>
-                        <div className="modal-actions mt-4">
-                            <button onClick={closeAttachmentModal} className="btn-secondary">Close</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+{/* Attachment Modal */}
+{showAttachmentModal && (
+  <div
+    className="modal-backdrop"
+    onClick={(e) => {
+      // close if clicked outside modal-content
+      if (e.target.classList.contains("modal-backdrop")) {
+        closeAttachmentModal();
+      }
+    }}
+  >
+    <div className="modal-content attachment-modal">
+      <h3>Customer Attachments</h3>
+      <div className="attachment-list">
+        {currentAttachmentUrls.cheque && (
+          <div className="attachment-item">
+            <h4>Cheque Image</h4>
+            <div className="attachment-preview">
+              <a
+                href={currentAttachmentUrls.cheque}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img src={currentAttachmentUrls.cheque} alt="Cheque" />
+              </a>
+            </div>
+            <button
+              className="btn-download"
+              onClick={() => {
+                const link = document.createElement("a");
+                link.href = currentAttachmentUrls.cheque;
+                link.setAttribute("download", "cheque_image.jpg");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+            >
+              <FaDownload /> Download
+            </button>
+          </div>
+        )}
+
+        {currentAttachmentUrls.passport && (
+          <div className="attachment-item">
+            <h4>Passport Image</h4>
+            <div className="attachment-preview">
+              <a
+                href={currentAttachmentUrls.passport}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img src={currentAttachmentUrls.passport} alt="Passport" />
+              </a>
+            </div>
+            <button
+              className="btn-download"
+              onClick={() => {
+                const link = document.createElement("a");
+                link.href = currentAttachmentUrls.passport;
+                link.setAttribute("download", "passport_image.jpg");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+            >
+              <FaDownload /> Download
+            </button>
+          </div>
+        )}
+
+        {currentAttachmentUrls.other && (
+          <div className="attachment-item">
+            <h4>Other Document</h4>
+            <div className="attachment-preview">
+              <a
+                href={currentAttachmentUrls.other}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img src={currentAttachmentUrls.other} alt="Other Document" />
+              </a>
+            </div>
+            <button
+              className="btn-download"
+              onClick={() => {
+                const link = document.createElement("a");
+                link.href = currentAttachmentUrls.other;
+                link.setAttribute("download", "other_document.jpg");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+            >
+              <FaDownload /> Download
+            </button>
+          </div>
+        )}
+
+        {!currentAttachmentUrls.cheque &&
+          !currentAttachmentUrls.passport &&
+          !currentAttachmentUrls.other && (
+            <p className="no-attachments">No attachments found for this customer.</p>
+          )}
+      </div>
+
+      <div className="modal-actions mt-4">
+        <button onClick={closeAttachmentModal} className="btn-secondary">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+    
         </div>
     );
 };
