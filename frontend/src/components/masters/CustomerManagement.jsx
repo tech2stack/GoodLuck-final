@@ -836,78 +836,51 @@ const CustomerManagement = ({ showFlashMessage }) => {
             )}
             <div className="main-content-layout">
                 {/* Customer Form - SECOND CHILD */}
-                <div className="form-container">
-                    <h3>{editingCustomerId ? 'Update Customer' : 'Add New Customer'}</h3>
+                <div className="form-container-card">
+                    <h3 className="form-title">{editingCustomerId ? 'Update Customer' : 'Add New Customer'}</h3>
                     <form onSubmit={handleSubmit} className="customer-form">
-                        <div className="form-row">
+                        <div className="form-row two-cols">
                             <div className="form-group customer-type-group">
                                 <label>Customer Type (Primary):</label>
-                                <div className="radio-group">
-                                    <label>
-                                        <input
-                                            type="radio"
-                                            name="primaryCustomerType"
-                                            value="Dealer"
-                                            checked={formData.primaryCustomerType === 'Dealer'}
-                                            onChange={handleChange}
-                                            disabled={loading}
-                                        /> Dealer
-                                    </label>
-                                    <label>
-                                        <input
-                                            type="radio"
-                                            name="primaryCustomerType"
-                                            value="School"
-                                            checked={formData.primaryCustomerType === 'School'}
-                                            onChange={handleChange}
-                                            disabled={loading}
-                                        /> School
-                                    </label>
-                                </div>
+                                <select
+                                    name="primaryCustomerType"
+                                    value={formData.primaryCustomerType || ""}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    className="dropdown"
+                                >
+                                    <option value="" disabled>
+                                        -- Select Primary Customer Type --
+                                    </option>
+                                    <option value="Dealer">Dealer</option>
+                                    <option value="School">School</option>
+                                </select>
                             </div>
-                        </div>
-                        {/* Conditional rendering for secondary customer types */}
-                        {formData.primaryCustomerType && (
-                            <div className="form-row">
+
+                            {formData.primaryCustomerType && (
                                 <div className="form-group customer-type-group">
                                     <label>Customer Type (Secondary):</label>
-                                    <div className="radio-group">
-                                        <label>
-                                            <input
-                                                type="radio"
-                                                name="secondaryCustomerType"
-                                                value="Retail"
-                                                checked={formData.secondaryCustomerType === 'Retail'}
-                                                onChange={handleChange}
-                                                disabled={loading}
-                                            /> Retail
-                                        </label>
-                                        <label>
-                                            <input
-                                                type="radio"
-                                                name="secondaryCustomerType"
-                                                value="Supply"
-                                                checked={formData.secondaryCustomerType === 'Supply'}
-                                                onChange={handleChange}
-                                                disabled={loading}
-                                            /> Supply
-                                        </label>
-                                        {formData.primaryCustomerType === 'School' && (
-                                            <label>
-                                                <input
-                                                    type="radio"
-                                                    name="secondaryCustomerType"
-                                                    value="Both"
-                                                    checked={formData.secondaryCustomerType === 'Both'}
-                                                    onChange={handleChange}
-                                                    disabled={loading}
-                                                /> Both
-                                            </label>
+                                    <select
+                                        name="secondaryCustomerType"
+                                        value={formData.secondaryCustomerType || ""}
+                                        onChange={handleChange}
+                                        disabled={loading}
+                                        className="dropdown"
+                                    >
+                                        <option value="" disabled>
+                                            -- Select Secondary Customer Type --
+                                        </option>
+                                        <option value="Retail">Retail</option>
+                                        <option value="Supply">Supply</option>
+                                        {formData.primaryCustomerType === "School" && (
+                                            <option value="Both">Both</option>
                                         )}
-                                    </div>
+                                    </select>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
+
+
 
                         <div className="form-row">
                             <div className="form-group">
@@ -1164,6 +1137,10 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
+
+                        </div>
+                        <h3 className="form-title">Add Bank Details</h3>
+                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="bankName">Bank Name:</label>
                                 <input
@@ -1177,9 +1154,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-                        </div>
-
-                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="accountNumber">Account Number:</label>
                                 <input
@@ -1266,8 +1240,19 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 />
                             </div> */}
                         </div>
-
-                        <div className="form-section-heading">Document Attachments</div>
+                        <div className="form-actions">
+                            <button
+                                type="button"
+                                className="toggle-isbn-btn"
+                                onClick={() => {
+                                    // your logic here (example: open modal, add extra fields, etc.)
+                                    alert("Add Other Details button clicked!");
+                                }}
+                            >
+                                Add Other Details
+                            </button>
+                        </div>
+                        <div className="form-section-heading"><h3 className="form-title">Document Attachments</h3></div>
                         <div className="form-row file-upload-section">
                             <div className="form-group">
                                 <label htmlFor="chequeImage">Cheque Image:</label>
@@ -1326,7 +1311,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                         </div>
                         <div className="form-actions">
                             <button type="submit" className="btn-primary" disabled={loading}>
-                                {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : editingCustomerId ? 'Update' : 'Add'}
+                                {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : editingCustomerId ? 'Update' : ' +  Add'}
                             </button>
                             {editingCustomerId && (
                                 <button type="button" className="btn-secondary ml-2" onClick={handleCancelEdit} disabled={loading}>
