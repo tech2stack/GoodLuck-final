@@ -764,7 +764,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     value={formData.personName}
                                     onChange={handleChange}
                                     placeholder="e.g., John Doe"
-                                    required
+                                    // required
                                     disabled={loading}
                                     className="form-input"
                                 />
@@ -833,7 +833,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     value={formData.mobileNumber}
                                     onChange={handleChange}
                                     placeholder="e.g., 9876543210"
-                                    required
+                                    // required
                                     disabled={loading}
                                     className="form-input"
                                 />
@@ -848,7 +848,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     value={formData.city}
                                     onChange={handleChange}
                                     placeholder="e.g., Indore, Bhopal"
-                                    required
+                                    // required
                                     disabled={loading}
                                     className="form-input"
                                 />
@@ -861,7 +861,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     value={formData.address}
                                     onChange={handleChange}
                                     placeholder="Full Address"
-                                    required
+                                    // required
                                     disabled={loading}
                                     className="form-textarea"
                                 ></textarea>

@@ -7,7 +7,7 @@ import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
 
-import companyLogo from '../../assets/glbs-logo.jpg'; 
+import companyLogo from '../../assets/glbs-logo.jpg';
 
 const CityManagement = ({ showFlashMessage }) => {
     const [cities, setCities] = useState([]);
@@ -60,19 +60,19 @@ const CityManagement = ({ showFlashMessage }) => {
                 } else if (totalPages === 0) {
                     setCurrentPage(1);
                 }
-                
+
                 if (scrollToNew && tableBodyRef.current) {
                     setTimeout(() => {
                         const lastPageIndex = Math.ceil(response.data.data.cities.length / itemsPerPage);
                         if (currentPage !== lastPageIndex) {
-                           setCurrentPage(lastPageIndex);
-                           setTimeout(() => {
+                            setCurrentPage(lastPageIndex);
+                            setTimeout(() => {
                                 if (tableBodyRef.current.lastElementChild) {
                                     tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
                                 } else {
                                     tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
                                 }
-                           }, 50);
+                            }, 50);
                         } else {
                             if (tableBodyRef.current.lastElementChild) {
                                 tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -155,14 +155,14 @@ const CityManagement = ({ showFlashMessage }) => {
             if (editingCityId) {
                 response = await api.patch(`/cities/${editingCityId}`, formData);
                 if (response.data.status === 'success') {
-                    showFlashMessage('City updated successfully!', 'success');
+                    showFlashMessage('Updated successfully!', 'success');
                 } else {
                     throw new Error(response.data.message || 'Failed to update city.');
                 }
             } else {
                 response = await api.post('/cities', formData);
                 if (response.data.status === 'success') {
-                    showFlashMessage('City created successfully!', 'success');
+                    showFlashMessage(' Created successfully!', 'success');
                 } else {
                     throw new Error(response.data.message || 'Failed to create city.');
                 }
@@ -240,7 +240,7 @@ const CityManagement = ({ showFlashMessage }) => {
     };
 
     const filteredCities = cities.filter(city =>
-        city.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        city.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (city.zone && city.zone.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (city.assignedSalesRepresentative && city.assignedSalesRepresentative.name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
@@ -403,31 +403,39 @@ const CityManagement = ({ showFlashMessage }) => {
 
     return (
         <div className="city-management-container">
-            <h2 className="main-section-title">City Management</h2>
+            {/* <h2 className="main-section-title">City Management</h2> */}
+            <h2 className="main-section-title">Zone Management</h2>
 
             {localError && (
                 <p className="error-message text-center">{localError}</p>
             )}
 
             <div className="main-content-layout">
-                                <div className="form-container-card">
+                <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
-                        <h3 className="form-title">{editingCityId ? 'Edit City' : 'Add City'}</h3>
+                        {/* <h3 className="form-title">{editingCityId ? 'Edit City' : 'Add City'}</h3> */}
+                        <h3 className="form-title">{editingCityId ? 'Edit Assigned Zone' : 'Assign Zone'}</h3>
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="name">City Name:</label>
-                                <input
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    value={formData.name}
+                                <label htmlFor="assignedSalesRepresentative">Sales Representative:</label>
+                                <select
+                                    id="assignedSalesRepresentative"
+                                    name="assignedSalesRepresentative"
+                                    value={formData.assignedSalesRepresentative}
                                     onChange={handleChange}
-                                    placeholder="e.g., Bhopal"
-                                    required
-                                    disabled={loading}
-                                    className="form-input"
-                                />
+                                    disabled={loading || salesRepresentatives.length === 0}
+                                    className="form-select"
+                                >
+                                    <option value="">-- Select Sales Rep --</option>
+                                    {salesRepresentatives.length > 0 ? (
+                                        salesRepresentatives.map(rep => (
+                                            <option key={rep._id} value={rep._id}>{rep.name}</option>
+                                        ))
+                                    ) : (
+                                        <option value="" disabled>No active Sales Reps found</option>
+                                    )}
+                                </select>
                             </div>
                             <div className="form-group">
                                 <label htmlFor="zone">Zone:</label>
@@ -449,28 +457,21 @@ const CityManagement = ({ showFlashMessage }) => {
                                     )}
                                 </select>
                             </div>
-                        </div>
-                        <div className="form-row">
-                             <div className="form-group">
-                                <label htmlFor="assignedSalesRepresentative">Assign Sales Representative:</label>
-                                <select
-                                    id="assignedSalesRepresentative"
-                                    name="assignedSalesRepresentative"
-                                    value={formData.assignedSalesRepresentative}
+                            <div className="form-group">
+                                <label htmlFor="name">City Name:</label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    name="name"
+                                    value={formData.name}
                                     onChange={handleChange}
-                                    disabled={loading || salesRepresentatives.length === 0}
-                                    className="form-select"
-                                >
-                                    <option value="">-- Select Sales Rep --</option>
-                                    {salesRepresentatives.length > 0 ? (
-                                        salesRepresentatives.map(rep => (
-                                            <option key={rep._id} value={rep._id}>{rep.name}</option>
-                                        ))
-                                    ) : (
-                                        <option value="" disabled>No active Sales Reps found</option>
-                                    )}
-                                </select>
+                                    placeholder="e.g., Bhopal"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
                             </div>
+                            
                             <div className="form-group">
                                 <label htmlFor="status">Status:</label>
                                 <select
@@ -480,17 +481,18 @@ const CityManagement = ({ showFlashMessage }) => {
                                     onChange={handleChange}
                                     disabled={loading}
                                     className="form-select"
-                                    
+
                                 >
                                     <option value="active">Active</option>
                                     <option value="inactive">Inactive</option>
                                 </select>
                             </div>
                         </div>
+                        
 
                         <div className="form-actions">
                             <button type="submit" className="btn btn-primary" disabled={loading || zones.length === 0}>
-                                {loading ? (editingCityId ? 'Updating...' : 'Adding...') : (editingCityId ? 'Update City' : 'Add City')}
+                                {loading ? (editingCityId ? 'Updating...' : 'Adding...') : (editingCityId ? 'Update ' : 'Add')}
                                 <FaPlusCircle className="icon ml-2" />
                             </button>
                             {editingCityId && (
@@ -536,9 +538,9 @@ const CityManagement = ({ showFlashMessage }) => {
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>
-                                        <th>City Name</th>
+                                        <th>Sales Representative</th>
                                         <th>Zone</th>
-                                        <th>Assigned Sales Rep</th>
+                                        <th>City Name</th>
                                         <th>Status</th>
                                         <th>Add Date</th>
                                         <th>Action</th>
@@ -548,9 +550,11 @@ const CityManagement = ({ showFlashMessage }) => {
                                     {currentCities.map((cityItem, index) => (
                                         <tr key={cityItem._id}>
                                             <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                            <td>{cityItem.name}</td>
-                                            <td>{cityItem.zone?.name || 'N/A'}</td>
                                             <td>{cityItem.assignedSalesRepresentative?.name || 'N/A'}</td>
+                                            <td>{cityItem.zone?.name || 'N/A'}</td>
+                                            <td>{cityItem.name}</td>
+                                            
+                                            
                                             <td>
                                                 <span className={`status-badge ${cityItem.status}`}>
                                                     {cityItem.status.charAt(0).toUpperCase() + cityItem.status.slice(1)}
