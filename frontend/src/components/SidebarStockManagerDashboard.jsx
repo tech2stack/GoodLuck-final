@@ -133,7 +133,9 @@ const SidebarStockManagerDashboard = ({
         { key: 'stationery-item', icon: FaPencilRuler, label: 'Stationery Item' },
         { key: 'customers', icon: FaUserFriends, label: 'Customers' },
         { key: 'transports', icon: FaTruck, label: 'Transports' },
+        // { key: 'set-quantity', icon: FaLayerGroup, label: 'Set Quantity' }, // NEW: Added Set Quantity
         { key: 'create-sets', icon: FaLayerGroup, label: 'Create Sets' },
+        
         { key: 'pending-book', icon: FaHourglassHalf, label: 'Pending Book' },
       ]
     },
@@ -180,7 +182,7 @@ const SidebarStockManagerDashboard = ({
       {/* Hamburger button */}
       <button
         className={`hamburger-menu-btn fixed left-4 z-50 p-2 transition-all duration-300 transform rounded-full bg-[#2c3e50] shadow-lg
-                    ${isSidebarCollapsed ? 'left-4' : 'left-[228px]'}`}
+          ${isSidebarCollapsed ? 'left-4' : 'left-[228px]'}`}
         style={{ top: '112px' }}
         onClick={() => setIsSidebarCollapsed(prev => !prev)}
       >

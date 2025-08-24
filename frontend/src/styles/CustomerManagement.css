@@ -13,6 +13,31 @@
     margin: 0 auto; /* Center the thumbnail in its table cell */
 }
 
+.btn-toggle {
+ display: inline-flex;
+ align-items: center;
+ gap: 8px;
+ padding: 10px 16px;
+ border: none;
+ border-radius: 8px;
+ background-color: #28a745; /* Success green */
+ color: white;
+ font-size: 16px;
+ cursor: pointer;
+ transition: background-color 0.3s ease;
+}
+
+.btn-toggle:hover {
+ background-color: #218838;
+}
+
+.btn-toggle.active {
+ background-color: #dc3545; /* Danger red */
+}
+
+.btn-toggle.active:hover {
+ background-color: #c82333;
+}
 /* You can add more specific styles for this component here if needed */
 .customer-management-container {
     /* Add any top-level container specific styles if necessary */
@@ -25,3 +50,18 @@
     /* color: #2C3E50; */
     /* font-size: 2em; */
 }
+/* --- START: Number Field Spinner Removal --- */
+
+/* For Chrome, Safari, Edge, Opera */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0; /* Ensures no extra space is left */
+}
+
+/* For Firefox */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* --- END: Number Field Spinner Removal --- */

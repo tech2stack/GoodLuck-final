@@ -19,7 +19,8 @@ const transportRouter = require('./transportRoutes');
 const pendingBookRouter = require('./pendingBookRoutes');
 const setRouter = require('./setRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
-const postRoutes = require('./postRoutes'); // <<<< UPDATED: Added import for postRoutes
+const postRoutes = require('./postRoutes');
+const firmRoutes = require('./firmRoutes'); // Added import for firmRoutes
 
 const router = express.Router();
 
@@ -43,6 +44,7 @@ router.use('/transports', transportRouter);
 router.use('/pending-books', pendingBookRouter);
 router.use('/sets', setRouter);
 router.use('/dashboard', dashboardRoutes);
-router.use('/posts', postRoutes); // <<<< UPDATED: Added mounting for postRoutes
+router.use('/posts', postRoutes);
+router.use('/firms', firmRoutes); // Added mounting for firmRoutes
 
 module.exports = router;

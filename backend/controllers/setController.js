@@ -473,8 +473,11 @@ exports.getBooksBySchool = catchAsync(async (req, res, next) => {
 
 // Get all customers (schools) for dropdown
 exports.getAllCustomersForDropdown = catchAsync(async (req, res, next) => {
-    // UPDATED: Ab customerType 'school-retail' wale customers hi fetch honge
-    const customers = await Customer.find({ customerType: 'School-Retail' }).select('customerName schoolCode').sort('customerName');
+    // UPDATED: Now fetches customers with customerType 'School-Retail' OR 'School-Both'
+    const customers = await Customer.find({ 
+        customerType: { $in: ['School-Retail', 'School-Both'] } 
+    }).select('customerName schoolCode').sort('customerName');
+    
     // DEBUGGING LOG: Yeh aapko server ke console mein dikhayega ki kitne customers mile hain
     console.log("DEBUG: Customers fetched for dropdown. Count:", customers.length);
     console.log("DEBUG: Fetched customers data:", customers);
@@ -518,8 +521,8 @@ exports.getAllBookCatalogsForDropdown = catchAsync(async (req, res, next) => {
 
 // Get all stationery items for dropdown
 exports.getAllStationeryItemsForDropdown = catchAsync(async (req, res, next) => {
-    // ADDED 'price' to select for stationery items dropdown
-    const stationeryItems = await StationeryItem.find().select('itemName price').sort('itemName');
+    // ADDED 'category' to the select for stationery items dropdown
+    const stationeryItems = await StationeryItem.find().select('itemName price category').sort('itemName');
     res.status(200).json({
         status: 'success',
         data: {
@@ -567,7 +570,12 @@ exports.getCustomersByBranch = catchAsync(async (req, res, next) => {
         return next(new AppError('Valid Branch ID is required.', 400));
     }
 
-    const customers = await Customer.find({ branch: branchId })
+    // Since you want to fetch customers by branch, you should probably also include 
+    // the customer type filter here, as you do in getAllCustomersForDropdown.
+    const customers = await Customer.find({ 
+        branch: branchId,
+        customerType: { $in: ['School-Retail', 'School-Both'] } 
+    })
         .select('customerName schoolCode')
         .sort('customerName');
 

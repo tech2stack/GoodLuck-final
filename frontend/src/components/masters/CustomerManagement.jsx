@@ -1,7 +1,11 @@
 // src/components/masters/CustomerManagement.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../utils/api'; // API utility for backend calls
-import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaSpinner, FaTimesCircle, FaEye, FaDownload } from 'react-icons/fa'; // Icons for UI
+import {
+    FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaChevronLeft,
+    FaChevronRight, FaSpinner, FaTimesCircle, FaEye, FaDownload,
+    FaFile, FaFilePdf, FaInfoCircle, FaMinusCircle
+} from 'react-icons/fa';
 
 // Stylesheets (assuming these are already present and styled for consistency)
 import '../../styles/Form.css';
@@ -31,8 +35,17 @@ const CustomerManagement = ({ showFlashMessage }) => {
     // NEW STATE: State for sales representatives
     const [salesRepresentatives, setSalesRepresentatives] = useState([]);
 
+    // NEW STATE: State for firms
+    const [firms, setFirms] = useState([]);
+
+    // State for firm management modal
+    const [showFirmModal, setShowFirmModal] = useState(false);
+    const [editingFirmId, setEditingFirmId] = useState(null);
+    const [firmName, setFirmName] = useState('');
+
     // Initial form data state
     const initialFormData = {
+        firm: '', // NEW: Firm ID
         customerName: '',
         schoolCode: '',
         branch: '', // Will store Branch ID
@@ -58,6 +71,26 @@ const CustomerManagement = ({ showFlashMessage }) => {
         ifscCode: '',
         openingBalance: 0,
         balanceType: 'Dr.',
+
+        // NEW FIELDS FOR "OTHER DETAILS"
+        customerShopName: '',
+        age: '',
+        so: '',
+        customerCity: '',
+        distt: '',
+        state: '',
+        pinCode: '',
+        shopRegNo: '',
+        fixedTradeDiscount: '',
+        remark: '',
+        goodsDeliveredTransportationPay: '',
+        goodsReturnTransportationPay: '',
+        finalSalesReturnMonth: '',
+        finalPaymentInAccountMonth: '',
+        paymentConcernPersonName: '',
+        closedDate: '',
+        chequeNo: '',
+        chequeOfBankName: '',
     };
 
     // State for form inputs
@@ -72,6 +105,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
     const [currentAttachmentUrls, setCurrentAttachmentUrls] = useState({});
     const [showAttachmentModal, setShowAttachmentModal] = useState(false);
 
+    const [showOtherDetails, setShowOtherDetails] = useState(false);
 
     // State for loading indicators
     const [loading, setLoading] = useState(false);
@@ -94,11 +128,9 @@ const CustomerManagement = ({ showFlashMessage }) => {
     // State for Branch Filter
     const [selectedBranchFilter, setSelectedBranchFilter] = useState(''); // Stores branch ID for filtering
 
-
     // States for Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10; // Show 10 entries per page
-
 
     // --- Helper function for date formatting ---
     const formatDateWithTime = (dateString) => {
@@ -137,28 +169,79 @@ const CustomerManagement = ({ showFlashMessage }) => {
         return docs.length > 0 ? docs.join('\n') : 'N/A';
     };
 
+    // --- Fetch Firms ---
+    const fetchFirms = useCallback(async () => {
+        try {
+            const response = await api.get('/firms');
+            if (response.data.status === 'success') {
+                setFirms(response.data.data.firms);
+            } else {
+                showFlashMessage('Failed to load firms.', 'error');
+            }
+        } catch (err) {
+            showFlashMessage(err.response?.data?.message || 'Failed to load firms due to network error.', 'error');
+        }
+    }, []);
+
+    // Fetch firms on component mount
+    useEffect(() => {
+        fetchFirms();
+    }, [fetchFirms]);
+
+    // --- Handle Firm Submit (Add/Update) ---
+    const handleFirmSubmit = async (e) => {
+        e.preventDefault();
+        if (!firmName) {
+            showFlashMessage('Firm name is required.', 'error');
+            return;
+        }
+
+        try {
+            if (editingFirmId) {
+                await api.patch(`/firms/${editingFirmId}`, { name: firmName });
+                showFlashMessage('Firm updated successfully!', 'success');
+            } else {
+                await api.post('/firms', { name: firmName });
+                showFlashMessage('Firm added successfully!', 'success');
+            }
+            fetchFirms();
+            setFirmName('');
+            setEditingFirmId(null);
+            setShowFirmModal(false);
+        } catch (err) {
+            showFlashMessage(err.response?.data?.message || 'Failed to save firm.', 'error');
+        }
+    };
+
+    // --- Handle Firm Delete ---
+    const handleFirmDelete = async (id, name) => {
+        if (window.confirm(`Are you sure you want to delete firm: ${name}?`)) {
+            try {
+                await api.delete(`/firms/${id}`);
+                showFlashMessage('Firm deleted successfully!', 'success');
+                fetchFirms();
+            } catch (err) {
+                showFlashMessage(err.response?.data?.message || 'Failed to delete firm.', 'error');
+            }
+        }
+    };
 
     // --- Fetch Customers ---
     const fetchCustomers = useCallback(async (scrollToNew = false) => {
         setLoading(true);
         setLocalError(null);
         try {
-            // Construct query parameters, including the branch filter
             const queryParams = new URLSearchParams();
             if (selectedBranchFilter) {
                 queryParams.append('branch', selectedBranchFilter);
             }
-            // Add search term if present
             if (searchTerm) {
-                queryParams.append('search', searchTerm); // Assuming backend handles a 'search' parameter
+                queryParams.append('search', searchTerm);
             }
 
-
             const response = await api.get(`/customers?${queryParams.toString()}`);
-            console.log('API Response for customers:', response.data); // Debugging: Log full response
             if (response.data.status === 'success' && response.data.data && Array.isArray(response.data.data.customers)) {
                 setCustomers(response.data.data.customers);
-                console.log('Customers fetched and set to state:', response.data.data.customers); // Debugging: Confirm state update
 
                 const totalPagesCalculated = Math.ceil(response.data.data.customers.length / itemsPerPage);
                 if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
@@ -197,9 +280,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, itemsPerPage, selectedBranchFilter, searchTerm]); // Added selectedBranchFilter and searchTerm to dependencies
+    }, [currentPage, itemsPerPage, selectedBranchFilter, searchTerm]);
 
-    // --- Fetch Branches, Cities, and Sales Representatives for Dropdowns ---
     // --- Fetch Branches, Cities, and Sales Representatives for Dropdowns ---
     const fetchDropdownData = useCallback(async () => {
         setLoading(true); // Set loading true for dropdowns
@@ -207,14 +289,10 @@ const CustomerManagement = ({ showFlashMessage }) => {
             const [branchesRes, citiesRes, salesRepsRes] = await Promise.all([
                 api.get('/branches'),
                 api.get('/cities'),
-                // NEW: Fetch sales representatives from the dedicated API endpoint
                 api.get('/employees/sales-representatives')
-
             ]);
 
-            // Existing logic to handle branches
             let fetchedBranches = [];
-            console.log('DEBUG: branchesRes.data received:', branchesRes.data);
             if (branchesRes.data && branchesRes.data.success) {
                 if (Array.isArray(branchesRes.data.data)) {
                     fetchedBranches = branchesRes.data.data;
@@ -231,9 +309,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                 showFlashMessage(branchesRes.data?.message || 'Failed to load branches for dropdown.', 'error');
             }
 
-            // Existing logic to handle cities
             let fetchedCities = [];
-            console.log('DEBUG: citiesRes.data received:', citiesRes.data);
             if (citiesRes.data && citiesRes.data.status === 'success') {
                 if (citiesRes.data.data && Array.isArray(citiesRes.data.data.cities)) {
                     fetchedCities = citiesRes.data.data.cities;
@@ -250,9 +326,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                 showFlashMessage(citiesRes.data?.message || 'Failed to load cities for dropdown.', 'error');
             }
 
-            // NEW LOGIC: Handle sales representatives response
             let fetchedSalesReps = [];
-            console.log('DEBUG: salesRepsRes.data received:', salesRepsRes.data);
             if (salesRepsRes.data && salesRepsRes.data.status === 'success' && Array.isArray(salesRepsRes.data.data.employees)) {
                 fetchedSalesReps = salesRepsRes.data.data.employees;
                 setSalesRepresentatives(fetchedSalesReps);
@@ -266,13 +340,12 @@ const CustomerManagement = ({ showFlashMessage }) => {
                 setFormData(prev => ({
                     ...prev,
                     city: fetchedCities.length > 0 ? fetchedCities[0]._id : '',
-                    salesBy: fetchedSalesReps.length > 0 ? fetchedSalesReps[0]._id : '' // NEW: Set initial salesBy value
+                    salesBy: fetchedSalesReps.length > 0 ? fetchedSalesReps[0]._id : ''
                 }));
             }
 
         } catch (err) {
             console.error('Error fetching dropdown data:', err);
-            // More specific error message for network/API issues
             const errorMessage = err.response?.data?.message || 'Network error fetching dropdown data (Branches/Cities/Sales Reps). Please ensure backend is running and accessible.';
             showFlashMessage(errorMessage, 'error');
         } finally {
@@ -288,7 +361,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
     useEffect(() => {
         fetchDropdownData();
     }, [fetchDropdownData]); // This fetches branches, cities, and sales reps once or when editingCustomerId changes
-
 
     // --- Form Handling ---
     const handleChange = (e) => {
@@ -414,7 +486,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
         }
     };
 
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -428,7 +499,12 @@ const CustomerManagement = ({ showFlashMessage }) => {
                 : '';
 
         // Basic validation
-        // email is no longer required
+        if (!formData.firm) {
+            setLocalError('Please select a firm.');
+            showFlashMessage('Please select a firm.', 'error');
+            setLoading(false);
+            return;
+        }
         if (!formData.customerName || !formData.city || !formData.mobileNumber) {
             setLocalError('Please fill in all required fields: Customer Name, City, and Mobile Number.');
             showFlashMessage('Please fill in all required fields.', 'error');
@@ -437,7 +513,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
         }
 
         // Conditional validation for School-Retail, School-Supply, and School-Both
-        // NOTE: The backend already has this validation, but good to have it on the frontend too
         if (formData.primaryCustomerType === 'School' && !formData.branch) {
             setLocalError('For School customers, Branch is a required field.');
             showFlashMessage('For School customers, Branch is a required field.', 'error');
@@ -464,7 +539,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
         if (finalCustomerType) {
             dataToSend.append('customerType', finalCustomerType);
         }
-
 
         // Append image files
         if (selectedChequeFile) {
@@ -532,12 +606,22 @@ const CustomerManagement = ({ showFlashMessage }) => {
             secondaryType = parts[1];
         }
 
+        // Check if any of the new "Other Details" fields have data to determine
+        // if the section should be visible on edit.
+        const hasOtherDetails = [
+            'customerShopName', 'age', 'so', 'customerCity', 'distt', 'state', 'pinCode',
+            'shopRegNo', 'fixedTradeDiscount', 'remark', 'goodsDeliveredTransportationPay',
+            'goodsReturnTransportationPay', 'finalSalesReturnMonth', 'finalPaymentInAccountMonth',
+            'paymentConcernPersonName', 'closedDate', 'chequeNo', 'chequeOfBankName'
+        ].some(key => customerItem[key] !== null && customerItem[key] !== '' && customerItem[key] !== 0);
+
         setFormData({
             ...initialFormData, // Use spread operator to ensure all fields are reset
+            firm: customerItem.firm ? customerItem.firm._id : '',
             customerName: customerItem.customerName || '',
             schoolCode: customerItem.schoolCode || '',
-            branch: customerItem.branch?._id || '', // Set branch ID
-            city: customerItem.city?._id || '',     // Set city ID
+            branch: customerItem.branch?._id || '',
+            city: customerItem.city?._id || '',
             contactPerson: customerItem.contactPerson || '',
             mobileNumber: customerItem.mobileNumber || '',
             email: customerItem.email || '',
@@ -549,8 +633,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
             status: customerItem.status || 'active',
             primaryCustomerType: primaryType,
             secondaryCustomerType: secondaryType,
-            // zone: customerItem.zone || '',
-            // NEW: Set the salesBy field to the ID of the sales representative
             salesBy: customerItem.salesBy?._id || '',
             discount: customerItem.discount || 0,
             returnTime: customerItem.returnTime || '',
@@ -559,16 +641,39 @@ const CustomerManagement = ({ showFlashMessage }) => {
             ifscCode: customerItem.ifscCode || '',
             openingBalance: customerItem.openingBalance || 0,
             balanceType: customerItem.balanceType || 'Dr.',
+            // NEW FIELDS
+            customerShopName: customerItem.customerShopName || '',
+            age: customerItem.age || '',
+            so: customerItem.so || '',
+            customerCity: customerItem.customerCity || '',
+            distt: customerItem.distt || '',
+            state: customerItem.state || '',
+            pinCode: customerItem.pinCode || '',
+            shopRegNo: customerItem.shopRegNo || '',
+            fixedTradeDiscount: customerItem.fixedTradeDiscount || '',
+            remark: customerItem.remark || '',
+            goodsDeliveredTransportationPay: customerItem.goodsDeliveredTransportationPay || '',
+            goodsReturnTransportationPay: customerItem.goodsReturnTransportationPay || '',
+            finalSalesReturnMonth: customerItem.finalSalesReturnMonth || '',
+            finalPaymentInAccountMonth: customerItem.finalPaymentInAccountMonth || '',
+            paymentConcernPersonName: customerItem.paymentConcernPersonName || '',
+            closedDate: customerItem.closedDate ? new Date(customerItem.closedDate).toISOString().split('T')[0] : '', // Format for date input
+            chequeNo: customerItem.chequeNo || '',
+            chequeOfBankName: customerItem.chequeOfBankName || '',
         });
+
+        // Set the state for showing/hiding the "Other Details" section
+        setShowOtherDetails(hasOtherDetails);
+
         setChequeImagePreviewUrl(customerItem.chequeImage ? `${BACKEND_BASE_URL}/uploads/customer-logos/${customerItem.chequeImage}` : '');
         setPassportImagePreviewUrl(customerItem.passportImage ? `${BACKEND_BASE_URL}/uploads/customer-logos/${customerItem.passportImage}` : '');
-        setOtherAttachmentPreviewUrl(customerItem.otherAttachment ? `${BACKEND_BASE_URL}/uploads/customer-logos/${customerItem.otherAttachment}` : ''); // NEW: Set preview URL for other attachment
-        setSelectedChequeFile(null); // No file selected during edit initially
+        setOtherAttachmentPreviewUrl(customerItem.otherAttachment ? `${BACKEND_BASE_URL}/uploads/customer-logos/${customerItem.otherAttachment}` : '');
+        setSelectedChequeFile(null);
         setSelectedPassportFile(null);
-        setSelectedOtherFile(null); // NEW: No other file selected during edit initially
+        setSelectedOtherFile(null);
         setEditingCustomerId(customerItem._id);
         setLocalError(null);
-        window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     // --- Attachment Modal Functions ---
@@ -697,7 +802,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
             // Generate table data
             const tableColumn = [
-                "S.No.", "Name (Type)", "Contact Person", "Mobile No.", "Address", "City", "School Code", "GST No.", "Discount", "Opening Balance", "Sales By", "Return Time"
+                "S.No.", "Firm", "Name (Type)", "Contact Person", "Mobile No.", "Address", "City", "School Code", "GST No.", "Discount", "Opening Balance", "Sales By", "Return Time"
             ];
             const tableRows = [];
 
@@ -706,6 +811,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                 const customerType = customer.customerType ? `(${customer.customerType})` : '';
                 const customerData = [
                     index + 1,
+                    customer.firm ? getStringValue(customer.firm.name) : 'N/A',
                     `${getStringValue(customer.customerName)} ${customerType}`,
                     getStringValue(customer.contactPerson),
                     getStringValue(customer.mobileNumber),
@@ -715,7 +821,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     getStringValue(customer.gstNumber),
                     getStringValue(customer.discount),
                     getStringValue(customer.openingBalance),
-                    // NEW: Use the populated salesBy name for the PDF
                     customer.salesBy ? getStringValue(customer.salesBy.name) : 'N/A',
                     getStringValue(customer.returnTime)
                 ];
@@ -752,16 +857,17 @@ const CustomerManagement = ({ showFlashMessage }) => {
                 columnStyles: {
                     0: { cellWidth: 15, halign: 'center' },
                     1: { cellWidth: 30, halign: 'left' },
-                    2: { cellWidth: 25, halign: 'left' },
-                    3: { cellWidth: 25, halign: 'center' },
-                    4: { cellWidth: 35, halign: 'left' },
-                    5: { cellWidth: 20, halign: 'left' },
-                    6: { cellWidth: 20, halign: 'center' },
-                    7: { cellWidth: 25, halign: 'left' },
-                    8: { cellWidth: 20, halign: 'center' },
-                    9: { cellWidth: 25, halign: 'center' },
-                    10: { cellWidth: 25, halign: 'left' },
-                    11: { cellWidth: 25, halign: 'center' }
+                    2: { cellWidth: 30, halign: 'left' },
+                    3: { cellWidth: 25, halign: 'left' },
+                    4: { cellWidth: 25, halign: 'center' },
+                    5: { cellWidth: 35, halign: 'left' },
+                    6: { cellWidth: 20, halign: 'left' },
+                    7: { cellWidth: 20, halign: 'center' },
+                    8: { cellWidth: 25, halign: 'left' },
+                    9: { cellWidth: 20, halign: 'center' },
+                    10: { cellWidth: 25, halign: 'center' },
+                    11: { cellWidth: 25, halign: 'left' },
+                    12: { cellWidth: 25, halign: 'center' }
                 },
                 didParseCell: function (data) {
                     if (data.section === 'head' && data.cell.text[0] === "Name (Type)") {
@@ -838,8 +944,36 @@ const CustomerManagement = ({ showFlashMessage }) => {
                 {/* Customer Form - SECOND CHILD */}
                 <div className="form-container-card">
                     <h3 className="form-title">{editingCustomerId ? 'Update Customer' : 'Add New Customer'}</h3>
+                    <button type="button" onClick={() => setShowFirmModal(true)} className="btn-primary mb-2">
+                        Manage Firms
+                    </button>
                     <form onSubmit={handleSubmit} className="customer-form">
                         <div className="form-row two-cols">
+                            <div className="form-group">
+                                <label htmlFor="firm">Firm Type:</label>
+                                <select
+                                    id="firm"
+                                    name="firm"
+                                    value={formData.firm}
+                                    onChange={handleChange}
+                                    required
+                                    disabled={loading || firms.length === 0}
+                                    className="form-select"
+                                >
+                                    {firms.length === 0 ? (
+                                        <option value="">Loading Firms...</option>
+                                    ) : (
+                                        <>
+                                            <option value="">-- SELECT FIRM --</option>
+                                            {firms.map(firm => (
+                                                <option key={firm._id} value={firm._id}>
+                                                    {firm.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    )}
+                                </select>
+                            </div>
                             <div className="form-group">
                                 <label htmlFor="city">City:</label>
                                 <select
@@ -929,8 +1063,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             )}
                         </div>
 
-
-
                         <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="customerName">Customer Name:</label>
@@ -959,7 +1091,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-
                         </div>
                         <div className="form-row">
                             <div className="form-group">
@@ -986,22 +1117,21 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-textarea"
                                 ></textarea>
                             </div>
-           
                         </div>
-<div className="form-group">
-                                    <label htmlFor="mobileNumber">Mobile Number:</label>
-                                    <input
-                                        type="text"
-                                        id="mobileNumber"
-                                        name="mobileNumber"
-                                        value={formData.mobileNumber}
-                                        onChange={handleChange}
-                                        placeholder="e.g., 9876543210"
-                                        required
-                                        disabled={loading}
-                                        className="form-input"
-                                    />
-                                </div>
+                        <div className="form-group">
+                            <label htmlFor="mobileNumber">Mobile Number:</label>
+                            <input
+                                type="text"
+                                id="mobileNumber"
+                                name="mobileNumber"
+                                value={formData.mobileNumber}
+                                onChange={handleChange}
+                                placeholder="e.g., 9876543210"
+                                required
+                                disabled={loading}
+                                className="form-input"
+                            />
+                        </div>
                         {/* Conditional rendering for School/Retail fields */}
                         {formData.primaryCustomerType === 'School' && (
                             <div className="form-row">
@@ -1045,8 +1175,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 </div>
                             </div>
                         )}
-
-
 
                         <div className="form-row">
                             <div className="form-group">
@@ -1107,9 +1235,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             </div>
                         </div>
 
-
                         <div className="form-row">
-
                             <div className="form-group">
                                 <label htmlFor="discount">Discount:</label>
                                 <input
@@ -1211,19 +1337,95 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             <div className="form-actions">
                                 <button
                                     type="button"
-                                    className="toggle-isbn-btn"
-                                    onClick={() => {
-                                        // your logic here (example: open modal, add extra fields, etc.)
-                                        alert("Add Other Details button clicked!");
-                                    }}
+                                    className={`btn-toggle ${showOtherDetails ? 'active' : ''}`}
+                                    onClick={() => setShowOtherDetails(!showOtherDetails)}
                                 >
-                                    Add Other Details
+                                    <FaInfoCircle /> {showOtherDetails ? 'Hide Other Details' : 'Add Other Details'}
                                 </button>
                             </div>
                         </div>
 
-
-
+                        {showOtherDetails && (
+                            <>
+                                <header className="section-title"><h3>Other Details</h3></header>
+                                <div className="form-section">
+                                    <div className="form-grid">
+                                        <div className="form-group">
+                                            <label htmlFor="customerShopName">Customer Shop Name</label>
+                                            <input type="text" id="customerShopName" name="customerShopName" value={formData.customerShopName} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="age">Age</label>
+                                            <input type="number" id="age" name="age" value={formData.age} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="so">S/O (Son Of)</label>
+                                            <input type="text" id="so" name="so" value={formData.so} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="customerCity">City (Manual)</label>
+                                            <input type="text" id="customerCity" name="customerCity" value={formData.customerCity} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="distt">District</label>
+                                            <input type="text" id="distt" name="distt" value={formData.distt} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="state">State</label>
+                                            <input type="text" id="state" name="state" value={formData.state} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="pinCode">Pincode</label>
+                                            <input type="text" id="pinCode" name="pinCode" value={formData.pinCode} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="shopRegNo">Shop Reg No</label>
+                                            <input type="text" id="shopRegNo" name="shopRegNo" value={formData.shopRegNo} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="fixedTradeDiscount">Fixed Trade Discount</label>
+                                            <input type="number" id="fixedTradeDiscount" name="fixedTradeDiscount" value={formData.fixedTradeDiscount} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="goodsDeliveredTransportationPay">Goods Del. Transport Pay</label>
+                                            <input type="text" id="goodsDeliveredTransportationPay" name="goodsDeliveredTransportationPay" value={formData.goodsDeliveredTransportationPay} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="goodsReturnTransportationPay">Goods Return Transport Pay</label>
+                                            <input type="text" id="goodsReturnTransportationPay" name="goodsReturnTransportationPay" value={formData.goodsReturnTransportationPay} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="finalSalesReturnMonth">Final Sales Return Month</label>
+                                            <input type="text" id="finalSalesReturnMonth" name="finalSalesReturnMonth" value={formData.finalSalesReturnMonth} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="finalPaymentInAccountMonth">Final Payment In Account Month</label>
+                                            <input type="text" id="finalPaymentInAccountMonth" name="finalPaymentInAccountMonth" value={formData.finalPaymentInAccountMonth} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="paymentConcernPersonName">Payment Concern Person</label>
+                                            <input type="text" id="paymentConcernPersonName" name="paymentConcernPersonName" value={formData.paymentConcernPersonName} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="closedDate">Closed Date</label>
+                                            <input type="date" id="closedDate" name="closedDate" value={formData.closedDate} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="chequeNo">Cheque No.</label>
+                                            <input type="text" id="chequeNo" name="chequeNo" value={formData.chequeNo} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="chequeOfBankName">Cheque Of Bank Name</label>
+                                            <input type="text" id="chequeOfBankName" name="chequeOfBankName" value={formData.chequeOfBankName} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group full-width">
+                                            <label htmlFor="remark">Remark</label>
+                                            <textarea id="remark" name="remark" rows="1" value={formData.remark} onChange={handleChange}></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
 
                         <div className="form-section-heading"><h3 className="form-title">Document Attachments</h3></div>
                         <div className="form-row file-upload-section">
@@ -1281,38 +1483,21 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     </div>
                                 )}
                             </div>
-
                         </div>
-                        {/* <div className="form-row"> */}
-                            <div className="form-group">
-                                <label htmlFor="status">Status:</label>
-                                <select
-                                    id="status"
-                                    name="status"
-                                    value={formData.status}
-                                    onChange={handleChange}
-                                    disabled={loading}
-                                    className="form-select"
-                                >
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                            </div>
-                            {/* <div className="form-group">
-                                <label htmlFor="zone">Zone:</label>
-                                <input
-                                    type="text"
-                                    id="zone"
-                                    name="zone"
-                                    value={formData.zone}
-                                    onChange={handleChange}
-                                    placeholder="e.g., North"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div> */}
-
-                        {/* </div> */}
+                        <div className="form-group">
+                            <label htmlFor="status">Status:</label>
+                            <select
+                                id="status"
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                disabled={loading}
+                                className="form-select"
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
                         <div className="form-actions">
                             <button type="submit" className="btn-primary" disabled={loading}>
                                 {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : editingCustomerId ? 'Update' : ' +  Add'}
@@ -1323,6 +1508,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 </button>
                             )}
                         </div>
+
 
                     </form>
                 </div>
@@ -1381,6 +1567,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>
+                                        <th>Firm</th> {/* NEW: Firm column */}
                                         <th>Name (Type)</th>
                                         <th>Contact Person</th>
                                         <th>Mobile No.</th>
@@ -1391,6 +1578,24 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                         <th>Sales Rep</th>
                                         <th>Discount</th>
                                         <th>Status</th>
+                                        <th>Customer Shop Name</th>
+                                        <th>Age</th>
+                                        <th>S/O</th>
+                                        <th>Customer City</th>
+                                        <th>District</th>
+                                        <th>State</th>
+                                        <th>Pincode</th>
+                                        <th>Shop Reg No</th>
+                                        <th>Fixed Trade Discount</th>
+                                        <th>Remark</th>
+                                        <th>Goods Del. Transport Pay</th>
+                                        <th>Goods Return Transport Pay</th>
+                                        <th>Final Sales Return Month</th>
+                                        <th>Final Payment Month</th>
+                                        <th>Payment Concern Person</th>
+                                        <th>Closed Date</th>
+                                        <th>Cheque No.</th>
+                                        <th>Cheque Bank Name</th>
                                         <th>Attachments</th>
                                         <th>Actions</th>
                                     </tr>
@@ -1399,6 +1604,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     {currentItems.map((customer, index) => (
                                         <tr key={customer._id}>
                                             <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td>{customer.firm ? customer.firm.name : 'N/A'}</td> {/* NEW: Firm value */}
                                             <td>{customer.customerName} ({customer.customerType || 'N/A'})</td>
                                             <td>{customer.contactPerson || 'N/A'}</td>
                                             <td>{customer.mobileNumber || 'N/A'}</td>
@@ -1409,6 +1615,24 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                             <td>{customer.salesBy ? customer.salesBy.name : 'N/A'}</td>
                                             <td>{customer.discount || 0}%</td>
                                             <td>{customer.status}</td>
+                                            <td>{customer.customerShopName || 'N/A'}</td>
+                                            <td>{customer.age || 'N/A'}</td>
+                                            <td>{customer.so || 'N/A'}</td>
+                                            <td>{customer.customerCity || 'N/A'}</td>
+                                            <td>{customer.distt || 'N/A'}</td>
+                                            <td>{customer.state || 'N/A'}</td>
+                                            <td>{customer.pinCode || 'N/A'}</td>
+                                            <td>{customer.shopRegNo || 'N/A'}</td>
+                                            <td>{customer.fixedTradeDiscount || 'N/A'}</td>
+                                            <td>{customer.remark || 'N/A'}</td>
+                                            <td>{customer.goodsDeliveredTransportationPay || 'N/A'}</td>
+                                            <td>{customer.goodsReturnTransportationPay || 'N/A'}</td>
+                                            <td>{customer.finalSalesReturnMonth || 'N/A'}</td>
+                                            <td>{customer.finalPaymentInAccountMonth || 'N/A'}</td>
+                                            <td>{customer.paymentConcernPersonName || 'N/A'}</td>
+                                            <td>{customer.closedDate ? formatDateWithTime(customer.closedDate) : 'N/A'}</td>
+                                            <td>{customer.chequeNo || 'N/A'}</td>
+                                            <td>{customer.chequeOfBankName || 'N/A'}</td>
                                             <td className="actions-column">
                                                 {(customer.chequeImage || customer.passportImage || customer.otherAttachment) && (
                                                     <button onClick={() => openAttachmentModal(customer)} className="btn-action view">
@@ -1511,6 +1735,65 @@ const CustomerManagement = ({ showFlashMessage }) => {
                         <div className="modal-actions mt-4">
                             <button onClick={closeAttachmentModal} className="btn-secondary">Close</button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Firm Management Modal */}
+            {showFirmModal && (
+                <div className="modal-backdrop">
+                    <div className="modal-content">
+                        <h3>{editingFirmId ? 'Update Firm' : 'Add Firm'}</h3>
+                        <form onSubmit={handleFirmSubmit}>
+                            <div className="form-group">
+                                <label htmlFor="firmName">Firm Name:</label>
+                                <input
+                                    type="text"
+                                    id="firmName"
+                                    value={firmName}
+                                    onChange={(e) => setFirmName(e.target.value)}
+                                    placeholder="e.g., Good Luck Book Store"
+                                    required
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="modal-actions">
+                                <button type="submit" className="btn-primary" disabled={loading}>
+                                    {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : editingFirmId ? 'Update' : 'Add'}
+                                </button>
+                                <button type="button" onClick={() => setShowFirmModal(false)} className="btn-secondary" disabled={loading}>
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                        <h3>Available Firms</h3>
+                        <table className="app-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {firms.map(firm => (
+                                    <tr key={firm._id}>
+                                        <td>{firm.name}</td>
+                                        <td className="actions-column">
+                                            <button onClick={() => {
+                                                setEditingFirmId(firm._id);
+                                                setFirmName(firm.name);
+                                            }} className="btn-action edit">
+                                                <FaEdit />
+                                            </button>
+                                            <button onClick={() => handleFirmDelete(firm._id, firm.name)} className="btn-action delete">
+                                                <FaTrashAlt />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             )}

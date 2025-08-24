@@ -24,6 +24,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const [bookCatalogs, setBookCatalogs] = useState([]);
     const [stationeryItemsMaster, setStationeryItemsMaster] = useState([]);
     const [existingSetsClasses, setExistingSetsClasses] = useState(new Set()); // Stores class IDs that already have a set
+    const [stationeryCategories, setStationeryCategories] = useState([]); // NEW: State to store unique stationery categories
+    const [selectedStationeryCategories, setSelectedStationeryCategories] = useState(new Set()); // NEW: State to track selected categories
 
     // --- State for Main Set Filters/Details ---
     const [selectedCustomer, setSelectedCustomer] = useState('');
@@ -36,11 +38,13 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const [stationeryDetail, setStationeryDetail] = useState([]);
 
     // --- State for Adding New Items ---
+    const [selectedItemType, setSelectedItemType] = useState('books'); // New state for radio buttons
     const [selectedSubtitle, setSelectedSubtitle] = useState('');
     const [selectedItemToAdd, setSelectedItemToAdd] = useState('');
     const [itemQuantity, setItemQuantity] = useState('');
     const [itemPrice, setItemPrice] = useState('');
     const [showAllBooksForSubtitle, setShowAllBooksForSubtitle] = useState(false);
+    const [showAllStationery, setShowAllStationery] = useState(false); // NEW: State for "Show All" stationery checkbox
 
     // --- State for Copying Sets ---
     const [copyToClass, setCopyToClass] = useState('');
@@ -93,26 +97,34 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const fetchDropdownData = useCallback(async () => {
         setLoading(true);
         try {
-            const [customersRes, classesRes, subtitlesRes, stationeryRes, allSetsRes] = await Promise.all([
+            const [customersRes, classesRes, publicationsRes, stationeryRes, allSetsRes] = await Promise.all([
                 api.get('/sets/dropdowns/customers'),
                 api.get('/sets/dropdowns/classes'),
-                api.get('/sets/dropdowns/subtitles'),
+                api.get('/publications'), // Publications se data fetch karega
                 api.get('/sets/dropdowns/stationery-items'),
                 api.get('/sets/all') // Fetch all sets to identify classes with existing sets
             ]);
 
             const validCustomers = (customersRes.data.data.customers || []).filter(c => c && c._id && String(c.customerName || '').trim() !== '');
             const validClasses = (classesRes.data.data.classes || []).filter(c => c && c._id && String(c.name || '').trim() !== '');
-            const validSubtitles = (subtitlesRes.data.data.subtitles || []).filter(s => s && s._id && String(s.name || '').trim() !== '');
             const validStationeryItems = (stationeryRes.data.data.stationeryItems || []).filter(i => i && i._id);
 
             setCustomers(validCustomers);
             setClasses(validClasses);
             setStationeryItemsMaster(validStationeryItems);
 
+            // NEW: Extract unique categories from stationery items
+            const uniqueCategories = [...new Set(validStationeryItems.map(item => item.category))].filter(Boolean);
+            setStationeryCategories(uniqueCategories);
+            setSelectedStationeryCategories(new Set(uniqueCategories)); // Initially select all categories
+
+            // Subtitles ko publications ke andar se extract karna
+            const allPublications = publicationsRes.data.data.publications || [];
             const allSubtitles = [
-                ...validSubtitles,
-                { _id: STATIONERY_SUBTITLE_ID, name: 'Stationery Items' }
+                ...allPublications.flatMap(pub => (pub.subtitles || []).map(sub => ({
+                    _id: sub._id,
+                    name: `${pub.name} - ${sub.name}` // Publication aur subtitle ka naam jod dega
+                }))),
             ];
             setSubtitles(allSubtitles);
 
@@ -122,8 +134,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 setExistingSetsClasses(classesWithSets);
                 console.log("Classes with existing sets:", Array.from(classesWithSets));
             }
-
-
         } catch (err) {
             console.error('Error fetching dropdown data:', err);
             showFlashMessage(err.response?.data?.message || 'Network error fetching dropdown data.', 'error');
@@ -132,12 +142,12 @@ export default function CreateSetManagement({ showFlashMessage }) {
             setLoading(false);
         }
     }, [showFlashMessage]);
-
     // --- Reset Form Function ---
     const resetForm = useCallback(() => {
         setCurrentSetId(null);
         setBooksDetail([]);
         setStationeryDetail([]);
+        setSelectedItemType('books');
         setSelectedSubtitle('');
         setSelectedItemToAdd('');
         setItemQuantity('');
@@ -150,6 +160,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setEditingItemType(null);
         setEditingItemId(null);
         setShowAllBooksForSubtitle(false);
+        setShowAllStationery(false); // NEW: Reset stationery filter
+        setSelectedStationeryCategories(new Set()); // NEW: Reset categories
         setShowConfirmModal(false);
         setItemToDelete(null);
         setExistingSetsClasses(new Set());
@@ -158,7 +170,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
 
     // --- Fetch Book Catalogs based on selected subtitle (always fetches all for that subtitle) ---
     const fetchBookCatalogsBySubtitle = useCallback(async () => {
-        if (!selectedSubtitle || selectedSubtitle === STATIONERY_SUBTITLE_ID) {
+        if (!selectedSubtitle) {
             setBookCatalogs([]);
             setSelectedItemToAdd('');
             return;
@@ -177,6 +189,46 @@ export default function CreateSetManagement({ showFlashMessage }) {
             setLoading(false);
         }
     }, [selectedSubtitle, showFlashMessage]);
+
+    // Helper to convert fetched data to local state format
+    const fetchedToLocalFormat = useCallback((items, type) => {
+        return (items || []).map(item => {
+            if (type === 'book') {
+                let subtitleName = '';
+                // Check if the API returned a populated object or just an ID
+                if (item.book.subtitle && typeof item.book.subtitle === 'object' && item.book.subtitle.name) {
+                    // Case 1: API returned a populated object with a name
+                    subtitleName = item.book.subtitle.name;
+                } else if (item.book.subtitle && typeof item.book.subtitle === 'string') {
+                    // Case 2: API returned a subtitle ID string. Look up the name from our dropdown state.
+                    const foundSub = subtitles.find(s => s._id === item.book.subtitle);
+                    subtitleName = foundSub ? foundSub.name : `ID: ${item.book.subtitle}`;
+                }
+
+                return {
+                    book: {
+                        _id: item.book?._id || '',
+                        bookName: item.book?.bookName || 'Unnamed Book',
+                        // Store the resolved name
+                        subtitle: subtitleName
+                    },
+                    quantity: item.quantity,
+                    price: item.price || 0,
+                    status: item.status
+                };
+            } else {
+                return {
+                    item: {
+                        _id: item.item?._id || '',
+                        itemName: item.item?.itemName || 'Unnamed Stationery Item'
+                    },
+                    quantity: item.quantity,
+                    price: item.price || 0,
+                    status: item.status
+                };
+            }
+        });
+    }, [subtitles]); // Add subtitles to the dependency array
 
     // --- Fetch Set Details (Show Info) ---
     const fetchSetDetails = useCallback(async () => {
@@ -226,35 +278,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
         } finally {
             setLoading(false);
         }
-    }, [selectedCustomer, selectedClass, showFlashMessage, resetForm]);
+    }, [selectedCustomer, selectedClass, showFlashMessage, resetForm, fetchedToLocalFormat]);
 
-    // Helper to convert fetched data to local state format
-    const fetchedToLocalFormat = (items, type) => {
-        return (items || []).map(item => {
-            if (type === 'book') {
-                return {
-                    book: {
-                        _id: item.book?._id || '',
-                        bookName: item.book?.bookName || 'Unnamed Book',
-                        subtitle: item.book?.subtitle?.name || item.book?.subtitle || ''
-                    },
-                    quantity: item.quantity,
-                    price: item.price || 0, // Ensure price is picked up correctly from fetched data
-                    status: item.status
-                };
-            } else {
-                return {
-                    item: {
-                        _id: item.item?._id || '',
-                        itemName: item.item?.itemName || 'Unnamed Stationery Item'
-                    },
-                    quantity: item.quantity,
-                    price: item.price || 0,
-                    status: item.status
-                };
-            }
-        });
-    };
 
     // --- Effects for initial data load and subtitle-based book fetching ---
     useEffect(() => {
@@ -262,13 +287,15 @@ export default function CreateSetManagement({ showFlashMessage }) {
     }, [fetchDropdownData]);
 
     useEffect(() => {
-        fetchBookCatalogsBySubtitle();
-    }, [fetchBookCatalogsBySubtitle]);
+        if (selectedItemType === 'books') {
+            fetchBookCatalogsBySubtitle();
+        }
+    }, [fetchBookCatalogsBySubtitle, selectedItemType]);
 
     // Effect to auto-fill price/quantity when selectedItemToAdd changes for stationery, or clear for books
     useEffect(() => {
         if (selectedItemToAdd) {
-            if (selectedSubtitle === STATIONERY_SUBTITLE_ID) {
+            if (selectedItemType === 'stationery') {
                 const itemInfo = stationeryItemsMaster.find(item => item._id === selectedItemToAdd);
                 if (itemInfo) {
                     if (!(editingItemType === 'stationery' && editingItemId === selectedItemToAdd)) {
@@ -279,7 +306,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     setItemQuantity('');
                     setItemPrice('');
                 }
-            } else if (selectedSubtitle !== '') {
+            } else if (selectedItemType === 'books') {
                 const bookInfo = bookCatalogs.find(book => book._id === selectedItemToAdd);
                 if (bookInfo) {
                     console.log('DEBUG: Book selected. Full bookInfo object:', bookInfo);
@@ -299,7 +326,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
             setItemQuantity('');
             setItemPrice('');
         }
-    }, [selectedSubtitle, selectedItemToAdd, stationeryItemsMaster, bookCatalogs, editingItemType, editingItemId]);
+    }, [selectedItemType, selectedItemToAdd, stationeryItemsMaster, bookCatalogs, editingItemType, editingItemId]);
 
 
     // --- Handlers for Adding/Updating Items (Books or Stationery) ---
@@ -315,7 +342,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
             return;
         }
 
-        if (selectedSubtitle === STATIONERY_SUBTITLE_ID) {
+        if (selectedItemType === 'stationery') {
             const itemInfo = stationeryItemsMaster.find(item => item._id === selectedItemToAdd);
             if (!itemInfo) {
                 showFlashMessage('Selected stationery item not found.', 'error');
@@ -353,16 +380,18 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     showFlashMessage('Stationery item added to list.', 'success');
                 }
             }
-        } else {
+        } else { // selectedItemType === 'books'
             const bookInfo = bookCatalogs.find(book => book._id === selectedItemToAdd);
             if (!bookInfo) {
                 showFlashMessage('Selected book not found in catalog.', 'error');
                 return;
             }
+            // FIX: Get subtitle name from the subtitles state using selectedSubtitle ID
+            const subtitleName = subtitles.find(s => s._id === selectedSubtitle)?.name || '';
 
             if (editingItemType === 'book' && editingItemId) {
                 setBooksDetail(prev => prev.map(item =>
-                    item.book._id === editingItemId ? { ...item, quantity: qty, price: price } : item
+                    item.book._id === editingItemId ? { ...item, quantity: qty, price: price, book: { ...item.book, subtitle: subtitleName } } : item
                 ));
                 showFlashMessage('Book successfully updated.', 'success');
             } else {
@@ -382,7 +411,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     setBooksDetail(prev => [
                         ...prev,
                         {
-                            book: { _id: selectedItemToAdd, bookName: bookInfo.bookName || 'Unnamed Book', subtitle: bookInfo.subtitle?.name || bookInfo.subtitle },
+                            // FIX: Store the subtitle name, not the ID, for rendering
+                            book: { _id: selectedItemToAdd, bookName: bookInfo.bookName || 'Unnamed Book', subtitle: subtitleName },
                             quantity: qty,
                             price: price,
                             status: 'pending'
@@ -401,6 +431,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setEditingItemType(null);
         setEditingItemId(null);
         setShowAllBooksForSubtitle(false);
+        setShowAllStationery(false); // NEW: Reset "Show All" stationery checkbox
+        setSelectedStationeryCategories(new Set(stationeryCategories)); // NEW: Reset categories to all
     };
 
     // --- Handlers for Deleting Items from Tables (Open Confirmation Modal) ---
@@ -484,9 +516,11 @@ export default function CreateSetManagement({ showFlashMessage }) {
 
     // --- Handlers for Editing Items from Tables ---
     const handleEditBook = (bookItem) => {
+        // FIX: Find the subtitle by its name from the local state for the dropdown
         const foundSubtitle = subtitles.find(s => s.name === bookItem.book.subtitle);
         const subtitleIdToSet = foundSubtitle ? foundSubtitle._id : '';
 
+        setSelectedItemType('books');
         setSelectedSubtitle(subtitleIdToSet);
         setSelectedItemToAdd(bookItem.book._id);
         setItemQuantity(String(bookItem.quantity));
@@ -498,13 +532,16 @@ export default function CreateSetManagement({ showFlashMessage }) {
     };
 
     const handleEditStationery = (stationeryItem) => {
-        setSelectedSubtitle(STATIONERY_SUBTITLE_ID);
+        setSelectedItemType('stationery');
+        setSelectedSubtitle('');
         setSelectedItemToAdd(stationeryItem.item._id);
         setItemQuantity(String(stationeryItem.quantity));
         setItemPrice(String(stationeryItem.price));
         setEditingItemType('stationery');
         setEditingItemId(stationeryItem.item._id);
         setShowAllBooksForSubtitle(false);
+        setShowAllStationery(true); // NEW: When editing, show all items
+        setSelectedStationeryCategories(new Set(stationeryCategories)); // NEW: Set all categories
         showFlashMessage('Stationery item loaded for editing.', 'info');
     };
 
@@ -926,11 +963,18 @@ export default function CreateSetManagement({ showFlashMessage }) {
         img.src = companyLogo;
     };
 
-    // --- Memoized options for the Item dropdown based on selectedSubtitle and checkbox ---
+    // --- Memoized options for the Item dropdown based on selectedItemType and checkbox ---
     const itemDropdownOptions = useMemo(() => {
-        if (selectedSubtitle === STATIONERY_SUBTITLE_ID) {
-            return stationeryItemsMaster;
-        } else if (selectedSubtitle) {
+        if (selectedItemType === 'stationery') {
+            if (showAllStationery) {
+                return stationeryItemsMaster;
+            } else if (selectedStationeryCategories.size > 0) {
+                // NEW: Filter stationery items by selected categories
+                return stationeryItemsMaster.filter(item => selectedStationeryCategories.has(item.category));
+            } else {
+                return [];
+            }
+        } else if (selectedItemType === 'books' && selectedSubtitle) {
             if (isEditMode && !showAllBooksForSubtitle) {
                 // Corrected: Get subtitle object from subtitles array using selectedSubtitle (ID)
                 const selectedSubtitleObj = subtitles.find(s => s._id === selectedSubtitle);
@@ -969,13 +1013,13 @@ export default function CreateSetManagement({ showFlashMessage }) {
             }
         }
         return [];
-    }, [selectedSubtitle, isEditMode, showAllBooksForSubtitle, stationeryItemsMaster, booksDetail, bookCatalogs, subtitles, editingItemType, editingItemId]);
+    }, [selectedItemType, selectedSubtitle, isEditMode, showAllBooksForSubtitle, showAllStationery, selectedStationeryCategories, stationeryItemsMaster, booksDetail, bookCatalogs, subtitles, editingItemType, editingItemId]);
 
 
     // --- UI Rendering ---
     const isFormDisabled = !selectedCustomer;
     const isAddItemFormDisabled = !selectedCustomer;
-    const isAddItemButtonDisabled = isAddItemFormDisabled || !selectedSubtitle || selectedItemToAdd === '' || itemQuantity === '' || itemPrice === '';
+    const isAddItemButtonDisabled = isAddItemFormDisabled || !selectedItemToAdd || itemQuantity === '' || itemPrice === '' || (selectedItemType === 'books' && !selectedSubtitle);
     const isSaveSetDisabled = (!booksDetail.length && !stationeryDetail.length && !currentSetId) || !selectedCustomer || !selectedClass;
 
     // Filter classes for "Copy To Class" dropdown
@@ -1001,6 +1045,33 @@ export default function CreateSetManagement({ showFlashMessage }) {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+    const handleCategoryChange = (category) => {
+        setSelectedStationeryCategories(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(category)) {
+                newSet.delete(category);
+            } else {
+                newSet.add(category);
+            }
+            setShowAllStationery(false);
+            setSelectedItemToAdd('');
+            return newSet;
+        });
+    };
+
+    const handleShowAllStationeryChange = (e) => {
+        const isChecked = e.target.checked;
+        setShowAllStationery(isChecked);
+        setSelectedItemToAdd('');
+        if (isChecked) {
+            // Select all categories when "Show All" is checked
+            setSelectedStationeryCategories(new Set(stationeryCategories));
+        } else {
+            // Unselect all categories when "Show All" is unchecked
+            setSelectedStationeryCategories(new Set());
+        }
+    };
 
 
     return (
@@ -1039,6 +1110,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                     setEditingItemType(null);
                                     setEditingItemId(null);
                                     setShowAllBooksForSubtitle(false);
+                                    setShowAllStationery(false); // NEW: Reset "Show All" stationery checkbox
+                                    setSelectedStationeryCategories(new Set()); // NEW: Reset categories
                                 }}
                                 disabled={loading}
                                 className="form-select"
@@ -1103,48 +1176,147 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     {/* Add Item Section */}
                     <section className="section-container">
                         <h2 className="section-header1">Add Items to Set</h2>
+                        
+                        {/* Radio Buttons for Item Type */}
                         <div className="form-group">
-                            <label htmlFor="subtitle-select" className="form-label">Sub Title / Item Type:</label>
-                            <select
-                                id="subtitle-select"
-                                value={selectedSubtitle}
-                                onChange={(e) => {
-                                    setSelectedSubtitle(e.target.value);
-                                    setSelectedItemToAdd('');
-                                    setItemQuantity('');
-                                    setItemPrice('');
-                                    setEditingItemType(null);
-                                    setEditingItemId(null);
-                                    setShowAllBooksForSubtitle(false);
-                                }}
-                                disabled={isAddItemFormDisabled || (subtitles || []).length === 0}
-                                className="form-select"
-                            >
-                                <option value="">-- Select --</option>
-                                {console.log("Rendering Subtitle Options from:", subtitles)}
-                                {(subtitles || []).map(subtitle => (
-                                    <option key={subtitle._id} value={subtitle._id}>
-                                        {subtitle.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <label className="form-label">Item Type:</label>
+                            <div className="flex gap-4 items-center">
+                                <div className="flex items-center">
+                                    <input
+                                        type="radio"
+                                        id="item-type-books"
+                                        name="item-type"
+                                        value="books"
+                                        checked={selectedItemType === 'books'}
+                                        onChange={(e) => {
+                                            setSelectedItemType(e.target.value);
+                                            setSelectedSubtitle('');
+                                            setSelectedItemToAdd('');
+                                            setItemQuantity('');
+                                            setItemPrice('');
+                                            setEditingItemType(null);
+                                            setEditingItemId(null);
+                                            setShowAllBooksForSubtitle(false);
+                                            setShowAllStationery(false);
+                                            setSelectedStationeryCategories(new Set());
+                                        }}
+                                        disabled={isAddItemFormDisabled}
+                                        className="radio-input"
+                                    />
+                                    <label htmlFor="item-type-books" className="ml-2 form-label">Books</label>
+                                </div>
+                                <div className="flex items-center">
+                                    <input
+                                        type="radio"
+                                        id="item-type-stationery"
+                                        name="item-type"
+                                        value="stationery"
+                                        checked={selectedItemType === 'stationery'}
+                                        onChange={(e) => {
+                                            setSelectedItemType(e.target.value);
+                                            setSelectedSubtitle('');
+                                            setSelectedItemToAdd('');
+                                            setItemQuantity('');
+                                            setItemPrice('');
+                                            setEditingItemType(null);
+                                            setEditingItemId(null);
+                                            setShowAllBooksForSubtitle(false);
+                                            setShowAllStationery(true); // Initially select "Show All" for stationery
+                                            setSelectedStationeryCategories(new Set(stationeryCategories)); // Select all categories initially
+                                        }}
+                                        disabled={isAddItemFormDisabled}
+                                        className="radio-input"
+                                    />
+                                    <label htmlFor="item-type-stationery" className="ml-2 form-label">Stationery Items</label>
+                                </div>
+                            </div>
                         </div>
+
+                        {selectedItemType === 'books' && (
+                            <div className="form-group">
+                                <label htmlFor="subtitle-select" className="form-label">Sub Title:</label>
+                                <select
+                                    id="subtitle-select"
+                                    value={selectedSubtitle}
+                                    onChange={(e) => {
+                                        setSelectedSubtitle(e.target.value);
+                                        setSelectedItemToAdd('');
+                                        setItemQuantity('');
+                                        setItemPrice('');
+                                        setEditingItemType(null);
+                                        setEditingItemId(null);
+                                        setShowAllBooksForSubtitle(false);
+                                    }}
+                                    disabled={isAddItemFormDisabled || (subtitles || []).length === 0}
+                                    className="form-select"
+                                >
+                                    <option value="">-- Select --</option>
+                                    {console.log("Rendering Subtitle Options from:", subtitles)}
+                                    {(subtitles || []).map(subtitle => (
+                                        <option key={subtitle._id} value={subtitle._id}>
+                                            {subtitle.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        
+                        {selectedItemType === 'stationery' && (
+                            <>
+                                <div className="form-group">
+                                    <label className="form-label">Filter by Category:</label>
+                                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                                        {stationeryCategories.length > 0 ? (
+                                            stationeryCategories.map(category => (
+                                                <div key={category} className="flex items-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`category-checkbox-${category}`}
+                                                        value={category}
+                                                        checked={selectedStationeryCategories.has(category)}
+                                                        onChange={() => handleCategoryChange(category)}
+                                                        disabled={isAddItemFormDisabled || loading}
+                                                        className="checkbox-input"
+                                                    />
+                                                    <label htmlFor={`category-checkbox-${category}`} className="ml-2 form-label">{category}</label>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-sm text-gray-500">No categories found.</p>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="checkbox-group mb-4">
+                                    <input
+                                        type="checkbox"
+                                        id="show-all-stationery-checkbox"
+                                        checked={showAllStationery}
+                                        onChange={handleShowAllStationeryChange}
+                                        disabled={isAddItemFormDisabled || loading}
+                                        className="checkbox-input"
+                                    />
+                                    <label htmlFor="show-all-stationery-checkbox" className="checkbox-label">Show all stationery items</label>
+                                </div>
+                            </>
+                        )}
+
+
                         <div className="form-group">
                             <label htmlFor="item-select" className="form-label">
-                                {selectedSubtitle === STATIONERY_SUBTITLE_ID ? 'Stationery Item:' : 'Book:'}
+                                {selectedItemType === 'stationery' ? 'Stationery Item:' : 'Book:'}
                             </label>
                             <select
                                 id="item-select"
                                 value={selectedItemToAdd}
                                 onChange={(e) => setSelectedItemToAdd(e.target.value)}
-                                disabled={isAddItemFormDisabled || !selectedSubtitle ||
+                                disabled={isAddItemFormDisabled || (selectedItemType === 'books' && !selectedSubtitle) ||
                                     (itemDropdownOptions || []).length === 0 || loading
                                 }
                                 className="form-select"
                             >
                                 <option value="">-- Select --</option>
                                 {console.log("Rendering Item Options from itemDropdownOptions:", itemDropdownOptions)}
-                                {selectedSubtitle === STATIONERY_SUBTITLE_ID ? (
+                                {selectedItemType === 'stationery' ? (
                                     (itemDropdownOptions || []).map(item => (
                                         <option key={item._id} value={item._id}>
                                             {item.itemName || 'Unnamed Stationery Item'}
@@ -1159,7 +1331,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 )}
                             </select>
                         </div>
-                        {selectedSubtitle && selectedSubtitle !== STATIONERY_SUBTITLE_ID && (
+                        {selectedItemType === 'books' && isEditMode && (
                             <div className="checkbox-group mb-4">
                                 <input
                                     type="checkbox"
@@ -1209,7 +1381,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             disabled={isAddItemButtonDisabled || loading}
                             className="btn-success"
                         >
-                            {/* <FaPlusCircle className="btn-icon-mr" />  */}
+                            <FaPlusCircle className="btn-icon-mr" />
                             {editingItemId ? 'Update Item' : 'Add Item'}
                         </button>
                     </section>
@@ -1255,7 +1427,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             disabled={isCopySetButtonDisabled || loading}
                             className="btn-purple"
                         >
-                            {/* <FaCopy className="btn-icon-mr" /> */}
+                            <FaCopy className="btn-icon-mr" />
                             Copy Set
                         </button>
                     </section>
@@ -1354,7 +1526,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         </tr>
                                     ) : (
                                         booksDetail.map((item, index) => (
-                                            <tr key={item.book._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}> {/* Added for coloring */}
+                                            <tr key={item.book._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
                                                 <td className="table-cell whitespace-nowrap font-medium">{index + 1}</td>
                                                 <td className="table-cell whitespace-nowrap">{getStringValue(item.book.subtitle)}</td>
                                                 <td className="table-cell whitespace-normal">{getStringValue(item.book.bookName)}</td>
@@ -1418,7 +1590,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                             </tr>
                                         ) : (
                                             stationeryDetail.map((item, index) => (
-                                                <tr key={item.item._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}> {/* Added for coloring */}
+                                                <tr key={item.item._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
                                                     <td className="table-cell whitespace-nowrap font-medium">{index + 1}</td>
                                                     <td className="table-cell whitespace-normal">{getStringValue(item.item.itemName)}</td>
                                                     <td className="table-cell whitespace-nowrap">{item.quantity}</td>
