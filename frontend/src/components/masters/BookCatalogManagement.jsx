@@ -747,11 +747,12 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                     disabled={loading || publications.length === 0}
                                     className="form-select"
                                 >
+                                    <option value="">-- SELECT PUBLICATION   --</option>
                                     {publications.length === 0 ? (
                                         <option value="">Loading Publications...</option>
                                     ) : (
                                         <>
-                                            <option value="">-- SELECT PUBLICATION --</option>
+                                            {/* <option value="">-- SELECT PUBLICATION --</option> */}
                                             {publications.map(pub => (
                                                 <option key={pub._id} value={pub._id}>
                                                     {pub.name}

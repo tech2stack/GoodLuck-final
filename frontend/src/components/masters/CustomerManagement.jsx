@@ -1635,16 +1635,21 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                             <td>{customer.chequeOfBankName || 'N/A'}</td>
                                             <td className="actions-column">
                                                 {(customer.chequeImage || customer.passportImage || customer.otherAttachment) && (
-                                                    <button onClick={() => openAttachmentModal(customer)} className="btn-action view">
-                                                        <FaEye />
+                                                    <button
+                                                        onClick={() => openAttachmentModal(customer)}
+                                                        className="action-icon-button view-button"
+                                                        title="View Attachment"
+                                                    >
+                                                        <FaEye className="icon" />
                                                     </button>
                                                 )}
+
                                             </td>
                                             <td className="actions-column">
-                                                <button onClick={() => handleEdit(customer)} className="btn-action edit">
+                                                <button onClick={() => handleEdit(customer)} className="action-icon-button edit-button">
                                                     <FaEdit />
                                                 </button>
-                                                <button onClick={() => openConfirmModal(customer)} className="btn-action delete">
+                                                <button onClick={() => openConfirmModal(customer)} className="action-icon-button delete-button">
                                                     <FaTrashAlt />
                                                 </button>
                                             </td>

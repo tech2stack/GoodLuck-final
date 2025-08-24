@@ -80,7 +80,7 @@
     
     letter-spacing: 0.5px;
     margin-bottom: 15px;
-    margin-top: 8px;
+    margin-top:15px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.05); /* Very light shadow */
 }
 
@@ -219,7 +219,7 @@
     flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
     gap: 10px; /* Space between buttons */
     justify-content: center; /* Center buttons horizontally */
-    margin-top: 20px; /* Space above buttons */
+    /* margin-top: 20px; Space above buttons */
     width: 100%; /* Take full width */
 }
 
