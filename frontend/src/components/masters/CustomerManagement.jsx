@@ -43,6 +43,12 @@ const CustomerManagement = ({ showFlashMessage }) => {
     const [editingFirmId, setEditingFirmId] = useState(null);
     const [firmName, setFirmName] = useState('');
 
+    const [firmAddress, setFirmAddress] = useState('');
+    const [firmRemark, setFirmRemark] = useState('');
+    const [firmGstin, setFirmGstin] = useState('');
+    const [selectedFirmLogo, setSelectedFirmLogo] = useState(null);
+    const [firmLogoPreviewUrl, setFirmLogoPreviewUrl] = useState('');
+
     // Initial form data state
     const initialFormData = {
         firm: '', // NEW: Firm ID
@@ -52,17 +58,14 @@ const CustomerManagement = ({ showFlashMessage }) => {
         city: '',   // Will store City ID
         contactPerson: '',
         mobileNumber: '',
-        // email field is no longer required
         email: '',
         gstNumber: '',
         aadharNumber: '',
         panNumber: '',
         shopAddress: '',
-        homeAddress: '',
         status: 'active', // Default status
         primaryCustomerType: null, // Change: Default to null, no radio button selected
         secondaryCustomerType: null, // Change: Secondary type is initially null
-        // zone: '',
         salesBy: '', // This will now store Sales Representative ID
         discount: 0,
         returnTime: '',
@@ -71,8 +74,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
         ifscCode: '',
         openingBalance: 0,
         balanceType: 'Dr.',
-
-        // NEW FIELDS FOR "OTHER DETAILS"
         customerShopName: '',
         age: '',
         so: '',
@@ -91,6 +92,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
         closedDate: '',
         chequeNo: '',
         chequeOfBankName: '',
+        profitMargin: 0, // NEW: Added profitMargin
+        advancePayment: 0, // NEW: Added advancePayment
     };
 
     // State for form inputs
@@ -151,13 +154,10 @@ const CustomerManagement = ({ showFlashMessage }) => {
     const getStringValue = (field) => field ? String(field).trim() : 'N/A';
 
     // --- Helper function to get address string ---
+    // --- Helper function to get address string ---
     const getAddressString = (customer) => {
         const shop = getStringValue(customer.shopAddress);
-        const home = getStringValue(customer.homeAddress);
-        let addressParts = [];
-        if (shop !== 'N/A') addressParts.push(`Shop: ${shop}`);
-        if (home !== 'N/A') addressParts.push(`Home: ${home}`);
-        return addressParts.length > 0 ? addressParts.join('\n') : 'N/A';
+        return shop !== 'N/A' ? `Shop: ${shop}` : 'N/A';
     };
 
     // --- Helper function to get documents string ---
@@ -189,28 +189,57 @@ const CustomerManagement = ({ showFlashMessage }) => {
     }, [fetchFirms]);
 
     // --- Handle Firm Submit (Add/Update) ---
-    const handleFirmSubmit = async (e) => {
-        e.preventDefault();
-        if (!firmName) {
-            showFlashMessage('Firm name is required.', 'error');
-            return;
-        }
+   const handleFirmSubmit = async (e) => {
+    e.preventDefault();
+    if (!firmName) {
+        showFlashMessage('Firm name is required.', 'error');
+        return;
+    }
 
-        try {
-            if (editingFirmId) {
-                await api.patch(`/firms/${editingFirmId}`, { name: firmName });
-                showFlashMessage('Firm updated successfully!', 'success');
-            } else {
-                await api.post('/firms', { name: firmName });
-                showFlashMessage('Firm added successfully!', 'success');
-            }
-            fetchFirms();
-            setFirmName('');
-            setEditingFirmId(null);
-            setShowFirmModal(false);
-        } catch (err) {
-            showFlashMessage(err.response?.data?.message || 'Failed to save firm.', 'error');
+    const firmFormData = new FormData();
+    firmFormData.append('name', firmName);
+    firmFormData.append('address', firmAddress || '');
+    firmFormData.append('remark', firmRemark || '');
+    firmFormData.append('gstin', firmGstin || '');
+    if (selectedFirmLogo) {
+        firmFormData.append('logo', selectedFirmLogo);
+        console.log('Logo file:', selectedFirmLogo.name, selectedFirmLogo.size); // Debug
+    } else {
+        console.log('No logo file selected');
+    }
+
+    try {
+        if (editingFirmId) {
+            await api.patch(`/firms/${editingFirmId}`, firmFormData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            showFlashMessage('Firm updated successfully!', 'success');
+        } else {
+            await api.post('/firms', firmFormData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            showFlashMessage('Firm added successfully!', 'success');
         }
+        fetchFirms();
+        setFirmName('');
+        setFirmAddress('');
+        setFirmRemark('');
+        setFirmGstin('');
+        setSelectedFirmLogo(null);
+        setFirmLogoPreviewUrl('');
+        setEditingFirmId(null);
+        setShowFirmModal(false);
+    } catch (err) {
+        console.error('Firm submit error:', err.response?.data || err.message); // Debug
+        showFlashMessage(err.response?.data?.message || 'Failed to save firm.', 'error');
+    }
+};
+
+    const openFirmLogoModal = (firm) => {
+        setCurrentAttachmentUrls({
+            logo: firm.logo ? `${BACKEND_BASE_URL}/uploads/firm-logos/${firm.logo}` : '' // Note: lowercase 'uploads'
+        });
+        setShowAttachmentModal(true);
     };
 
     // --- Handle Firm Delete ---
@@ -361,6 +390,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
     useEffect(() => {
         fetchDropdownData();
     }, [fetchDropdownData]); // This fetches branches, cities, and sales reps once or when editingCustomerId changes
+
+
 
     // --- Form Handling ---
     const handleChange = (e) => {
@@ -606,13 +637,14 @@ const CustomerManagement = ({ showFlashMessage }) => {
             secondaryType = parts[1];
         }
 
-        // Check if any of the new "Other Details" fields have data to determine
+        // Check if any of the "Other Details" fields have data to determine
         // if the section should be visible on edit.
         const hasOtherDetails = [
             'customerShopName', 'age', 'so', 'customerCity', 'distt', 'state', 'pinCode',
             'shopRegNo', 'fixedTradeDiscount', 'remark', 'goodsDeliveredTransportationPay',
             'goodsReturnTransportationPay', 'finalSalesReturnMonth', 'finalPaymentInAccountMonth',
-            'paymentConcernPersonName', 'closedDate', 'chequeNo', 'chequeOfBankName'
+            'paymentConcernPersonName', 'closedDate', 'chequeNo', 'chequeOfBankName',
+            'profitMargin', 'advancePayment' // NEW: Added profitMargin and advancePayment
         ].some(key => customerItem[key] !== null && customerItem[key] !== '' && customerItem[key] !== 0);
 
         setFormData({
@@ -629,7 +661,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
             aadharNumber: customerItem.aadharNumber || '',
             panNumber: customerItem.panNumber || '',
             shopAddress: customerItem.shopAddress || '',
-            homeAddress: customerItem.homeAddress || '',
             status: customerItem.status || 'active',
             primaryCustomerType: primaryType,
             secondaryCustomerType: secondaryType,
@@ -657,9 +688,11 @@ const CustomerManagement = ({ showFlashMessage }) => {
             finalSalesReturnMonth: customerItem.finalSalesReturnMonth || '',
             finalPaymentInAccountMonth: customerItem.finalPaymentInAccountMonth || '',
             paymentConcernPersonName: customerItem.paymentConcernPersonName || '',
-            closedDate: customerItem.closedDate ? new Date(customerItem.closedDate).toISOString().split('T')[0] : '', // Format for date input
+            closedDate: customerItem.closedDate ? new Date(customerItem.closedDate).toISOString().split('T')[0] : '',
             chequeNo: customerItem.chequeNo || '',
             chequeOfBankName: customerItem.chequeOfBankName || '',
+            profitMargin: customerItem.profitMargin || 0, // NEW: Added profitMargin
+            advancePayment: customerItem.advancePayment || 0 // NEW: Added advancePayment
         });
 
         // Set the state for showing/hiding the "Other Details" section
@@ -1106,16 +1139,17 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 ></textarea>
                             </div>
                             <div className="form-group">
-                                <label htmlFor="homeAddress">Home Address:</label>
-                                <textarea
-                                    id="homeAddress"
-                                    name="homeAddress"
-                                    value={formData.homeAddress}
+                                <label htmlFor="profitMargin">Profit Margin (%):</label>
+                                <input
+                                    type="number"
+                                    id="profitMargin"
+                                    name="profitMargin"
+                                    value={formData.profitMargin}
                                     onChange={handleChange}
-                                    placeholder="Full Home Address"
+                                    placeholder="Enter profit margin"
                                     disabled={loading}
-                                    className="form-textarea"
-                                ></textarea>
+                                    className="form-input"
+                                />
                             </div>
                         </div>
                         <div className="form-group">
@@ -1405,6 +1439,20 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                         <div className="form-group">
                                             <label htmlFor="paymentConcernPersonName">Payment Concern Person</label>
                                             <input type="text" id="paymentConcernPersonName" name="paymentConcernPersonName" value={formData.paymentConcernPersonName} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="advancePayment">Advance Payment:</label>
+                                            <input
+                                                type="number"
+                                                id="advancePayment"
+                                                name="advancePayment"
+                                                value={formData.advancePayment}
+                                                onChange={handleChange}
+                                                placeholder="Enter advance payment"
+
+                                                disabled={loading}
+                                                className="form-input"
+                                            />
                                         </div>
                                         <div className="form-group">
                                             <label htmlFor="closedDate">Closed Date</label>
@@ -1698,8 +1746,19 @@ const CustomerManagement = ({ showFlashMessage }) => {
             {showAttachmentModal && (
                 <div className="modal-backdrop">
                     <div className="modal-content">
-                        <h3>Customer Attachments</h3>
+                        <h3>Attachments</h3> {/* Changed to generic title */}
                         <div className="attachment-list">
+                            {currentAttachmentUrls.logo && (
+                                <div className="attachment-item">
+                                    <h4>Firm Logo</h4>
+                                    <a href={currentAttachmentUrls.logo} target="_blank" rel="noopener noreferrer">
+                                        <img src={currentAttachmentUrls.logo} alt="Firm Logo" />
+                                    </a>
+                                    <a href={currentAttachmentUrls.logo} download className="btn-download">
+                                        <FaDownload /> Download
+                                    </a>
+                                </div>
+                            )}
                             {currentAttachmentUrls.cheque && (
                                 <div className="attachment-item">
                                     <h4>Cheque Image</h4>
@@ -1733,12 +1792,12 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     </a>
                                 </div>
                             )}
-                            {(!currentAttachmentUrls.cheque && !currentAttachmentUrls.passport && !currentAttachmentUrls.other) && (
-                                <p>No attachments found for this customer.</p>
+                            {(!currentAttachmentUrls.logo && !currentAttachmentUrls.cheque && !currentAttachmentUrls.passport && !currentAttachmentUrls.other) && (
+                                <p>No attachments found.</p>
                             )}
                         </div>
                         <div className="modal-actions mt-4">
-                            <button onClick={closeAttachmentModal} className="btn-secondary">Close</button>
+                            <button onClick={() => setShowAttachmentModal(false)} className="btn-secondary">Close</button>
                         </div>
                     </div>
                 </div>
@@ -1763,20 +1822,94 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
+                            <div className="form-group">
+                                <label htmlFor="firmAddress">Address:</label>
+                                <textarea
+                                    id="firmAddress"
+                                    value={firmAddress}
+                                    onChange={(e) => setFirmAddress(e.target.value)}
+                                    placeholder="Enter firm address"
+                                    disabled={loading}
+                                    className="form-textarea"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="firmRemark">Remark:</label>
+                                <textarea
+                                    id="firmRemark"
+                                    value={firmRemark}
+                                    onChange={(e) => setFirmRemark(e.target.value)}
+                                    placeholder="Enter remarks"
+                                    disabled={loading}
+                                    className="form-textarea"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="firmGstin">GSTIN:</label>
+                                <input
+                                    type="text"
+                                    id="firmGstin"
+                                    value={firmGstin}
+                                    onChange={(e) => setFirmGstin(e.target.value)}
+                                    placeholder="Enter GSTIN (e.g., 22AAAAA0000A1Z5)"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="firmLogo">Logo:</label>
+                                <input
+                                    type="file"
+                                    id="firmLogo"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        setSelectedFirmLogo(file);
+                                        if (file) {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => setFirmLogoPreviewUrl(reader.result);
+                                            reader.readAsDataURL(file);
+                                        } else {
+                                            setFirmLogoPreviewUrl('');
+                                        }
+                                    }}
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                                {firmLogoPreviewUrl && (
+                                    <div className="image-preview">
+                                        <img src={firmLogoPreviewUrl} alt="Firm Logo Preview" style={{ maxWidth: '100px', marginTop: '10px' }} />
+                                    </div>
+                                )}
+                            </div>
                             <div className="modal-actions">
                                 <button type="submit" className="btn-primary" disabled={loading}>
                                     {loading ? <FaSpinner className="icon mr-2 animate-spin" /> : editingFirmId ? 'Update' : 'Add'}
                                 </button>
-                                <button type="button" onClick={() => setShowFirmModal(false)} className="btn-secondary" disabled={loading}>
+                                <button type="button" onClick={() => {
+                                    setShowFirmModal(false);
+                                    setFirmName('');
+                                    setFirmAddress('');
+                                    setFirmRemark('');
+                                    setFirmGstin('');
+                                    setSelectedFirmLogo(null);
+                                    setFirmLogoPreviewUrl('');
+                                    setEditingFirmId(null);
+                                }} className="btn-secondary" disabled={loading}>
                                     Cancel
                                 </button>
                             </div>
                         </form>
                         <h3>Available Firms</h3>
+                        {/* ... firm table (updated below) ... */}
                         <table className="app-table">
                             <thead>
                                 <tr>
                                     <th>Name</th>
+                                    <th>Address</th>
+                                    <th>Remark</th>
+                                    <th>GSTIN</th>
+                                    <th>Logo</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -1784,10 +1917,31 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 {firms.map(firm => (
                                     <tr key={firm._id}>
                                         <td>{firm.name}</td>
+                                        <td>{firm.address || 'N/A'}</td>
+                                        <td>{firm.remark || 'N/A'}</td>
+                                        <td>{firm.gstin || 'N/A'}</td>
+                                        <td>
+                                            {firm.logo ? (
+                                                <button
+                                                    onClick={() => openFirmLogoModal(firm)}
+                                                    className="action-icon-button view-button"
+                                                    title="View Logo"
+                                                >
+                                                    <FaEye className="icon" />
+                                                </button>
+                                            ) : (
+                                                <FaFile className="icon" />
+                                            )}
+                                        </td>
                                         <td className="actions-column">
                                             <button onClick={() => {
                                                 setEditingFirmId(firm._id);
                                                 setFirmName(firm.name);
+                                                setFirmAddress(firm.address || '');
+                                                setFirmRemark(firm.remark || '');
+                                                setFirmGstin(firm.gstin || '');
+                                                setFirmLogoPreviewUrl(firm.logo ? `${BACKEND_BASE_URL}/uploads/firm-logos/${firm.logo}` : '');
+                                                setSelectedFirmLogo(null);
                                             }} className="btn-action edit">
                                                 <FaEdit />
                                             </button>
