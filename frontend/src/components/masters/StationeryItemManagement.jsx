@@ -28,6 +28,8 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         itemName: '',
         price: '',
         marginPercentage: '', // NEW: Add marginPercentage to form data
+        customerDiscountPercentage: '', // NEW: Add customerDiscountPercentage
+        companyDiscountPercentage: '',  // NEW: Add companyDiscountPercentage
         status: 'active',
     });
     // State for loading indicators
@@ -73,6 +75,22 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         const date = new Date(dateString);
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
+
+    // --- Automatic Profit Margin Calculation Logic ---
+    useEffect(() => {
+        const { customerDiscountPercentage, companyDiscountPercentage } = formData;
+        const totalDiscount = (parseFloat(customerDiscountPercentage) || 0) + (parseFloat(companyDiscountPercentage) || 0);
+        const newMargin = 100 - totalDiscount;
+
+        // Update marginPercentage in formData, but only if it's a valid number
+        if (!isNaN(newMargin) && newMargin >= 0 && newMargin <= 100) {
+            setFormData(prev => ({
+                ...prev,
+                marginPercentage: newMargin
+            }));
+        }
+    }, [formData.customerDiscountPercentage, formData.companyDiscountPercentage]);
+
 
     // --- Fetch Stationery Items ---
     const fetchStationeryItems = useCallback(async (scrollToNew = false) => {
@@ -155,13 +173,14 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         setLocalError(null);
 
         // Basic validation
-        if (!formData.itemName.trim() || formData.price === '' || formData.price === null || isNaN(formData.price) || formData.marginPercentage === '' || formData.marginPercentage === null || isNaN(formData.marginPercentage)) {
-            setLocalError('Please fill in all required fields (Item Name, Price, Margin %). Price and Margin must be valid numbers.');
+        // NEW: Validate all fields
+        if (!formData.itemName.trim() || formData.price === '' || formData.price === null || isNaN(formData.price) || formData.marginPercentage === '' || formData.marginPercentage === null || isNaN(formData.marginPercentage) || formData.customerDiscountPercentage === '' || formData.customerDiscountPercentage === null || isNaN(formData.customerDiscountPercentage) || formData.companyDiscountPercentage === '' || formData.companyDiscountPercentage === null || isNaN(formData.companyDiscountPercentage)) {
+            setLocalError('Please fill in all required fields (Item Name, Price, Margin %, Customer Discount %, Company Discount %). Price, Margin, and Discounts must be valid numbers.');
             showFlashMessage('Please fill in all required fields.', 'error');
             setLoading(false);
             return;
         }
-        
+
         if (!selectedCategory) {
             setLocalError('Please select a category from the dropdown above the table.');
             showFlashMessage('Please select a category first.', 'error');
@@ -183,6 +202,21 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
             return;
         }
 
+        if (formData.customerDiscountPercentage < 0) {
+            setLocalError('Customer discount cannot be negative.');
+            showFlashMessage('Customer discount cannot be negative.', 'error');
+            setLoading(false);
+            return;
+        }
+
+        if (formData.companyDiscountPercentage < 0) {
+            setLocalError('Company discount cannot be negative.');
+            showFlashMessage('Company discount cannot be negative.', 'error');
+            setLoading(false);
+            return;
+        }
+
+
         try {
             let response;
             const dataToSend = {
@@ -190,6 +224,8 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                 category: selectedCategory, // Use the globally selected category
                 price: parseFloat(formData.price),
                 marginPercentage: parseFloat(formData.marginPercentage), // NEW: Add marginPercentage to dataToSend
+                customerDiscountPercentage: parseFloat(formData.customerDiscountPercentage), // NEW: Add to dataToSend
+                companyDiscountPercentage: parseFloat(formData.companyDiscountPercentage),  // NEW: Add to dataToSend
                 status: formData.status
             };
 
@@ -209,7 +245,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                 }
             }
             // Reset form and re-fetch stationery items
-            setFormData({ itemName: '', price: '', marginPercentage: '', status: 'active' }); // NEW: Reset marginPercentage
+            setFormData({ itemName: '', price: '', marginPercentage: '', customerDiscountPercentage: '', companyDiscountPercentage: '', status: 'active' }); // NEW: Reset all fields
             setEditingItemId(null);
             fetchStationeryItems(true);
         } catch (err) {
@@ -224,7 +260,14 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
 
     // --- Edit and Delete Operations ---
     const handleEdit = (item) => {
-        setFormData({ itemName: item.itemName, price: item.price, marginPercentage: item.marginPercentage, status: item.status }); // NEW: Set marginPercentage
+        setFormData({
+            itemName: item.itemName,
+            price: item.price,
+            marginPercentage: item.marginPercentage,
+            customerDiscountPercentage: item.customerDiscountPercentage, // NEW: Set this field
+            companyDiscountPercentage: item.companyDiscountPercentage,   // NEW: Set this field
+            status: item.status
+        });
         setSelectedCategory(item.category);
         setEditingItemId(item._id);
         setLocalError(null);
@@ -267,7 +310,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
     };
 
     const handleCancelEdit = () => {
-        setFormData({ itemName: '', price: '', marginPercentage: '', status: 'active' }); // NEW: Reset marginPercentage
+        setFormData({ itemName: '', price: '', marginPercentage: '', customerDiscountPercentage: '', companyDiscountPercentage: '', status: 'active' }); // NEW: Reset all fields
         setSelectedCategory('');
         setEditingItemId(null);
         setLocalError(null);
@@ -281,6 +324,8 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
             const category = item.category ? String(item.category).toLowerCase() : '';
             const price = item.price !== undefined && item.price !== null ? String(item.price).toLowerCase() : '';
             const marginPercentage = item.marginPercentage !== undefined && item.marginPercentage !== null ? String(item.marginPercentage).toLowerCase() : ''; // NEW: Include marginPercentage in search
+            const customerDiscountPercentage = item.customerDiscountPercentage !== undefined && item.customerDiscountPercentage !== null ? String(item.customerDiscountPercentage).toLowerCase() : ''; // NEW: Include in search
+            const companyDiscountPercentage = item.companyDiscountPercentage !== undefined && item.companyDiscountPercentage !== null ? String(item.companyDiscountPercentage).toLowerCase() : ''; // NEW: Include in search
             const status = item.status ? String(item.status).toLowerCase() : '';
 
             const matchesSearchTerm = (
@@ -288,6 +333,8 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                 category.includes(lowercasedSearchTerm) ||
                 price.includes(lowercasedSearchTerm) ||
                 marginPercentage.includes(lowercasedSearchTerm) || // NEW: Search by marginPercentage
+                customerDiscountPercentage.includes(lowercasedSearchTerm) || // NEW: Search by this field
+                companyDiscountPercentage.includes(lowercasedSearchTerm) || // NEW: Search by this field
                 status.includes(lowercasedSearchTerm)
             );
 
@@ -348,19 +395,30 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
 
             const tableStartY = startYPositionForTable + 20;
 
-            const tableColumn = ["S.No.", "Item Name", "Category", "Price (Rs.)", "Margin %", "Add Date", "Status"]; // NEW: Add Margin % to PDF table
+            const tableColumn = ["S.No.", "Item Name", "Category", "Price (Rs.)", "Margin %", "Customer Discount %", "Company Discount %", "Add Date", "Status"]; // NEW: Add new columns
             const tableRows = [];
 
             filteredItems.forEach((item, index) => {
                 const formattedPrice = typeof item.price === 'number' && !isNaN(item.price)
                     ? `Rs ${item.price.toFixed(2)}`
                     : 'N/A';
+                const formattedMargin = typeof item.marginPercentage === 'number' && !isNaN(item.marginPercentage)
+                    ? `${item.marginPercentage.toFixed(2)}%`
+                    : 'N/A';
+                const formattedCustomerDiscount = typeof item.customerDiscountPercentage === 'number' && !isNaN(item.customerDiscountPercentage)
+                    ? `${item.customerDiscountPercentage.toFixed(2)}%`
+                    : 'N/A';
+                const formattedCompanyDiscount = typeof item.companyDiscountPercentage === 'number' && !isNaN(item.companyDiscountPercentage)
+                    ? `${item.companyDiscountPercentage.toFixed(2)}%`
+                    : 'N/A';
                 const itemData = [
                     String(index + 1),
                     String(item.itemName || '').trim(),
                     String(item.category || '').trim(),
                     formattedPrice,
-                   // formattedMargin, // NEW: Add marginPercentage to row data
+                    formattedMargin, // NEW: Add marginPercentage to row data
+                    formattedCustomerDiscount, // NEW: Add customer discount
+                    formattedCompanyDiscount,  // NEW: Add company discount
                     formatDateWithTime(item.createdAt),
                     String(item.status || '').trim().charAt(0).toUpperCase() + String(item.status || '').trim().slice(1)
                 ];
@@ -399,8 +457,10 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                     2: { cellWidth: 'auto', halign: 'left' },
                     3: { cellWidth: 'auto', halign: 'right' },
                     4: { cellWidth: 'auto', halign: 'right' }, // NEW: Column style for Margin %
-                    5: { halign: 'center' },
-                    6: { halign: 'center' }
+                    5: { cellWidth: 'auto', halign: 'right' }, // NEW: Column for customer discount
+                    6: { cellWidth: 'auto', halign: 'right' }, // NEW: Column for company discount
+                    7: { halign: 'center' },
+                    8: { halign: 'center' }
                 },
                 margin: { top: 10, right: 14, bottom: 10, left: 14 },
                 didDrawPage: function (data) {
@@ -485,6 +545,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                         <h3 className="form-title">{editingItemId ? 'Edit Stationery Item' : 'Add New Stationery Item'}</h3>
                         {/* Category Filter Dropdown, with a cleaner design that aligns with the search input */}
                         <div className="form-group">
+                            <label htmlFor="category-filter">Category:</label>
                             <select
                                 id="category-filter"
                                 value={selectedCategory}
@@ -534,21 +595,56 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                             />
                         </div>
 
+                        {/* NEW: Add Customer Discount Percentage field */}
+                        <div className="form-group">
+                            <label htmlFor="customerDiscountPercentage">Customer Discount (%):</label>
+                            <input
+                                type="number"
+                                id="customerDiscountPercentage"
+                                name="customerDiscountPercentage"
+                                value={formData.customerDiscountPercentage}
+                                onChange={handleChange}
+                                placeholder="e.g., 20"
+                                min="0"
+                                step="0.01"
+                                required
+                                disabled={loading}
+                                className="form-input"
+                            />
+                        </div>
+
+                        {/* NEW: Add Company Discount Percentage field */}
+                        <div className="form-group">
+                            <label htmlFor="companyDiscountPercentage">Company Discount (%):</label>
+                            <input
+                                type="number"
+                                id="companyDiscountPercentage"
+                                name="companyDiscountPercentage"
+                                value={formData.companyDiscountPercentage}
+                                onChange={handleChange}
+                                placeholder="e.g., 10"
+                                min="0"
+                                step="0.01"
+                                required
+                                disabled={loading}
+                                className="form-input"
+                            />
+                        </div>
+
                         {/* NEW: Add Margin Percentage field */}
                         <div className="form-group">
-                            <label htmlFor="marginPercentage">Margin (%):</label>
+                            <label htmlFor="marginPercentage">Profit Margin (%):</label>
                             <input
                                 type="number"
                                 id="marginPercentage"
                                 name="marginPercentage"
                                 value={formData.marginPercentage}
-                                onChange={handleChange}
-                                placeholder="e.g., 20"
+                                placeholder="e.g., 70"
                                 min="0"
                                 max="100"
                                 step="0.01"
                                 required
-                                disabled={loading}
+                                disabled={true} // This field is now read-only and automatically calculated
                                 className="form-input"
                             />
                         </div>
@@ -626,7 +722,9 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                                         <th>Item Name</th>
                                         <th>Category</th>
                                         <th>Price</th>
-                                        <th>Margin (%)</th> 
+                                        <th>Customer Discount (%)</th>
+                                        <th>Company Discount (%)</th>
+                                        <th>Margin (%)</th>
                                         <th>Add Date</th>
                                         <th>Status</th>
                                         <th>Action</th>
@@ -641,6 +739,20 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                                             <td>
                                                 {typeof item.price === 'number' && !isNaN(item.price)
                                                     ? `Rs ${item.price.toFixed(2)}`
+                                                    : 'N/A'
+                                                }
+                                            </td>
+                                            {/* NEW: Display customerDiscountPercentage */}
+                                            <td>
+                                                {typeof item.customerDiscountPercentage === 'number' && !isNaN(item.customerDiscountPercentage)
+                                                    ? `${item.customerDiscountPercentage.toFixed(2)}%`
+                                                    : 'N/A'
+                                                }
+                                            </td>
+                                            {/* NEW: Display companyDiscountPercentage */}
+                                            <td>
+                                                {typeof item.companyDiscountPercentage === 'number' && !isNaN(item.companyDiscountPercentage)
+                                                    ? `${item.companyDiscountPercentage.toFixed(2)}%`
                                                     : 'N/A'
                                                 }
                                             </td>

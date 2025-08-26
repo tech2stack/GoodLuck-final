@@ -36,6 +36,14 @@ router.get('/books-by-customer-class', setController.getBooksByCustomerAndClass)
 // Route for fetching all books for a specific school (customer) across all classes
 router.get('/books-by-school', setController.getBooksBySchool);
 
+// NEW: Routes for set quantities
+router
+    .route('/set-quantities/:customerId')
+    .get(setController.getSetQuantitiesByCustomer)
+    .post(setController.setQuantitiesByCustomer);
+
+// NEW: Route to delete a specific set quantity
+router.delete('/set-quantities/:customerId/:classId', setController.deleteSetQuantityByCustomerAndClass);
 
 // --- Routes for dropdown data ---
 router.get('/dropdowns/customers', (req, res, next) => {
@@ -69,8 +77,7 @@ router.get('/dropdowns/branches', (req, res, next) => {
     setController.getAllBranchesForDropdown(req, res, next);
 });
 
-// NEW: Route to get customers by branch for dropdown
+// Route to get customers by branch for dropdown
 router.get('/dropdowns/customers-by-branch', setController.getCustomersByBranch);
-
 
 module.exports = router;

@@ -1,13 +1,13 @@
 // backend/controllers/setController.js
 
 const Set = require('../models/Set');
+const SetQuantity = require('../models/SetQuantity');
 const Customer = require('../models/Customer');
 const Class = require('../models/Class');
 const BookCatalog = require('../models/BookCatalog');
 const StationeryItem = require('../models/StationeryItem');
-// const PublicationSubtitle = require('../models/PublicationSubtitle'); // This model is no longer used
-const Publication = require('../models/Publication'); // NEW: Import Publication model
-const Branch = require('../models/Branch'); // Import Branch model
+const Publication = require('../models/Publication');
+const Branch = require('../models/Branch');
 
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
@@ -26,7 +26,7 @@ const populateSetQuery = (query) => {
         })
         .populate({
             path: 'books.book',
-            select: 'bookName subtitle commonPrice' // Include commonPrice here
+            select: 'bookName subtitle commonPrice'
         })
         .populate({
             path: 'stationeryItems.item',
@@ -36,7 +36,7 @@ const populateSetQuery = (query) => {
 
 // 1. Create a new Set (Order Detail)
 exports.createSet = catchAsync(async (req, res, next) => {
-    const { customer, class: classId, books, stationeryItems } = req.body;
+    const { customer, class: classId, books, stationeryItems, quantity = 0 } = req.body;
 
     // Basic validation: Customer and Class are mandatory
     if (!customer || !classId) {
@@ -49,13 +49,25 @@ exports.createSet = catchAsync(async (req, res, next) => {
         return next(new AppError('A set already exists for this customer and class. Please update the existing set instead.', 409));
     }
 
+    // Check SetQuantity for pre-set quantity
+    const setQuantity = await SetQuantity.findOne({ customer, class: classId });
+    const finalQuantity = setQuantity ? setQuantity.quantity : quantity;
+
     // Create the new set
     const newSet = await Set.create({
         customer,
         class: classId,
         books: books || [],
-        stationeryItems: stationeryItems || []
+        stationeryItems: stationeryItems || [],
+        quantity: finalQuantity
     });
+
+    // Update or create SetQuantity entry
+    await SetQuantity.findOneAndUpdate(
+        { customer, class: classId },
+        { quantity: finalQuantity, updatedAt: Date.now() },
+        { upsert: true, new: true, runValidators: true }
+    );
 
     // Populate the newly created set for the response
     const populatedSet = await populateSetQuery(Set.findById(newSet._id));
@@ -87,7 +99,6 @@ exports.getSetByFilters = catchAsync(async (req, res, next) => {
     const set = await populateSetQuery(Set.findOne(filter));
 
     if (!set) {
-        // If no set is found, return a success status with null data and an informative message
         return res.status(200).json({
             status: 'success',
             data: {
@@ -106,9 +117,9 @@ exports.getSetByFilters = catchAsync(async (req, res, next) => {
     });
 });
 
-// NEW: Get all Sets (for frontend dropdown filtering)
+// 3. Get all Sets (for frontend dropdown filtering)
 exports.getAllSets = catchAsync(async (req, res, next) => {
-    const sets = await Set.find().select('customer class'); // Only need customer and class IDs
+    const sets = await Set.find().select('customer class quantity');
     res.status(200).json({
         status: 'success',
         results: sets.length,
@@ -118,11 +129,10 @@ exports.getAllSets = catchAsync(async (req, res, next) => {
     });
 });
 
-
-// 3. Update an existing Set
+// 4. Update an existing Set
 exports.updateSet = catchAsync(async (req, res, next) => {
     const { id } = req.params;
-    const { books, stationeryItems, customer, class: classId } = req.body;
+    const { books, stationeryItems, customer, class: classId, quantity } = req.body;
 
     const currentSet = await Set.findById(id);
     if (!currentSet) {
@@ -145,10 +155,16 @@ exports.updateSet = catchAsync(async (req, res, next) => {
         }
     }
 
+    // Prepare update data
+    const updateData = { books, stationeryItems, customer, class: classId };
+    if (quantity !== undefined) {
+        updateData.quantity = quantity;
+    }
+
     // Update the set
     const updatedSet = await Set.findByIdAndUpdate(
         id,
-        { books, stationeryItems, customer, class: classId },
+        updateData,
         {
             new: true,
             runValidators: true,
@@ -158,6 +174,15 @@ exports.updateSet = catchAsync(async (req, res, next) => {
 
     if (!updatedSet) {
         return next(new AppError('No set found with that ID.', 404));
+    }
+
+    // Update or create SetQuantity entry if quantity was provided
+    if (quantity !== undefined) {
+        await SetQuantity.findOneAndUpdate(
+            { customer: updatedSet.customer, class: updatedSet.class },
+            { quantity, updatedAt: Date.now() },
+            { upsert: true, new: true, runValidators: true }
+        );
     }
 
     // Populate the updated set for the response
@@ -172,7 +197,7 @@ exports.updateSet = catchAsync(async (req, res, next) => {
     });
 });
 
-// 4. Delete a Set
+// 5. Delete a Set
 exports.deleteSet = catchAsync(async (req, res, next) => {
     const { id } = req.params;
 
@@ -182,6 +207,9 @@ exports.deleteSet = catchAsync(async (req, res, next) => {
         return next(new AppError('No set found with that ID.', 404));
     }
 
+    // Optionally, remove SetQuantity entry
+    await SetQuantity.deleteOne({ customer: deletedSet.customer, class: deletedSet.class });
+
     res.status(204).json({
         status: 'success',
         data: null,
@@ -189,7 +217,7 @@ exports.deleteSet = catchAsync(async (req, res, next) => {
     });
 });
 
-// 5. Copy a Set to another Class/Customer
+// 6. Copy a Set to another Class/Customer
 exports.copySet = catchAsync(async (req, res, next) => {
     const { sourceSetId, targetCustomerId, targetClassId, copyStationery } = req.body;
 
@@ -208,41 +236,48 @@ exports.copySet = catchAsync(async (req, res, next) => {
     }
     console.log('DEBUG: copySet - Source Set Found:', sourceSet._id);
 
-
     // Map books from the source set to the new set, resetting status to 'pending'
     const newBooks = sourceSet.books.map(bookItem => ({
         book: bookItem.book,
         quantity: bookItem.quantity,
-        price: bookItem.price, // Ensure price is copied from the source set's stored price
+        price: bookItem.price,
         status: 'pending'
     }));
     console.log('DEBUG: copySet - New Books prepared:', newBooks);
-
 
     // Conditionally map stationery items based on 'copyStationery' flag
     const newStationeryItems = copyStationery ? sourceSet.stationeryItems.map(stationeryItem => ({
         item: stationeryItem.item,
         quantity: stationeryItem.quantity,
-        price: stationeryItem.price, // Ensure price is copied from the source set's stored price
+        price: stationeryItem.price,
         status: 'pending'
     })) : [];
     console.log('DEBUG: copySet - New Stationery Items prepared (copyStationery:', copyStationery, '):', newStationeryItems);
 
+    // Check SetQuantity for pre-set quantity
+    const setQuantity = await SetQuantity.findOne({ customer: targetCustomerId, class: targetClassId });
+    const finalQuantity = setQuantity ? setQuantity.quantity : 0;
 
     // Create the copied set
     const copiedSet = await Set.create({
         customer: targetCustomerId,
         class: targetClassId,
         books: newBooks,
-        stationeryItems: newStationeryItems
+        stationeryItems: newStationeryItems,
+        quantity: finalQuantity
     });
     console.log('DEBUG: copySet - Copied Set Created:', copiedSet._id);
 
+    // Update or create SetQuantity entry
+    await SetQuantity.findOneAndUpdate(
+        { customer: targetCustomerId, class: targetClassId },
+        { quantity: finalQuantity, updatedAt: Date.now() },
+        { upsert: true, new: true, runValidators: true }
+    );
 
     // Populate the newly copied set for the response
     const populatedCopiedSet = await populateSetQuery(Set.findById(copiedSet._id));
     console.log('DEBUG: copySet - Copied Set Populated.');
-
 
     res.status(201).json({
         status: 'success',
@@ -252,14 +287,12 @@ exports.copySet = catchAsync(async (req, res, next) => {
         message: 'Set copied successfully!'
     });
     console.log('DEBUG: copySet - Response Sent.');
-
 });
 
-
-// 6. Update the status of a specific item (book or stationery) within a Set
+// 7. Update the status of a specific item (book or stationery) within a Set
 exports.updateSetItemStatus = catchAsync(async (req, res, next) => {
     const { setId } = req.params;
-    const { itemId, itemType, status } = req.body; 
+    const { itemId, itemType, status } = req.body;
 
     console.log('DEBUG: updateSetItemStatus called');
     console.log('DEBUG: setId:', setId);
@@ -289,7 +322,7 @@ exports.updateSetItemStatus = catchAsync(async (req, res, next) => {
                 if (status === 'clear') {
                     set.books[bookIndex].clearedDate = Date.now();
                 } else {
-                    set.books[bookIndex].clearedDate = undefined; 
+                    set.books[bookIndex].clearedDate = undefined;
                 }
                 updated = true;
             }
@@ -301,7 +334,7 @@ exports.updateSetItemStatus = catchAsync(async (req, res, next) => {
                 if (status === 'clear') {
                     set.stationeryItems[stationeryIndex].clearedDate = Date.now();
                 } else {
-                    set.stationeryItems[stationeryIndex].clearedDate = undefined; 
+                    set.stationeryItems[stationeryIndex].clearedDate = undefined;
                 }
                 updated = true;
             }
@@ -312,7 +345,7 @@ exports.updateSetItemStatus = catchAsync(async (req, res, next) => {
             return next(new AppError(`Item with ID ${itemId} not found in the set's ${itemType} list.`, 404));
         }
 
-        await set.save(); // <-- यह लाइन अक्सर एरर देती है अगर स्कीमा या डेटा में कोई समस्या हो
+        await set.save();
         console.log('DEBUG: Set saved successfully.');
 
         const populatedSet = await populateSetQuery(Set.findById(set._id));
@@ -326,18 +359,18 @@ exports.updateSetItemStatus = catchAsync(async (req, res, next) => {
             message: `Status of ${itemType} item updated successfully to "${status}"!`
         });
     } catch (err) {
-        console.error('SERVER ERROR: Error updating set item status:', err); // <-- यह तुम्हें असली एरर दिखाएगा
-        // If it's a Mongoose validation error, you might want to send a 400
+        console.error('SERVER ERROR: Error updating set item status:', err);
         if (err.name === 'ValidationError') {
             return next(new AppError(err.message, 400));
         }
-        next(err); // Pass the error to your global error handler
+        next(err);
     }
 });
-// NEW: Remove a specific item (book or stationery) from a Set
+
+// 8. Remove a specific item (book or stationery) from a Set
 exports.removeItemFromSet = catchAsync(async (req, res, next) => {
     const { setId } = req.params;
-    const { itemId, itemType } = req.body; // itemId is the _id of the book/stationery reference
+    const { itemId, itemType } = req.body;
 
     if (!itemId || !itemType || !['book', 'stationery'].includes(itemType)) {
         return next(new AppError('Item ID and valid Item Type ("book" or "stationery") are required.', 400));
@@ -351,14 +384,12 @@ exports.removeItemFromSet = catchAsync(async (req, res, next) => {
     let modified = false;
     if (itemType === 'book') {
         const initialLength = set.books.length;
-        // Filter out the book by its 'book' field (which stores the BookCatalog _id)
         set.books = set.books.filter(b => String(b.book) !== itemId);
         if (set.books.length < initialLength) {
             modified = true;
         }
     } else if (itemType === 'stationery') {
         const initialLength = set.stationeryItems.length;
-        // Filter out the stationery item by its 'item' field (which stores the StationeryItem _id)
         set.stationeryItems = set.stationeryItems.filter(s => String(s.item) !== itemId);
         if (set.stationeryItems.length < initialLength) {
             modified = true;
@@ -382,7 +413,7 @@ exports.removeItemFromSet = catchAsync(async (req, res, next) => {
     });
 });
 
-// Get all books for a specific customer and class for pending book management
+// 9. Get all books for a specific customer and class for pending book management
 exports.getBooksByCustomerAndClass = catchAsync(async (req, res, next) => {
     const { customerId, classId } = req.query;
 
@@ -395,13 +426,13 @@ exports.getBooksByCustomerAndClass = catchAsync(async (req, res, next) => {
             path: 'books.book',
             select: 'bookName subtitle commonPrice'
         })
-        .select('books'); // Only select the books array
+        .select('books');
 
     if (!set) {
         return res.status(200).json({
             status: 'success',
             data: {
-                books: [] // Return an empty array if no set found
+                books: []
             },
             message: 'No set found for the selected customer and class.'
         });
@@ -409,11 +440,10 @@ exports.getBooksByCustomerAndClass = catchAsync(async (req, res, next) => {
 
     // Default status to 'active' if not explicitly set
     const booksWithDefaultStatus = set.books.map(bookItem => ({
-        ...bookItem.toObject(), // Convert Mongoose document to plain object
-        book: bookItem.book ? bookItem.book.toObject() : null, // Convert populated book to plain object
-        status: bookItem.status || 'active' // Default to 'active'
+        ...bookItem.toObject(),
+        book: bookItem.book ? bookItem.book.toObject() : null,
+        status: bookItem.status || 'active'
     }));
-
 
     res.status(200).json({
         status: 'success',
@@ -424,7 +454,7 @@ exports.getBooksByCustomerAndClass = catchAsync(async (req, res, next) => {
     });
 });
 
-// NEW: Get all books for a specific customer (school) across all classes
+// 10. Get all books for a specific customer (school) across all classes
 exports.getBooksBySchool = catchAsync(async (req, res, next) => {
     const { customerId } = req.query;
 
@@ -438,23 +468,22 @@ exports.getBooksBySchool = catchAsync(async (req, res, next) => {
             path: 'books.book',
             select: 'bookName subtitle commonPrice'
         })
-        .populate({ // Populate the class for each set
+        .populate({
             path: 'class',
             select: 'name'
         })
-        .select('books class'); // Select books and class to identify where they came from
+        .select('books class quantity');
 
     let allBooks = [];
     sets.forEach(set => {
-        // For each set, map its books and include the class name and setId for context
-        const classInfo = set.class ? { _id: set.class._id, name: set.class.name } : null; // Get class info
+        const classInfo = set.class ? { _id: set.class._id, name: set.class.name } : null;
         set.books.forEach(bookItem => {
             allBooks.push({
                 ...bookItem.toObject(),
                 book: bookItem.book ? bookItem.book.toObject() : null,
-                status: bookItem.status || 'active', // Default to 'active'
-                class: classInfo, // Add class context to each book
-                setId: set._id // Include the setId for status updates
+                status: bookItem.status || 'active',
+                class: classInfo,
+                setId: set._id
             });
         });
     });
@@ -468,17 +497,128 @@ exports.getBooksBySchool = catchAsync(async (req, res, next) => {
     });
 });
 
+// 11. Get all set quantities for a customer
+exports.getSetQuantitiesByCustomer = catchAsync(async (req, res, next) => {
+    const { customerId } = req.params;
+
+    if (!customerId || !mongoose.Types.ObjectId.isValid(customerId)) {
+        return next(new AppError('Valid Customer ID is required.', 400));
+    }
+
+    const setQuantities = await SetQuantity.find({ customer: customerId })
+        .populate({
+            path: 'class',
+            select: 'name'
+        })
+        .select('class quantity');
+
+    const result = setQuantities.map(sq => ({
+        classId: sq.class._id,
+        className: sq.class.name,
+        quantity: sq.quantity
+    }));
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            setQuantities: result
+        },
+        message: 'Set quantities fetched successfully.'
+    });
+});
+
+// 12. Bulk set quantities for a customer
+exports.setQuantitiesByCustomer = catchAsync(async (req, res, next) => {
+    const { customerId } = req.params;
+    const { classQuantities } = req.body;
+
+    if (!customerId || !mongoose.Types.ObjectId.isValid(customerId)) {
+        return next(new AppError('Valid Customer ID is required.', 400));
+    }
+
+    if (!Array.isArray(classQuantities) || classQuantities.length === 0) {
+        return next(new AppError('classQuantities must be a non-empty array.', 400));
+    }
+
+    // Validate each entry in classQuantities
+    for (const cq of classQuantities) {
+        if (!cq.classId || !mongoose.Types.ObjectId.isValid(cq.classId) || typeof cq.quantity !== 'number' || cq.quantity < 0) {
+            return next(new AppError('Each classQuantity must have a valid classId and a non-negative quantity.', 400));
+        }
+    }
+
+    // Perform bulk upsert
+    const bulkOps = classQuantities.map(cq => ({
+        updateOne: {
+            filter: { customer: customerId, class: cq.classId },
+            update: { quantity: cq.quantity, updatedAt: Date.now() },
+            upsert: true
+        }
+    }));
+
+    await SetQuantity.bulkWrite(bulkOps);
+
+    // Sync quantities to existing Sets
+    for (const cq of classQuantities) {
+        await Set.findOneAndUpdate(
+            { customer: customerId, class: cq.classId },
+            { quantity: cq.quantity },
+            { new: true, runValidators: true }
+        );
+    }
+
+    res.status(200).json({
+        status: 'success',
+        message: 'Set quantities updated successfully.'
+    });
+});
+
+// 13. Delete a specific set quantity by customerId and classId
+exports.deleteSetQuantityByCustomerAndClass = catchAsync(async (req, res, next) => {
+    const { customerId, classId } = req.params;
+
+    // Validate customerId and classId
+    if (!mongoose.Types.ObjectId.isValid(customerId) || !mongoose.Types.ObjectId.isValid(classId)) {
+        console.log('DEBUG: Invalid customerId or classId:', { customerId, classId });
+        return next(new AppError('Valid Customer ID and Class ID are required.', 400));
+    }
+
+    console.log('DEBUG: Deleting set quantity:', { customerId, classId });
+
+    // Find and delete the set quantity
+    const result = await SetQuantity.findOneAndDelete({ customer: customerId, class: classId });
+
+    if (!result) {
+        console.log('DEBUG: Set quantity not found for:', { customerId, classId });
+        return res.status(404).json({
+            status: 'error',
+            message: 'Set quantity not found for the specified customer and class.'
+        });
+    }
+
+    // Update the corresponding Set's quantity to 0
+    await Set.findOneAndUpdate(
+        { customer: customerId, class: classId },
+        { quantity: 0 },
+        { new: true, runValidators: true }
+    );
+
+    console.log('DEBUG: Set quantity deleted successfully:', result);
+    res.status(204).json({
+        status: 'success',
+        data: null,
+        message: 'Set quantity deleted successfully.'
+    });
+});
 
 // --- Helper functions for dropdown data ---
 
 // Get all customers (schools) for dropdown
 exports.getAllCustomersForDropdown = catchAsync(async (req, res, next) => {
-    // UPDATED: Now fetches customers with customerType 'School-Retail' OR 'School-Both'
     const customers = await Customer.find({ 
         customerType: { $in: ['School-Retail', 'School-Both'] } 
     }).select('customerName schoolCode').sort('customerName');
     
-    // DEBUGGING LOG: Yeh aapko server ke console mein dikhayega ki kitne customers mile hain
     console.log("DEBUG: Customers fetched for dropdown. Count:", customers.length);
     console.log("DEBUG: Fetched customers data:", customers);
 
@@ -489,6 +629,7 @@ exports.getAllCustomersForDropdown = catchAsync(async (req, res, next) => {
         }
     });
 });
+
 // Get all classes for dropdown
 exports.getAllClassesForDropdown = catchAsync(async (req, res, next) => {
     const classes = await Class.find().select('name').sort('name');
@@ -509,7 +650,6 @@ exports.getAllBookCatalogsForDropdown = catchAsync(async (req, res, next) => {
         filter.subtitle = subtitleId;
     }
 
-    // CHANGED: Select 'commonPrice' instead of 'price' for book catalogs
     const bookCatalogs = await BookCatalog.find(filter).select('bookName subtitle commonPrice').populate('subtitle', 'name').sort('bookName');
     res.status(200).json({
         status: 'success',
@@ -521,7 +661,6 @@ exports.getAllBookCatalogsForDropdown = catchAsync(async (req, res, next) => {
 
 // Get all stationery items for dropdown
 exports.getAllStationeryItemsForDropdown = catchAsync(async (req, res, next) => {
-    // ADDED 'category' to the select for stationery items dropdown
     const stationeryItems = await StationeryItem.find().select('itemName price category').sort('itemName');
     res.status(200).json({
         status: 'success',
@@ -533,12 +672,11 @@ exports.getAllStationeryItemsForDropdown = catchAsync(async (req, res, next) => 
 
 // Get all publication subtitles for dropdown
 exports.getAllPublicationSubtitlesForDropdown = catchAsync(async (req, res, next) => {
-    // UPDATED: This now uses a Mongoose aggregation pipeline to fetch unique subtitles from the 'Publication' model
     const subtitles = await Publication.aggregate([
-        { $match: { subtitle: { $ne: null, $ne: '' } } }, // Find documents with a subtitle
-        { $group: { _id: '$subtitle' } }, // Group by subtitle to get unique values
-        { $project: { _id: 0, name: '$_id' } }, // Reformat the output to have a 'name' field
-        { $sort: { name: 1 } } // Sort alphabetically
+        { $match: { subtitle: { $ne: null, $ne: '' } } },
+        { $group: { _id: '$subtitle' } },
+        { $project: { _id: 0, name: '$_id' } },
+        { $sort: { name: 1 } }
     ]);
 
     res.status(200).json({
@@ -549,11 +687,9 @@ exports.getAllPublicationSubtitlesForDropdown = catchAsync(async (req, res, next
     });
 });
 
-
-// NEW: Get all branches for dropdown (using the Branch model)
+// Get all branches for dropdown
 exports.getAllBranchesForDropdown = catchAsync(async (req, res, next) => {
-    // Assuming Branch model has 'name' and 'location' as per your provided branch data
-    const branches = await Branch.find().select('name location').sort('name'); 
+    const branches = await Branch.find().select('name location').sort('name');
     res.status(200).json({
         status: 'success',
         data: {
@@ -562,7 +698,7 @@ exports.getAllBranchesForDropdown = catchAsync(async (req, res, next) => {
     });
 });
 
-// NEW: Get customers by branch for dropdown (This is the new function you need)
+// Get customers by branch for dropdown
 exports.getCustomersByBranch = catchAsync(async (req, res, next) => {
     const { branchId } = req.query;
 
@@ -570,8 +706,6 @@ exports.getCustomersByBranch = catchAsync(async (req, res, next) => {
         return next(new AppError('Valid Branch ID is required.', 400));
     }
 
-    // Since you want to fetch customers by branch, you should probably also include 
-    // the customer type filter here, as you do in getAllCustomersForDropdown.
     const customers = await Customer.find({ 
         branch: branchId,
         customerType: { $in: ['School-Retail', 'School-Both'] } 
@@ -586,3 +720,5 @@ exports.getCustomersByBranch = catchAsync(async (req, res, next) => {
         }
     });
 });
+
+module.exports = exports;

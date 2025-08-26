@@ -27,6 +27,18 @@ const stationeryItemSchema = new mongoose.Schema({
         min: [0, 'Margin cannot be negative'],
         max: [100, 'Margin cannot exceed 100']
     },
+    // NEW: Add a customer discount percentage field
+    customerDiscountPercentage: {
+        type: Number,
+        required: [true, 'Customer discount percentage is required'],
+        min: [0, 'Customer discount cannot be negative']
+    },
+    // NEW: Add a company discount percentage field
+    companyDiscountPercentage: {
+        type: Number,
+        required: [true, 'Company discount percentage is required'],
+        min: [0, 'Company discount cannot be negative']
+    },
     status: {
         type: String,
         enum: ['active', 'inactive'],

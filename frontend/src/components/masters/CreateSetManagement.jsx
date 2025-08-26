@@ -7,11 +7,10 @@ import { FaPlusCircle, FaSearch, FaCopy, FaEdit, FaTrashAlt, FaSpinner, FaDownlo
 
 // Stylesheets (ensure these paths are correct in your project)
 import '../../styles/Form.css';
-import '../../styles/Table.css'; // This will be updated for compressed and colorful tables
+import '../../styles/Table.css';
 import '../../styles/Modal.css';
 import '../../styles/CreateSetManagement.css';
 import companyLogo from '../../assets/glbs-logo.jpg';
-
 
 // Define special IDs for dropdown entries that are not actual database IDs
 const STATIONERY_SUBTITLE_ID = 'STATIONERY_ITEMS_SPECIAL_ID';
@@ -23,9 +22,9 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const [subtitles, setSubtitles] = useState([]);
     const [bookCatalogs, setBookCatalogs] = useState([]);
     const [stationeryItemsMaster, setStationeryItemsMaster] = useState([]);
-    const [existingSetsClasses, setExistingSetsClasses] = useState(new Set()); // Stores class IDs that already have a set
-    const [stationeryCategories, setStationeryCategories] = useState([]); // NEW: State to store unique stationery categories
-    const [selectedStationeryCategories, setSelectedStationeryCategories] = useState(new Set()); // NEW: State to track selected categories
+    const [existingSetsClasses, setExistingSetsClasses] = useState(new Set());
+    const [stationeryCategories, setStationeryCategories] = useState([]);
+    const [selectedStationeryCategories, setSelectedStationeryCategories] = useState(new Set());
 
     // --- State for Main Set Filters/Details ---
     const [selectedCustomer, setSelectedCustomer] = useState('');
@@ -38,13 +37,15 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const [stationeryDetail, setStationeryDetail] = useState([]);
 
     // --- State for Adding New Items ---
-    const [selectedItemType, setSelectedItemType] = useState('books'); // New state for radio buttons
+    const [selectedItemType, setSelectedItemType] = useState('books');
     const [selectedSubtitle, setSelectedSubtitle] = useState('');
     const [selectedItemToAdd, setSelectedItemToAdd] = useState('');
     const [itemQuantity, setItemQuantity] = useState('');
     const [itemPrice, setItemPrice] = useState('');
     const [showAllBooksForSubtitle, setShowAllBooksForSubtitle] = useState(false);
-    const [showAllStationery, setShowAllStationery] = useState(false); // NEW: State for "Show All" stationery checkbox
+    const [showAllStationery, setShowAllStationery] = useState(false);
+    const [editingItemType, setEditingItemType] = useState(null);
+    const [editingItemId, setEditingItemId] = useState(null);
 
     // --- State for Copying Sets ---
     const [copyToClass, setCopyToClass] = useState('');
@@ -55,18 +56,20 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const [localError, setLocalError] = useState(null);
     const [isEditMode, setIsEditMode] = useState(false);
 
-    // --- State for Editing Items ---
-    const [editingItemType, setEditingItemType] = useState(null);
-    const [editingItemId, setEditingItemId] = useState(null);
-
-    // --- State for Confirmation Modal ---
+    // --- State for Confirmation Modals ---
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
+    const [showDeleteQuantityModal, setShowDeleteQuantityModal] = useState(false);
+    const [quantityToDelete, setQuantityToDelete] = useState(null);
 
     // --- State for Download Dropdown ---
     const [showDownloadDropdown, setShowDownloadDropdown] = useState(false);
-    const downloadDropdownRef = useRef(null); // Ref for closing dropdown on outside click
+    const downloadDropdownRef = useRef(null);
 
+    // --- State for Set Quantity Management ---
+    const [showQuantityModal, setShowQuantityModal] = useState(false);
+    const [setQuantities, setSetQuantities] = useState([]);
+    const [editedQuantities, setEditedQuantities] = useState({});
 
     // --- Calculated Totals ---
     const totalAmount = booksDetail.reduce((sum, item) => sum + (item.quantity * item.price), 0) +
@@ -75,10 +78,9 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const totalQuantity = booksDetail.reduce((sum, item) => sum + item.quantity, 0) +
         stationeryDetail.reduce((sum, item) => sum + item.quantity, 0);
 
-    // --- Helper function to safely get string value or 'N/A' for display ---
+    // --- Helper Functions ---
     const getStringValue = (field) => field ? String(field).trim() : 'N/A';
 
-    // --- Helper function for date formatting ---
     const formatDateWithTime = (dateString) => {
         if (!dateString) return 'N/A';
         const options = {
@@ -87,22 +89,22 @@ export default function CreateSetManagement({ showFlashMessage }) {
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-            hour12: true // For AM/PM format
+            hour12: true
         };
         const date = new Date(dateString);
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
 
-    // --- Fetch All Dropdown Data ---
+    // --- Fetch Dropdown Data ---
     const fetchDropdownData = useCallback(async () => {
         setLoading(true);
         try {
             const [customersRes, classesRes, publicationsRes, stationeryRes, allSetsRes] = await Promise.all([
                 api.get('/sets/dropdowns/customers'),
                 api.get('/sets/dropdowns/classes'),
-                api.get('/publications'), // Publications se data fetch karega
+                api.get('/publications'),
                 api.get('/sets/dropdowns/stationery-items'),
-                api.get('/sets/all') // Fetch all sets to identify classes with existing sets
+                api.get('/sets/all')
             ]);
 
             const validCustomers = (customersRes.data.data.customers || []).filter(c => c && c._id && String(c.customerName || '').trim() !== '');
@@ -113,26 +115,22 @@ export default function CreateSetManagement({ showFlashMessage }) {
             setClasses(validClasses);
             setStationeryItemsMaster(validStationeryItems);
 
-            // NEW: Extract unique categories from stationery items
             const uniqueCategories = [...new Set(validStationeryItems.map(item => item.category))].filter(Boolean);
             setStationeryCategories(uniqueCategories);
-            setSelectedStationeryCategories(new Set(uniqueCategories)); // Initially select all categories
+            setSelectedStationeryCategories(new Set(uniqueCategories));
 
-            // Subtitles ko publications ke andar se extract karna
             const allPublications = publicationsRes.data.data.publications || [];
             const allSubtitles = [
                 ...allPublications.flatMap(pub => (pub.subtitles || []).map(sub => ({
                     _id: sub._id,
-                    name: `${pub.name} - ${sub.name}` // Publication aur subtitle ka naam jod dega
+                    name: `${pub.name} - ${sub.name}`
                 }))),
             ];
             setSubtitles(allSubtitles);
 
-            // Populate existingSetsClasses
             if (allSetsRes.data.status === 'success') {
                 const classesWithSets = new Set(allSetsRes.data.data.sets.map(set => set.class));
                 setExistingSetsClasses(classesWithSets);
-                console.log("Classes with existing sets:", Array.from(classesWithSets));
             }
         } catch (err) {
             console.error('Error fetching dropdown data:', err);
@@ -142,7 +140,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
             setLoading(false);
         }
     }, [showFlashMessage]);
-    // --- Reset Form Function ---
+
+    // --- Reset Form ---
     const resetForm = useCallback(() => {
         setCurrentSetId(null);
         setBooksDetail([]);
@@ -160,15 +159,19 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setEditingItemType(null);
         setEditingItemId(null);
         setShowAllBooksForSubtitle(false);
-        setShowAllStationery(false); // NEW: Reset stationery filter
-        setSelectedStationeryCategories(new Set()); // NEW: Reset categories
+        setShowAllStationery(false);
+        setSelectedStationeryCategories(new Set());
         setShowConfirmModal(false);
         setItemToDelete(null);
-        setExistingSetsClasses(new Set());
+        setShowQuantityModal(false);
+        setSetQuantities([]);
+        setEditedQuantities({});
+        setShowDeleteQuantityModal(false);
+        setQuantityToDelete(null);
         fetchDropdownData();
     }, [fetchDropdownData]);
 
-    // --- Fetch Book Catalogs based on selected subtitle (always fetches all for that subtitle) ---
+    // --- Fetch Book Catalogs by Subtitle ---
     const fetchBookCatalogsBySubtitle = useCallback(async () => {
         if (!selectedSubtitle) {
             setBookCatalogs([]);
@@ -181,7 +184,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
             const response = await api.get(`/sets/dropdowns/book-catalogs?subtitleId=${selectedSubtitle}`);
             const validBookCatalogs = (response.data.data.bookCatalogs || []).filter(b => b && b._id);
             setBookCatalogs(validBookCatalogs);
-
         } catch (err) {
             console.error('Error fetching book catalogs by subtitle:', err);
             showFlashMessage(err.response?.data?.message || 'Failed to load books for selected subtitle.', 'error');
@@ -190,17 +192,14 @@ export default function CreateSetManagement({ showFlashMessage }) {
         }
     }, [selectedSubtitle, showFlashMessage]);
 
-    // Helper to convert fetched data to local state format
+    // --- Convert Fetched Data to Local Format ---
     const fetchedToLocalFormat = useCallback((items, type) => {
         return (items || []).map(item => {
             if (type === 'book') {
                 let subtitleName = '';
-                // Check if the API returned a populated object or just an ID
                 if (item.book.subtitle && typeof item.book.subtitle === 'object' && item.book.subtitle.name) {
-                    // Case 1: API returned a populated object with a name
                     subtitleName = item.book.subtitle.name;
                 } else if (item.book.subtitle && typeof item.book.subtitle === 'string') {
-                    // Case 2: API returned a subtitle ID string. Look up the name from our dropdown state.
                     const foundSub = subtitles.find(s => s._id === item.book.subtitle);
                     subtitleName = foundSub ? foundSub.name : `ID: ${item.book.subtitle}`;
                 }
@@ -209,7 +208,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     book: {
                         _id: item.book?._id || '',
                         bookName: item.book?.bookName || 'Unnamed Book',
-                        // Store the resolved name
                         subtitle: subtitleName
                     },
                     quantity: item.quantity,
@@ -228,9 +226,62 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 };
             }
         });
-    }, [subtitles]); // Add subtitles to the dependency array
+    }, [subtitles]);
 
-    // --- Fetch Set Details (Show Info) ---
+    // --- Fetch Set Details ---
+
+    // --- Fetch Set Quantities ---
+    const fetchSetQuantities = useCallback(async () => {
+        if (!selectedCustomer) {
+            setSetQuantities([]);
+            setEditedQuantities({});
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const response = await api.get(`/sets/set-quantities/${selectedCustomer}`);
+            if (response.data.status === 'success') {
+                const fetchedQuantities = response.data.data.setQuantities || [];
+                setSetQuantities(fetchedQuantities);
+
+                // Initialize editedQuantities with all classes
+                const initialQuantities = {};
+                classes.forEach(cls => {
+                    const existingQuantity = fetchedQuantities.find(sq => sq.classId === cls._id);
+                    initialQuantities[cls._id] = existingQuantity ? String(existingQuantity.quantity) : '';
+                });
+                setEditedQuantities(initialQuantities);
+
+                // Update noOfSets if selectedClass has a quantity
+                if (selectedClass) {
+                    const classQuantity = fetchedQuantities.find(sq => sq.classId === selectedClass);
+                    setNoOfSets(classQuantity ? String(classQuantity.quantity) : '1');
+                }
+
+                showFlashMessage('Set quantities fetched successfully!', 'success');
+            } else {
+                throw new Error(response.data.message || 'Failed to fetch set quantities.');
+            }
+        } catch (err) {
+            console.error('Error fetching set quantities:', err);
+            showFlashMessage(err.response?.data?.message || 'Failed to fetch set quantities.', 'error');
+
+            // Initialize editedQuantities with all classes set to empty
+            const initialQuantities = {};
+            classes.forEach(cls => {
+                initialQuantities[cls._id] = '';
+            });
+            setEditedQuantities(initialQuantities);
+            setSetQuantities([]);
+            if (selectedClass) {
+                setNoOfSets('1'); // Reset to default
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, [selectedCustomer, selectedClass, classes, showFlashMessage]);
+
     const fetchSetDetails = useCallback(async () => {
         if (!selectedCustomer || !selectedClass) {
             resetForm();
@@ -247,24 +298,24 @@ export default function CreateSetManagement({ showFlashMessage }) {
             });
 
             const response = await api.get(`/sets?${queryParams.toString()}`);
-            console.log("RAW API Response: Set Details", response.data);
 
             if (response.data.status === 'success' && response.data.data.set) {
                 const fetchedSet = response.data.data.set;
                 setCurrentSetId(fetchedSet._id);
                 setBooksDetail(fetchedToLocalFormat(fetchedSet.books, 'book'));
                 setStationeryDetail(fetchedToLocalFormat(fetchedSet.stationeryItems, 'item'));
-                setNoOfSets(1);
                 setIsEditMode(true);
                 showFlashMessage('Existing set loaded successfully!', 'success');
             } else {
                 setCurrentSetId(null);
                 setBooksDetail([]);
                 setStationeryDetail([]);
-                setNoOfSets(1);
                 setIsEditMode(false);
                 showFlashMessage('No existing set found for the selected criteria. You can create a new one.', 'info');
             }
+
+            // Fetch quantities separately to ensure noOfSets is updated
+            await fetchSetQuantities();
         } catch (err) {
             console.error('Error fetching set details:', err);
             const errorMessage = err.response?.data?.message || 'Failed to fetch set details due to network error.';
@@ -273,15 +324,135 @@ export default function CreateSetManagement({ showFlashMessage }) {
             setCurrentSetId(null);
             setBooksDetail([]);
             setStationeryDetail([]);
-            setNoOfSets(1);
             setIsEditMode(false);
+            setNoOfSets('1');
+            await fetchSetQuantities(); // Still attempt to fetch quantities
         } finally {
             setLoading(false);
         }
-    }, [selectedCustomer, selectedClass, showFlashMessage, resetForm, fetchedToLocalFormat]);
+    }, [selectedCustomer, selectedClass, showFlashMessage, resetForm, fetchedToLocalFormat, fetchSetQuantities]);
 
 
-    // --- Effects for initial data load and subtitle-based book fetching ---
+    const handleQuantityChange = (classId, value) => {
+        const quantity = value === '' ? '' : Math.max(0, parseInt(value) || 0);
+        setEditedQuantities(prev => ({
+            ...prev,
+            [classId]: quantity
+        }));
+        if (classId === selectedClass) {
+            setNoOfSets(quantity === '' ? '1' : String(quantity));
+        }
+    };
+    // --- Handle Edit Quantity ---
+    const handleEditQuantity = (classId, className) => {
+        showFlashMessage(`Editing quantity for class ${className}.`, 'info');
+        const input = document.querySelector(`input[value="${editedQuantities[classId] ?? ''}"]`);
+        if (input) input.focus();
+    };
+
+    // --- Handle Delete Quantity ---
+    const handleDeleteQuantity = (classId, className) => {
+        setQuantityToDelete({ classId, className });
+        setShowDeleteQuantityModal(true);
+    };
+
+    // --- Confirm Delete Quantity ---
+  // --- Confirm Delete Quantity ---
+const confirmDeleteQuantity = async () => {
+    if (!quantityToDelete || !selectedCustomer) {
+        showFlashMessage('Error: No class selected for deletion or customer not selected.', 'error');
+        setShowDeleteQuantityModal(false);
+        setQuantityToDelete(null);
+        return;
+    }
+
+    const { classId, className } = quantityToDelete;
+
+    // Debug: Log the IDs to verify correctness
+    console.log('Attempting to delete quantity for:', {
+        customerId: selectedCustomer,
+        classId,
+        className
+    });
+
+    setLoading(true);
+    try {
+        // Optional: Verify the quantity exists before deleting
+        const checkResponse = await api.get(`/sets/set-quantities/${selectedCustomer}`);
+        const quantityExists = checkResponse.data.status === 'success' &&
+            checkResponse.data.data.setQuantities.some(q => q.classId === classId);
+
+        if (!quantityExists) {
+            showFlashMessage(`No quantity found for class ${className}. It may have already been deleted.`, 'warning');
+            setShowDeleteQuantityModal(false);
+            setQuantityToDelete(null);
+            await fetchSetQuantities();
+            return;
+        }
+
+        const response = await api.delete(`/sets/set-quantities/${selectedCustomer}/${classId}`);
+        if (response.status === 204 || response.data.status === 'success') {
+            showFlashMessage(`Quantity for class ${className} deleted successfully!`, 'success');
+            await fetchSetQuantities();
+        } else {
+            throw new Error(response.data.message || 'Failed to delete set quantity.');
+        }
+    } catch (err) {
+        console.error('Error deleting set quantity:', err);
+        let errorMessage = 'Failed to delete set quantity.';
+        if (err.response) {
+            if (err.response.status === 404) {
+                errorMessage = `Set quantity for class ${className} not found on the server. It may have been deleted already.`;
+            } else {
+                errorMessage = err.response.data?.message || `Server error: ${err.response.status}`;
+            }
+        } else if (err.request) {
+            errorMessage = 'No response from server. Please check your network connection.';
+        } else {
+            errorMessage = err.message || 'An unexpected error occurred.';
+        }
+        showFlashMessage(errorMessage, 'error');
+    } finally {
+        setLoading(false);
+        setShowDeleteQuantityModal(false);
+        setQuantityToDelete(null);
+    }
+};
+
+    // --- Save Set Quantities ---
+    const saveSetQuantities = useCallback(async () => {
+        if (!selectedCustomer) {
+            showFlashMessage('Please select a customer to manage quantities.', 'warning');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const classQuantities = Object.entries(editedQuantities)
+                .filter(([_, quantity]) => quantity !== '' && quantity >= 0)
+                .map(([classId, quantity]) => ({
+                    classId,
+                    quantity: parseInt(quantity) || 0
+                }));
+
+            if (classQuantities.length === 0) {
+                showFlashMessage('No valid quantities to save.', 'warning');
+                setLoading(false);
+                return;
+            }
+
+            await api.post(`/sets/set-quantities/${selectedCustomer}`, { classQuantities });
+            showFlashMessage('Set quantities updated successfully!', 'success');
+            setShowQuantityModal(false);
+            await fetchSetQuantities(); // Refresh quantities after saving
+        } catch (err) {
+            console.error('Error saving set quantities:', err);
+            showFlashMessage(err.response?.data?.message || 'Failed to save set quantities.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }, [selectedCustomer, editedQuantities, showFlashMessage, fetchSetQuantities]);
+    // --- Effects ---
     useEffect(() => {
         fetchDropdownData();
     }, [fetchDropdownData]);
@@ -292,14 +463,13 @@ export default function CreateSetManagement({ showFlashMessage }) {
         }
     }, [fetchBookCatalogsBySubtitle, selectedItemType]);
 
-    // Effect to auto-fill price/quantity when selectedItemToAdd changes for stationery, or clear for books
     useEffect(() => {
         if (selectedItemToAdd) {
             if (selectedItemType === 'stationery') {
                 const itemInfo = stationeryItemsMaster.find(item => item._id === selectedItemToAdd);
                 if (itemInfo) {
                     if (!(editingItemType === 'stationery' && editingItemId === selectedItemToAdd)) {
-                        setItemQuantity(String(1));
+                        setItemQuantity('1');
                         setItemPrice(String(itemInfo.price || ''));
                     }
                 } else {
@@ -309,13 +479,9 @@ export default function CreateSetManagement({ showFlashMessage }) {
             } else if (selectedItemType === 'books') {
                 const bookInfo = bookCatalogs.find(book => book._id === selectedItemToAdd);
                 if (bookInfo) {
-                    console.log('DEBUG: Book selected. Full bookInfo object:', bookInfo);
-                    // CHANGED: Use bookInfo.commonPrice instead of bookInfo.price
-                    console.log('DEBUG: Book selected. bookInfo.commonPrice:', bookInfo.commonPrice);
-
                     if (!(editingItemType === 'book' && editingItemId === selectedItemToAdd)) {
-                        setItemQuantity(String(1));
-                        setItemPrice(String(bookInfo.commonPrice || '')); // *** यहां bookInfo.commonPrice का उपयोग करें ***
+                        setItemQuantity('1');
+                        setItemPrice(String(bookInfo.commonPrice || ''));
                     }
                 } else {
                     setItemQuantity('');
@@ -328,8 +494,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
         }
     }, [selectedItemType, selectedItemToAdd, stationeryItemsMaster, bookCatalogs, editingItemType, editingItemId]);
 
-
-    // --- Handlers for Adding/Updating Items (Books or Stationery) ---
+    // --- Handlers for Adding/Updating Items ---
     const handleAddOrUpdateItem = () => {
         if (!selectedItemToAdd || itemQuantity === '' || itemPrice === '') {
             showFlashMessage('Please select an item, quantity, and price.', 'error');
@@ -380,13 +545,12 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     showFlashMessage('Stationery item added to list.', 'success');
                 }
             }
-        } else { // selectedItemType === 'books'
+        } else {
             const bookInfo = bookCatalogs.find(book => book._id === selectedItemToAdd);
             if (!bookInfo) {
                 showFlashMessage('Selected book not found in catalog.', 'error');
                 return;
             }
-            // FIX: Get subtitle name from the subtitles state using selectedSubtitle ID
             const subtitleName = subtitles.find(s => s._id === selectedSubtitle)?.name || '';
 
             if (editingItemType === 'book' && editingItemId) {
@@ -411,7 +575,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     setBooksDetail(prev => [
                         ...prev,
                         {
-                            // FIX: Store the subtitle name, not the ID, for rendering
                             book: { _id: selectedItemToAdd, bookName: bookInfo.bookName || 'Unnamed Book', subtitle: subtitleName },
                             quantity: qty,
                             price: price,
@@ -423,7 +586,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
             }
         }
 
-        // Reset add/edit form fields
         setSelectedSubtitle('');
         setSelectedItemToAdd('');
         setItemQuantity('');
@@ -431,11 +593,11 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setEditingItemType(null);
         setEditingItemId(null);
         setShowAllBooksForSubtitle(false);
-        setShowAllStationery(false); // NEW: Reset "Show All" stationery checkbox
-        setSelectedStationeryCategories(new Set(stationeryCategories)); // NEW: Reset categories to all
+        setShowAllStationery(false);
+        setSelectedStationeryCategories(new Set(stationeryCategories));
     };
 
-    // --- Handlers for Deleting Items from Tables (Open Confirmation Modal) ---
+    // --- Handlers for Deleting Items ---
     const handleDeleteBook = (bookId, bookName) => {
         if (!currentSetId) {
             setBooksDetail(prev => prev.filter(item => item.book._id !== bookId));
@@ -456,7 +618,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setShowConfirmModal(true);
     };
 
-    // --- Confirmation Logic for Deletion ---
+    // --- Confirm Deletion ---
     const confirmDeletion = async () => {
         if (!itemToDelete || !currentSetId) {
             showFlashMessage('Error: No item selected for deletion or set not loaded.', 'error');
@@ -469,7 +631,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setLocalError(null);
         try {
             const { id, type } = itemToDelete;
-            console.log(`DEBUG: Attempting to delete ${type} with ID ${id} from set ${currentSetId}`);
             const response = await api.patch(`/sets/${currentSetId}/removeItem`, {
                 itemId: id,
                 itemType: type
@@ -482,15 +643,13 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 if (type === 'book') {
                     updatedBooks = updatedBooks.filter(item => item.book._id !== id);
                     setBooksDetail(updatedBooks);
-                } else { // stationery
+                } else {
                     updatedStationery = updatedStationery.filter(item => item.item._id !== id);
                     setStationeryDetail(updatedStationery);
                 }
                 showFlashMessage(`${itemToDelete.name} successfully removed from set!`, 'success');
 
-                // Check if the set should be deleted after item removal
                 if (updatedBooks.length === 0 && updatedStationery.length === 0) {
-                    console.log("DEBUG: Both book and stationery lists are empty. Deleting the entire set.");
                     handleDeleteSet(currentSetId);
                 }
             } else {
@@ -514,9 +673,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
         showFlashMessage('Deletion cancelled.', 'info');
     };
 
-    // --- Handlers for Editing Items from Tables ---
+    // --- Handlers for Editing Items ---
     const handleEditBook = (bookItem) => {
-        // FIX: Find the subtitle by its name from the local state for the dropdown
         const foundSubtitle = subtitles.find(s => s.name === bookItem.book.subtitle);
         const subtitleIdToSet = foundSubtitle ? foundSubtitle._id : '';
 
@@ -540,12 +698,12 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setEditingItemType('stationery');
         setEditingItemId(stationeryItem.item._id);
         setShowAllBooksForSubtitle(false);
-        setShowAllStationery(true); // NEW: When editing, show all items
-        setSelectedStationeryCategories(new Set(stationeryCategories)); // NEW: Set all categories
+        setShowAllStationery(true);
+        setSelectedStationeryCategories(new Set(stationeryCategories));
         showFlashMessage('Stationery item loaded for editing.', 'info');
     };
 
-    // --- Handle Delete Set (New function to delete the entire set) ---
+    // --- Handle Delete Set ---
     const handleDeleteSet = async (setId) => {
         setLoading(true);
         setLocalError(null);
@@ -567,7 +725,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         }
     };
 
-
     // --- Save/Update Set ---
     const handleSaveSet = async () => {
         if (!selectedCustomer || !selectedClass) {
@@ -575,10 +732,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
             return;
         }
 
-        // If both item lists are empty, delete the set instead of saving an empty set
         if (booksDetail.length === 0 && stationeryDetail.length === 0) {
             if (isEditMode && currentSetId) {
-                console.log("DEBUG: Attempting to save an empty existing set. Deleting set instead.");
                 handleDeleteSet(currentSetId);
                 return;
             } else {
@@ -608,8 +763,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
             }))
         };
 
-        console.log('Payload being sent to backend for Save/Update:', JSON.stringify(payload, null, 2));
-
         try {
             let response;
             if (isEditMode && currentSetId) {
@@ -622,6 +775,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 showFlashMessage(response.data.message, 'success');
                 setCurrentSetId(response.data.data.set._id);
                 setIsEditMode(true);
+                await saveSetQuantities();
                 fetchSetDetails();
             } else {
                 throw new Error(response.data.message || 'Failed to save set.');
@@ -646,12 +800,10 @@ export default function CreateSetManagement({ showFlashMessage }) {
             showFlashMessage('Please select a target class for copying, and ensure School Name is selected.', 'error');
             return;
         }
-        // Ensure the target class does not already have a set
         if (existingSetsClasses.has(copyToClass)) {
             showFlashMessage('A set already exists for the target class. Please select a different class or update the existing set.', 'error');
             return;
         }
-
 
         setLoading(true);
         setLocalError(null);
@@ -663,13 +815,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
             copyStationery: copyStationery
         };
 
-        console.log('Payload being sent to backend for Copy Set:', JSON.stringify(copyPayload, null, 2));
-
-
         try {
             const response = await api.post(`/sets/copy`, copyPayload);
-            console.log("RAW API Response: Copy Set", response.data);
-
 
             if (response.data.status === 'success') {
                 showFlashMessage(response.data.message, 'success');
@@ -687,21 +834,20 @@ export default function CreateSetManagement({ showFlashMessage }) {
         }
     };
 
-    // --- Handle Download (Implemented) ---
+    // --- Handle Download ---
     const handleDownload = (type) => {
-        setShowDownloadDropdown(false); // Close dropdown after selection
+        setShowDownloadDropdown(false);
 
         if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF !== 'function') {
             showFlashMessage('PDF generation libraries not fully loaded or accessible. Check console for details.', 'error');
-            console.error("PDF generation failed: window.jspdf or window.jspdf.jsPDF is not available/callable. Ensure CDNs are correctly linked in public/index.html");
+            console.error("PDF generation failed: window.jspdf or window.jspdf.jsPDF is not available/callable.");
             return;
         }
 
-        // Changed: Set PDF to A4 portrait
         const doc = new window.jspdf.jsPDF('portrait', 'mm', 'a4');
 
         if (typeof doc.autoTable !== 'function') {
-            showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details. (The PDF libraries might be loaded as global variables; ensure jspdf and jspdf-autotable are correctly linked in your `public/index.html` file, with `jspdf.plugin.autotable.min.js` loaded AFTER `jspdf.umd.min.js`.)', 'error');
+            showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible.', 'error');
             console.error("PDF generation failed: doc.autoTable is not a function.");
             return;
         }
@@ -711,7 +857,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         let finalFilename = "";
         let finalTitle = "";
 
-        // Define company details for PDF header
         const companyName = "GOOD LUCK BOOK STORE";
         const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
         const companyMobile = "Mobile Number: 7024136476";
@@ -722,55 +867,47 @@ export default function CreateSetManagement({ showFlashMessage }) {
             const marginY = 10;
             const textOffsetFromLogo = 5;
 
-            // Add the logo at the top-left
-            if (img) { // Only add if image object is provided (i.e., loaded successfully)
+            if (img) {
                 docInstance.addImage(img, 'JPEG', marginX, marginY, imgWidth, imgHeight);
             }
 
-            // Add generation date/time to the top right
             docInstance.setFontSize(10);
             docInstance.setFont('helvetica', 'normal');
-            docInstance.setTextColor(100, 100, 100); // Gray color for date text
+            docInstance.setTextColor(100, 100, 100);
             docInstance.text(`Date: ${formatDateWithTime(new Date())}`, docInstance.internal.pageSize.width - marginX, marginY + 10, { align: 'right' });
 
-            // Add company name and details next to logo
             docInstance.setFontSize(12);
             docInstance.setFont('helvetica', 'bold');
             docInstance.setTextColor(30, 30, 30);
-            const companyTextStartX = img ? (marginX + imgWidth + textOffsetFromLogo) : marginX; // Adjust start X if no logo
-            let currentCompanyTextY = marginY + textOffsetFromLogo; // Start slightly below logo's top or at marginY
+            const companyTextStartX = img ? (marginX + imgWidth + textOffsetFromLogo) : marginX;
+            let currentCompanyTextY = marginY + textOffsetFromLogo;
 
-            docInstance.text(companyName, companyTextStartX, currentCompanyTextY); // Company Name
-
+            docInstance.text(companyName, companyTextStartX, currentCompanyTextY);
             docInstance.setFontSize(9);
             docInstance.setFont('helvetica', 'normal');
             docInstance.setTextColor(50, 50, 50);
-            currentCompanyTextY += 7; // Line height for next line
-            docInstance.text(companyAddress, companyTextStartX, currentCompanyTextY); // Address
-            currentCompanyTextY += 5; // Line height for next line
-            docInstance.text(companyMobile, companyTextStartX, currentCompanyTextY); // Mobile
-            currentCompanyTextY += 5; // Line height for next line
-            docInstance.text(companyGST, companyTextStartX, currentCompanyTextY); // GST No.
+            currentCompanyTextY += 7;
+            docInstance.text(companyAddress, companyTextStartX, currentCompanyTextY);
+            currentCompanyTextY += 5;
+            docInstance.text(companyMobile, companyTextStartX, currentCompanyTextY);
+            currentCompanyTextY += 5;
+            docInstance.text(companyGST, companyTextStartX, currentCompanyTextY);
 
-            // Calculate max Y used by the header content (either logo bottom or last company text line bottom)
             const maxHeaderY = Math.max(img ? (marginY + imgHeight) : marginY, currentCompanyTextY);
 
-            // Add a professional report title (centered, below company info)
             docInstance.setFontSize(18);
             docInstance.setFont('helvetica', 'bold');
-            docInstance.setTextColor(30, 30, 30); // Dark gray for title
-            const reportTitleY = maxHeaderY + 10; // 10 units padding after header content
+            docInstance.setTextColor(30, 30, 30);
+            const reportTitleY = maxHeaderY + 10;
             docInstance.text(reportTitle, docInstance.internal.pageSize.width / 2, reportTitleY, { align: 'center' });
 
-            // Add a line separator below the main title
             docInstance.setLineWidth(0.5);
-            docInstance.line(marginX, reportTitleY + 5, docInstance.internal.pageSize.width - marginX, reportTitleY + 5); // Line spanning almost full width
+            docInstance.line(marginX, reportTitleY + 5, docInstance.internal.pageSize.width - marginX, reportTitleY + 5);
 
-            return reportTitleY + 10; // Return Y position for table start (10 units padding after line)
+            return reportTitleY + 10;
         };
 
         const addTableToDoc = (docInstance, title, columns, rows, startY) => {
-            // Add a sub-title for the table if needed (e.g., "Book Details" or "Stationery Item Detail")
             docInstance.setFontSize(14);
             docInstance.setFont('helvetica', 'bold');
             docInstance.setTextColor(30, 30, 30);
@@ -779,45 +916,43 @@ export default function CreateSetManagement({ showFlashMessage }) {
             docInstance.autoTable({
                 head: [columns],
                 body: rows,
-                startY: startY + 5, // Start table slightly below sub-title
-                theme: 'striped', // Changed to 'striped' for alternating row colors
+                startY: startY + 5,
+                theme: 'striped',
                 styles: {
                     font: 'helvetica',
-                    fontSize: 8, // Compressed: Reduced font size
-                    cellPadding: 2, // Compressed: Reduced cell padding
-                    textColor: [0, 0, 0], // Changed: Black text for body
+                    fontSize: 8,
+                    cellPadding: 2,
+                    textColor: [0, 0, 0],
                     valign: 'middle',
                     halign: 'left'
                 },
                 headStyles: {
-                    fillColor: [37, 99, 235], // Colorful: Darker blue header (Tailwind blue-700 equivalent)
-                    textColor: [255, 255, 255], // Colorful: White text for header
+                    fillColor: [37, 99, 235],
+                    textColor: [255, 255, 255],
                     fontStyle: 'bold',
-                    halign: 'center', // Center align header text
-                    valign: 'middle', // Vertically align header text
-                    lineWidth: 0.1, // Add a thin border to header cells
-                    lineColor: [200, 200, 200] // Light gray border
+                    halign: 'center',
+                    valign: 'middle',
+                    lineWidth: 0.1,
+                    lineColor: [200, 200, 200]
                 },
                 bodyStyles: {
-                    lineWidth: 0.1, // Add a thin border to body cells
-                    lineColor: [200, 200, 200] // Light gray border
+                    lineWidth: 0.1,
+                    lineColor: [200, 200, 200]
                 },
-                // Colorful: Alternating row colors using didParseCell
                 didParseCell: function (data) {
                     if (data.section === 'body') {
-                        if (data.row.index % 2 === 0) { // Even rows
-                            data.cell.styles.fillColor = [240, 248, 255]; // Alice Blue
-                        } else { // Odd rows
-                            data.cell.styles.fillColor = [255, 255, 255]; // White
+                        if (data.row.index % 2 === 0) {
+                            data.cell.styles.fillColor = [240, 248, 255];
+                        } else {
+                            data.cell.styles.fillColor = [255, 255, 255];
                         }
                     }
                 },
                 columnStyles: {
-                    // Specific column styling for books
-                    0: { cellWidth: 15, halign: 'center' }, // S.No.
-                    3: { halign: 'center' }, // QTY
-                    4: { halign: 'right' }, // Price
-                    5: { halign: 'right' } // Total
+                    0: { cellWidth: 15, halign: 'center' },
+                    3: { halign: 'center' },
+                    4: { halign: 'right' },
+                    5: { halign: 'right' }
                 },
                 margin: { top: 10, right: 14, bottom: 10, left: 14 },
                 didDrawPage: function (data) {
@@ -826,7 +961,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     docInstance.text(str, data.settings.margin.left, docInstance.internal.pageSize.height - 10);
                 }
             });
-            return docInstance.autoTable.previous.finalY + 10; // Return Y position after table + some margin
+            return docInstance.autoTable.previous.finalY + 10;
         };
 
         const generateBooksData = () => {
@@ -882,8 +1017,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
             return { columns: tableColumn, rows: tableRows };
         };
 
-
-        // Main logic to decide what to download and generate PDF
         const generatePdfContent = (docInstance, img, imgWidth, imgHeight) => {
             let currentY;
 
@@ -895,7 +1028,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     currentY = addTableToDoc(docInstance, "Books Detail", columns, rows, currentY);
                 } else if (type === 'books') {
                     showFlashMessage('No books to download.', 'warning');
-                    return; // Exit if only books requested and none exist
+                    return;
                 }
             }
 
@@ -904,12 +1037,11 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     if (type === 'stationery') {
                         finalTitle = `Stationery Item Detail for ${customerName} - ${className}`;
                         currentY = addHeaderAndSetStartY(docInstance, finalTitle, img, imgWidth, imgHeight);
-                    } else { // type === 'both'
-                        // If books were added, check if new page is needed for stationery
+                    } else {
                         if (booksDetail.length > 0 && currentY > (docInstance.internal.pageSize.height - 50)) {
                             docInstance.addPage();
                             currentY = addHeaderAndSetStartY(docInstance, `Stationery Item Detail for ${customerName} - ${className}`, img, imgWidth, imgHeight);
-                        } else if (booksDetail.length === 0) { // If no books, then this is the first section
+                        } else if (booksDetail.length === 0) {
                             currentY = addHeaderAndSetStartY(docInstance, `Stationery Item Detail for ${customerName} - ${className}`, img, imgWidth, imgHeight);
                         }
                     }
@@ -917,7 +1049,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     addTableToDoc(docInstance, "Stationery Item Detail", columns, rows, currentY);
                 } else if (type === 'stationery') {
                     showFlashMessage('No stationery items to download.', 'warning');
-                    return; // Exit if only stationery requested and none exist
+                    return;
                 }
             }
 
@@ -937,46 +1069,37 @@ export default function CreateSetManagement({ showFlashMessage }) {
             showFlashMessage(`${finalTitle} downloaded as PDF!`, 'success');
         };
 
-
-        // Handle Logo Loading Asynchronously and then generate content
         const img = new Image();
-        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
+        img.crossOrigin = 'Anonymous';
         img.onload = () => {
-            const logoX = 14; // Left margin for logo
-            const logoY = 10; // Top margin for logo
-            const imgWidth = 25; // Changed: Reduced logo width
-            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
+            const logoX = 14;
+            const logoY = 10;
+            const imgWidth = 25;
+            const imgHeight = (img.height * imgWidth) / img.width;
 
-
-            // Now generate the rest of the content after the image is loaded
             generatePdfContent(doc, img, imgWidth, imgHeight);
         };
 
         img.onerror = () => {
             console.warn("Logo image could not be loaded. Generating PDF without logo.");
-            // If logo fails, proceed to generate content without adding the image
-            // Pass dummy values for img, imgWidth, imgHeight to addHeaderAndSetStartY
-            generatePdfContent(doc, null, 0, 0); // Pass null for img to indicate no logo
+            generatePdfContent(doc, null, 0, 0);
         };
 
-        // Directly use companyLogo here
         img.src = companyLogo;
     };
 
-    // --- Memoized options for the Item dropdown based on selectedItemType and checkbox ---
+    // --- Memoized Item Dropdown Options ---
     const itemDropdownOptions = useMemo(() => {
         if (selectedItemType === 'stationery') {
             if (showAllStationery) {
                 return stationeryItemsMaster;
             } else if (selectedStationeryCategories.size > 0) {
-                // NEW: Filter stationery items by selected categories
                 return stationeryItemsMaster.filter(item => selectedStationeryCategories.has(item.category));
             } else {
                 return [];
             }
         } else if (selectedItemType === 'books' && selectedSubtitle) {
             if (isEditMode && !showAllBooksForSubtitle) {
-                // Corrected: Get subtitle object from subtitles array using selectedSubtitle (ID)
                 const selectedSubtitleObj = subtitles.find(s => s._id === selectedSubtitle);
                 const selectedSubtitleName = selectedSubtitleObj ? selectedSubtitleObj.name : null;
 
@@ -989,7 +1112,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 ).map(item => ({
                     _id: item.book._id,
                     bookName: item.book.bookName,
-                    price: item.book.price // Keep price here for consistency if it's stored in the set
+                    price: item.book.price
                 }));
 
                 if (editingItemType === 'book' && editingItemId) {
@@ -998,54 +1121,34 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         booksInCurrentSetForSubtitle.push({
                             _id: currentBookBeingEdited._id,
                             bookName: currentBookBeingEdited.bookName,
-                            price: currentBookBeingEdited.commonPrice || currentBookBeingEdited.price // Use commonPrice or existing price
+                            price: currentBookBeingEdited.commonPrice || currentBookBeingEdited.price
                         });
                     }
                 }
                 return booksInCurrentSetForSubtitle;
-
             } else {
-                // When showing all books, ensure 'price' property is actually 'commonPrice'
                 return bookCatalogs.map(book => ({
                     ...book,
-                    price: book.commonPrice // Map commonPrice to 'price' for consistency in dropdown options
+                    price: book.commonPrice
                 }));
             }
         }
         return [];
     }, [selectedItemType, selectedSubtitle, isEditMode, showAllBooksForSubtitle, showAllStationery, selectedStationeryCategories, stationeryItemsMaster, booksDetail, bookCatalogs, subtitles, editingItemType, editingItemId]);
 
-
-    // --- UI Rendering ---
+    // --- UI States ---
     const isFormDisabled = !selectedCustomer;
     const isAddItemFormDisabled = !selectedCustomer;
     const isAddItemButtonDisabled = isAddItemFormDisabled || !selectedItemToAdd || itemQuantity === '' || itemPrice === '' || (selectedItemType === 'books' && !selectedSubtitle);
     const isSaveSetDisabled = (!booksDetail.length && !stationeryDetail.length && !currentSetId) || !selectedCustomer || !selectedClass;
-
-    // Filter classes for "Copy To Class" dropdown
     const availableClassesForCopy = useMemo(() => {
         return classes.filter(_class => !existingSetsClasses.has(_class._id));
     }, [classes, existingSetsClasses]);
-
-    // Use useMemo for isCopySetButtonDisabled to ensure availableClassesForCopy is ready
     const isCopySetButtonDisabled = useMemo(() => {
         return !currentSetId || !selectedCustomer || !copyToClass || availableClassesForCopy.length === 0;
     }, [currentSetId, selectedCustomer, copyToClass, availableClassesForCopy]);
 
-
-    // Close download dropdown if clicked outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (downloadDropdownRef.current && !downloadDropdownRef.current.contains(event.target)) {
-                setShowDownloadDropdown(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
-
+    // --- Handle Category Change ---
     const handleCategoryChange = (category) => {
         setSelectedStationeryCategories(prev => {
             const newSet = new Set(prev);
@@ -1065,18 +1168,28 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setShowAllStationery(isChecked);
         setSelectedItemToAdd('');
         if (isChecked) {
-            // Select all categories when "Show All" is checked
             setSelectedStationeryCategories(new Set(stationeryCategories));
         } else {
-            // Unselect all categories when "Show All" is unchecked
             setSelectedStationeryCategories(new Set());
         }
     };
 
+    // --- Close Download Dropdown on Outside Click ---
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (downloadDropdownRef.current && !downloadDropdownRef.current.contains(event.target)) {
+                setShowDownloadDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     return (
         <div className="create-set-management-container">
-            <h2 className="main-section-title">Create Set Managemet</h2>
+            <h2 className="main-section-title">Create Set Management</h2>
             {localError && (
                 <p className="error-message">
                     <FaTimesCircle className="error-icon" /> {localError}
@@ -1086,10 +1199,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
             <div className="main-grid">
                 {/* Left Panel: Order Details, Add, Copy */}
                 <div className="left-panel">
-                    {/* Order Details Section */}
                     <section className="section-container">
                         <h2 className="section-header1">Order Details</h2>
-                        
                         <div className="form-group">
                             <label htmlFor="customer-select" className="form-label">School Name:</label>
                             <select
@@ -1097,7 +1208,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 value={selectedCustomer}
                                 onChange={(e) => {
                                     setSelectedCustomer(e.target.value);
-                                    // Reset all relevant data when customer changes
                                     setCurrentSetId(null);
                                     setBooksDetail([]);
                                     setStationeryDetail([]);
@@ -1110,20 +1220,32 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                     setEditingItemType(null);
                                     setEditingItemId(null);
                                     setShowAllBooksForSubtitle(false);
-                                    setShowAllStationery(false); // NEW: Reset "Show All" stationery checkbox
-                                    setSelectedStationeryCategories(new Set()); // NEW: Reset categories
+                                    setShowAllStationery(false);
+                                    setSelectedStationeryCategories(new Set());
                                 }}
                                 disabled={loading}
                                 className="form-select"
                             >
                                 <option value="">-- Select --</option>
-                                {console.log("Rendering Customer Options from:", customers)}
                                 {(customers || []).map(customer => (
                                     <option key={customer._id} value={customer._id}>
                                         {customer.customerName} {customer.schoolCode ? `(${customer.schoolCode})` : ''}
                                     </option>
                                 ))}
                             </select>
+
+                            <div>
+                                <button
+                            onClick={() => {
+                                setShowQuantityModal(true);
+                                fetchSetQuantities();
+                            }}
+                            className="btn-primary"
+                            disabled={loading || !selectedCustomer}
+                        >
+                            <FaEdit className="btn-icon-mr" /> Manage Set Quantity
+                        </button>
+                            </div>
                         </div>
                         <div className="form-grid-2-cols">
                             <div className="form-group">
@@ -1143,7 +1265,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                     className="form-select"
                                 >
                                     <option value="">-- Select --</option>
-                                    {console.log("Rendering Class Options from:", classes)}
                                     {(classes || []).map(_class => (
                                         <option key={_class._id} value={_class._id}>
                                             {_class.name}
@@ -1157,9 +1278,23 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                     type="number"
                                     id="no-of-sets"
                                     value={noOfSets}
-                                    onChange={(e) => setNoOfSets(Math.max(1, Number(e.target.value || 0)))}
+                                    onChange={(e) => {
+                                        const value = e.target.value === '' ? '' : Math.max(1, Number(e.target.value) || 0);
+                                        setNoOfSets(value);
+                                        if (selectedClass) {
+                                            handleQuantityChange(selectedClass, value);
+                                        }
+                                    }}
+                                    onBlur={() => {
+                                        if (noOfSets === '' || Number(noOfSets) < 1) {
+                                            setNoOfSets('1');
+                                            if (selectedClass) {
+                                                handleQuantityChange(selectedClass, '1');
+                                            }
+                                        }
+                                    }}
                                     min="1"
-                                    disabled={isFormDisabled}
+                                    disabled={true}
                                     className="form-input"
                                 />
                             </div>
@@ -1173,11 +1308,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         </button>
                     </section>
 
-                    {/* Add Item Section */}
                     <section className="section-container">
                         <h2 className="section-header1">Add Items to Set</h2>
-                        
-                        {/* Radio Buttons for Item Type */}
                         <div className="form-group">
                             <label className="form-label">Item Type:</label>
                             <div className="flex gap-4 items-center">
@@ -1221,8 +1353,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                             setEditingItemType(null);
                                             setEditingItemId(null);
                                             setShowAllBooksForSubtitle(false);
-                                            setShowAllStationery(true); // Initially select "Show All" for stationery
-                                            setSelectedStationeryCategories(new Set(stationeryCategories)); // Select all categories initially
+                                            setShowAllStationery(true);
+                                            setSelectedStationeryCategories(new Set(stationeryCategories));
                                         }}
                                         disabled={isAddItemFormDisabled}
                                         className="radio-input"
@@ -1251,7 +1383,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                     className="form-select"
                                 >
                                     <option value="">-- Select --</option>
-                                    {console.log("Rendering Subtitle Options from:", subtitles)}
                                     {(subtitles || []).map(subtitle => (
                                         <option key={subtitle._id} value={subtitle._id}>
                                             {subtitle.name}
@@ -1260,7 +1391,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 </select>
                             </div>
                         )}
-                        
+
                         {selectedItemType === 'stationery' && (
                             <>
                                 <div className="form-group">
@@ -1300,7 +1431,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             </>
                         )}
 
-
                         <div className="form-group">
                             <label htmlFor="item-select" className="form-label">
                                 {selectedItemType === 'stationery' ? 'Stationery Item:' : 'Book:'}
@@ -1315,7 +1445,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 className="form-select"
                             >
                                 <option value="">-- Select --</option>
-                                {console.log("Rendering Item Options from itemDropdownOptions:", itemDropdownOptions)}
                                 {selectedItemType === 'stationery' ? (
                                     (itemDropdownOptions || []).map(item => (
                                         <option key={item._id} value={item._id}>
@@ -1345,24 +1474,23 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             </div>
                         )}
                         <div className="form-grid-2-cols">
-                           <div className="form-group">
-    <label htmlFor="item-quantity" className="form-label">Order Quantity:</label>
-    <input
-        type="number"
-        id="item-quantity"
-        value={itemQuantity}
-        onChange={(e) => setItemQuantity(e.target.value)} // Let user type freely
-        onBlur={() => {
-            // Auto-correct when field loses focus
-            if (!itemQuantity || Number(itemQuantity) < 1) {
-                setItemQuantity("1");
-            }
-        }}
-        min="1"
-        disabled={isAddItemFormDisabled || !selectedItemToAdd || loading}
-        className="form-input"
-    />
-</div>
+                            <div className="form-group">
+                                <label htmlFor="item-quantity" className="form-label">Order Quantity:</label>
+                                <input
+                                    type="number"
+                                    id="item-quantity"
+                                    value={itemQuantity}
+                                    onChange={(e) => setItemQuantity(e.target.value)}
+                                    onBlur={() => {
+                                        if (!itemQuantity || Number(itemQuantity) < 1) {
+                                            setItemQuantity("1");
+                                        }
+                                    }}
+                                    min="1"
+                                    disabled={isAddItemFormDisabled || !selectedItemToAdd || loading}
+                                    className="form-input"
+                                />
+                            </div>
                             <div className="form-group">
                                 <label htmlFor="item-price" className="form-label">Price:</label>
                                 <input
@@ -1376,6 +1504,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 />
                             </div>
                         </div>
+
+                        
                         <button
                             onClick={handleAddOrUpdateItem}
                             disabled={isAddItemButtonDisabled || loading}
@@ -1386,7 +1516,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         </button>
                     </section>
 
-                    {/* Copy Set Section */}
                     <section className="section-container">
                         <h2 className="section-header1">Copy Set</h2>
                         <div className="form-group">
@@ -1399,7 +1528,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 className="form-select"
                             >
                                 <option value="">-- Select --</option>
-                                {console.log("Rendering Copy To Class Options from availableClassesForCopy:", availableClassesForCopy)}
                                 {availableClassesForCopy.length === 0 ? (
                                     <option value="" disabled>No available classes for copying</option>
                                 ) : (
@@ -1432,7 +1560,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         </button>
                     </section>
 
-                    {/* Action Buttons */}
                     <div className="flex gap-4">
                         <button
                             onClick={handleSaveSet}
@@ -1452,10 +1579,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     </div>
                 </div>
 
-                {/* Right Panel: Books Detail and Stationery Item Detail Tables */}
+                {/* Right Panel: Books and Stationery Tables */}
                 <div className="right-panel">
-                    {/* Header: Title and Totals (Moved Here) */}
-
                     <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-200">
                         <h2 className="section-header"> </h2>
                         <div className="relative" ref={downloadDropdownRef}>
@@ -1491,22 +1616,19 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             )}
                         </div>
                     </div>
-                    {/* Books Detail Table */}
+
                     <section className="section-container">
                         <header className="moved-header-container">
                             <h1 className="moved-header-title"> </h1>
                             <div className="moved-header-totals">
-
                                 <div className="total-item">Items: {totalItems}</div>
                                 <div className="total-item1">Total Set Value: Rs.{totalAmount.toFixed(2)}</div>
                                 <div className="total-item">Qty: {totalQuantity * noOfSets}</div>
                             </div>
-
                         </header>
 
-
                         <div className="table-container">
-                            <h2 className="section-header"> Books List Details</h2>
+                            <h2 className="section-header">Books List Details</h2>
                             <table className="app-table">
                                 <thead className="table-header-group">
                                     <tr>
@@ -1566,10 +1688,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         </div>
                     </section>
 
-                    {/* Stationery Item Detail Table (Moved to be conditional on download type) */}
                     {(booksDetail.length > 0 || stationeryDetail.length > 0) && (
                         <section className="section-container">
-
                             <div className="table-container">
                                 <h2 className="section-header">Stationery Item Details</h2>
                                 <table className="app-table">
@@ -1632,7 +1752,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 </div>
             </div>
 
-            {/* Confirmation Modal */}
+            {/* Item Deletion Confirmation Modal */}
             {showConfirmModal && itemToDelete && (
                 <div className="modal-overlay">
                     <div className="modal-content">
@@ -1645,6 +1765,125 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 Cancel
                             </button>
                             <button onClick={confirmDeletion} className="btn-danger" disabled={loading}>
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Confirm Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showQuantityModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h3 className="modal-header">Manage Set Quantities</h3>
+                        <div className="modal-body">
+                            <p>Update quantities for sets associated with the selected school.</p>
+                            {classes.length === 0 ? (
+                                <p>No classes available to manage quantities.</p>
+                            ) : (
+                                <table className="app-table">
+                                    <thead className="table-header-group">
+                                        <tr>
+                                            <th className="table-header-cell">Class</th>
+                                            <th className="table-header-cell">Quantity</th>
+                                            <th className="table-header-cell table-cell-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="table-body">
+                                        {classes.map((cls, index) => {
+                                            const classId = cls._id;
+                                            const className = cls.name;
+                                            const quantity = editedQuantities[classId] ?? '';
+                                            return (
+                                                <tr key={classId} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
+                                                    <td className="table-cell">{className}</td>
+                                                    <td className="table-cell">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            value={quantity}
+                                                            onChange={(e) => handleQuantityChange(classId, e.target.value)}
+                                                            onBlur={() => {
+                                                                if (quantity === '' || Number(quantity) < 0) {
+                                                                    handleQuantityChange(classId, '');
+                                                                }
+                                                            }}
+                                                            disabled={loading}
+                                                            className="form-input w-full"
+                                                        />
+                                                    </td>
+                                                    <td className="table-cell whitespace-nowrap text-center">
+                                                        <button
+                                                            onClick={() => handleEditQuantity(classId, className)}
+                                                            className="table-action-btn edit-btn"
+                                                            title="Edit Quantity"
+                                                            disabled={loading}
+                                                        >
+                                                            <FaEdit className="table-action-icon" />
+                                                        </button>
+                                                        {setQuantities.some(sq => sq.classId === classId) && (
+                                                            <button
+                                                                onClick={() => handleDeleteQuantity(classId, className)}
+                                                                className="table-action-btn delete-btn"
+                                                                title="Delete Quantity"
+                                                                disabled={loading}
+                                                            >
+                                                                <FaTrashAlt className="table-action-icon" />
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                onClick={() => setShowQuantityModal(false)}
+                                className="btn-secondary mr-2"
+                                disabled={loading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={saveSetQuantities}
+                                className="btn-primary"
+                                disabled={loading || !Object.values(editedQuantities).some(qty => qty !== '' && qty >= 0)}
+                            >
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Save Quantities'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Set Quantity Deletion Confirmation Modal */}
+            {showDeleteQuantityModal && quantityToDelete && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h3 className="modal-header">Confirm Delete Quantity</h3>
+                        <p className="modal-body">
+                            Are you sure you want to delete the set quantity for class "{quantityToDelete.className}"? This action cannot be undone.
+                        </p>
+                        <div className="modal-footer">
+                            <button
+                                onClick={() => {
+                                    setShowDeleteQuantityModal(false);
+                                    setQuantityToDelete(null);
+                                    showFlashMessage('Deletion cancelled.', 'info');
+                                }}
+                                className="btn-secondary mr-2"
+                                disabled={loading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDeleteQuantity}
+                                className="btn-danger"
+                                disabled={loading}
+                            >
                                 {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Confirm Delete'}
                             </button>
                         </div>

@@ -25,18 +25,17 @@ const setSchema = new mongoose.Schema({
                 required: [true, 'Book quantity is required'],
                 min: [1, 'Quantity must be at least 1']
             },
-            price: { // Store the price at the time of adding to the set
+            price: {
                 type: Number,
                 required: [true, 'Book price is required'],
                 min: [0, 'Price cannot be negative']
             },
-            // FIX: Ensure 'active' is a valid enum value
             status: {
                 type: String,
-                enum: ['active', 'pending', 'clear'], // Added 'active' here
-                default: 'active' // Default status when a book is added to a set
+                enum: ['active', 'pending', 'clear'],
+                default: 'active'
             },
-            clearedDate: Date // Date when the book status was set to 'clear'
+            clearedDate: Date
         }
     ],
     stationeryItems: [
@@ -51,20 +50,25 @@ const setSchema = new mongoose.Schema({
                 required: [true, 'Stationery quantity is required'],
                 min: [1, 'Quantity must be at least 1']
             },
-            price: { // Store the price at the time of adding to the set
+            price: {
                 type: Number,
                 required: [true, 'Stationery price is required'],
                 min: [0, 'Price cannot be negative']
             },
-            // FIX: Ensure 'active' is a valid enum value
             status: {
                 type: String,
-                enum: ['active', 'pending', 'clear'], // Added 'active' here
-                default: 'active' // Default status when a stationery item is added to a set
+                enum: ['active', 'pending', 'clear'],
+                default: 'active'
             },
-            clearedDate: Date // Date when the stationery item status was set to 'clear'
+            clearedDate: Date
         }
     ],
+    quantity: {
+        type: Number,
+        required: [true, 'Set quantity is required'],
+        min: [0, 'Quantity cannot be negative'],
+        default: 0
+    },
     createdAt: {
         type: Date,
         default: Date.now
