@@ -7,7 +7,7 @@ const fs = require('fs');
 
 const router = express.Router();
 
-const uploadsDir = path.join(__dirname, '../Uploads');
+const uploadsDir = path.join(__dirname, '../uploads');
 const firmLogosDir = path.join(uploadsDir, 'firm-logos');
 
 if (!fs.existsSync(uploadsDir)) {
