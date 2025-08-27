@@ -246,13 +246,12 @@ const TransportManagement = ({ showFlashMessage }) => {
         let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
         startY = addReportTitle(doc, startY, "Transport Report");
         
-        const tableColumn = ["S.No.", "Transport Name", "Contact Person", "Mobile No.", "Address", "Status"];
+        const tableColumn = ["S.No.", "Transport Name", "Contact Person", "Mobile No.", "Status"];
         const tableRows = filteredTransports.map((transport, index) => [
             index + 1,
             transport.transportName,
             transport.person || 'N/A',
             transport.mobile || 'N/A',
-            transport.address || 'N/A',
             transport.status
         ]);
         

@@ -381,10 +381,6 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         "Category", 
         "Price (Rs.)", 
         "Margin %", 
-        "Customer Discount %", 
-        "Company Discount %", 
-        "Add Date", 
-        "Status"
     ];
 
     const tableRows = filteredItems.map((item, index) => [
@@ -393,17 +389,13 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         item.category || 'N/A',
         (typeof item.price === 'number' && !isNaN(item.price)) ? `Rs ${item.price.toFixed(2)}` : 'N/A',
         (typeof item.marginPercentage === 'number' && !isNaN(item.marginPercentage)) ? `${item.marginPercentage.toFixed(2)}%` : 'N/A',
-        (typeof item.customerDiscountPercentage === 'number' && !isNaN(item.customerDiscountPercentage)) ? `${item.customerDiscountPercentage.toFixed(2)}%` : 'N/A',
-        (typeof item.companyDiscountPercentage === 'number' && !isNaN(item.companyDiscountPercentage)) ? `${item.companyDiscountPercentage.toFixed(2)}%` : 'N/A',
-        formatDateWithTime(item.createdAt),
-        item.status ? (item.status.charAt(0).toUpperCase() + item.status.slice(1)) : 'N/A'
     ]);
 
 
     addTableToDoc(doc, tableColumn, tableRows, startY);
 
-        doc.save(`Customer_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
-        showFlashMessage('Customer list downloaded as PDF!', 'success');
+        doc.save(`Stationary_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
+        showFlashMessage('Stationary list downloaded as PDF!', 'success');
     };
     // --- UI Rendering ---
     return (

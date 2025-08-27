@@ -233,12 +233,11 @@ const ClassManagement = ({ showFlashMessage }) => {
         let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
         startY = addReportTitle(doc, startY, "Class List Report");
 
-        const tableColumn = ["S.No.", "Class Name", "Status", "Add Date"];
+        const tableColumn = ["S.No.", "Class Name", "Status"];
         const tableRows = filteredClasses.map((classItem, index) => [
             index + 1,
             classItem.name,
             classItem.status.charAt(0).toUpperCase() + classItem.status.slice(1),
-            formatDateWithTime(classItem.createdAt)
         ]);
         
         addTableToDoc(doc, tableColumn, tableRows, startY);

@@ -273,16 +273,15 @@ const CityManagement = ({ showFlashMessage }) => {
         const doc = new window.jspdf.jsPDF();
         
         let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
-        startY = addReportTitle(doc, startY, "City List Report");
+        startY = addReportTitle(doc, startY, "Zone List Report");
 
-        const tableColumn = ["S.No.", "City Name", "Zone", "Assigned Sales Rep", "Status", "Add Date"];
+        const tableColumn = ["S.No.", "City Name", "Zone", "Assigned Sales Rep", "Status"];
         const tableRows = filteredCities.map((cityItem, index) => [
             index + 1,
             cityItem.name,
             cityItem.zone ? cityItem.zone.name : 'N/A',
             cityItem.assignedSalesRepresentative ? cityItem.assignedSalesRepresentative.name : 'Not Assigned',
-            cityItem.status.charAt(0).toUpperCase() + cityItem.status.slice(1),
-            formatDateWithTime(cityItem.createdAt)
+            cityItem.status.charAt(0).toUpperCase() + cityItem.status.slice(1)
         ]);
 
         addTableToDoc(doc, tableColumn, tableRows, startY);

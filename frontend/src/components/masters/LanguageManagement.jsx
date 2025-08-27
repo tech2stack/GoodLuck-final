@@ -268,11 +268,10 @@ const LanguageManagement = ({ showFlashMessage }) => {
         let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
         startY = addReportTitle(doc, startY, "Language List Report");
 
-        const tableColumn = ["S.No.", "Name", "Add Date", "Status"];
+        const tableColumn = ["S.No.", "Name", "Status"];
         const tableRows = filteredLanguages.map((langItem, index) => [
             index + 1,
             langItem.name,
-            formatDateWithTime(langItem.createdAt),
             langItem.status.charAt(0).toUpperCase() + langItem.status.slice(1)
         ]);
 

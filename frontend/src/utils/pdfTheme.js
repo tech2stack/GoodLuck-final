@@ -19,7 +19,7 @@ export const standardColors = {
 // यह फ़ंक्शन PDF में हेडर जोड़ता है (लोगो और कंपनी की जानकारी)
 // और अगले कंटेंट के लिए शुरुआती Y-कोऑर्डिनेट लौटाता है।
 export const addHeaderAndSetStartY = (doc, img, imgWidth, imgHeight) => {
-  const marginX = 14, marginY = 10;
+  const marginX = 12, marginY = 9;
   const pageWidth = doc.internal.pageSize.width;
   const rightAlignX = pageWidth - marginX;
 
@@ -54,7 +54,7 @@ export const addHeaderAndSetStartY = (doc, img, imgWidth, imgHeight) => {
   doc.line(marginX, maxY + 5, pageWidth - marginX, maxY + 5);
 
   // हेडर के बाद कंटेंट के लिए शुरुआती Y-कोऑर्डिनेट लौटाएँ
-  return maxY + 15;
+  return maxY + 12;
 };
 
 // यह फ़ंक्शन रिपोर्ट का शीर्षक जोड़ता है और उसे थोड़ा ऊपर करता है
@@ -65,7 +65,7 @@ export const addReportTitle = (doc, startY, reportTitle) => {
 
     // शीर्षक के बाद अगले कंटेंट के लिए Y-कोऑर्डिनेट लौटाएँ
     // इसे भी कम किया गया है ताकि अगली सामग्री ऊपर रहे
-    return startY + 10; 
+    return startY + 5; 
 };
 
 // यह फ़ंक्शन PDF में टेबल जोड़ता है

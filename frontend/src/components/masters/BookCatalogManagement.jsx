@@ -532,12 +532,12 @@ const downloadPdf = () => {
     let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
     startY = addReportTitle(doc, startY, "Book Catalog Report");
 
-    const tableColumn = ["S.No.", "Publication", "Subtitle", "Book Name", "Language", "ISBN No.", "Discount"];
+    const tableColumn = ["S.No.", "Book Name", "Publication", "Subtitle", "Language", "ISBN No.", "Discount"];
     const tableRows = filteredBookCatalogs.map((book, index) => [
         index + 1,
+        book.bookName,
         book.publication ? book.publication.name : 'N/A',
         book.subtitle ? book.subtitle.name : 'N/A',
-        book.bookName,
         book.language ? book.language.name : 'N/A',
         // Corrected line: Join ISBNs from pricesByClass, or use commonIsbn
         book.bookType === 'common_price'
