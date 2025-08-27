@@ -21,6 +21,7 @@ import '../../styles/CustomerManagement.css'; // NEW: Import specific styles
 
 // Import the logo image directly (assuming it exists at this path for PDF)
 import companyLogo from '../../assets/glbs-logo.jpg';
+import { addHeaderAndSetStartY, addReportTitle, addTableToDoc } from '../../utils/pdfTheme';
 
 
 const CustomerManagement = ({ showFlashMessage }) => {
@@ -796,174 +797,36 @@ const CustomerManagement = ({ showFlashMessage }) => {
     };
 
     // --- PDF Download Functionality ---
+    // --- PDF Download Functionality ---
     const downloadPdf = () => {
-        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
-            showFlashMessage('PDF generation library (jspdf) not loaded or accessible. Check console for details.', 'error');
-            console.error("PDF generation failed: jspdf is not loaded. Ensure jspdf.umd.min.js is correctly linked in public/index.html");
+        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF !== 'function') {
+            showFlashMessage('PDF generation failed: Core libraries are not loaded. Please check your script links.', 'error');
+            console.error("PDF generation failed: window.jspdf is not available.");
             return;
         }
 
-        if (customers.length === 0) {
-            showFlashMessage('No customer data to download.', 'warning');
-            return;
-        }
+        const doc = new window.jspdf.jsPDF();
+        let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
+        startY = addReportTitle(doc, startY, "Customer List Report");
 
-        // Changed: Set PDF to A4 portrait
-        const doc = new window.jspdf.jsPDF('portrait', 'mm', 'a4');
-        if (typeof doc.autoTable !== 'function') {
-            showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
-            console.error("PDF generation failed: doc.autoTable is not a function. Ensure jspdf.plugin.autotable.min.js is correctly linked and loaded AFTER jspdf.umd.min.js.");
-            return;
-        }
+        // Updated table columns as per user request
+        const tableColumn = ["S.No.", "Customer Name", "Contact Person", "Mobile No.", "Address", "City"];
 
-        // Define company details for PDF header
-        const companyName = "GOOD LUCK BOOK STORE";
-        const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
-        const companyMobile = "Mobile Number: 7024136476";
-        const companyGST = "GST NO: 23EAVPP3772F1Z8";
-        const companyLogoUrl = companyLogo; // Use the imported logo directly
+        // Updated table rows with the new fields
+        const tableRows = customers.map((cust, index) => [
+            index + 1,
+            cust.customerName || 'N/A',
+            cust.contactPerson || 'N/A',
+            cust.mobileNumber || 'N/A',
+            getAddressString(cust), // Use the helper function to combine addresses
+            cust.city ? cust.city.name : 'N/A'
+        ]);
 
-        // Function to generate the main report content (title, line, table, save)
-        const generateReportBody = (startYPositionForTable) => {
-            doc.setFontSize(18);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30); // Dark gray for title
-            doc.text("Customer List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' });
-            doc.setLineWidth(0.5);
-            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15); // Line spanning almost full width
-            const tableStartY = startYPositionForTable + 20;
+        addTableToDoc(doc, tableColumn, tableRows, startY);
 
-            // Generate table data
-            const tableColumn = [
-                "S.No.", "Firm", "Name (Type)", "Contact Person", "Mobile No.", "Address", "City", "School Code", "GST No.", "Discount", "Opening Balance", "Sales By", "Return Time"
-            ];
-            const tableRows = [];
-
-            // Populate tableRows with data from filteredCustomers
-            customers.forEach((customer, index) => {
-                const customerType = customer.customerType ? `(${customer.customerType})` : '';
-                const customerData = [
-                    index + 1,
-                    customer.firm ? getStringValue(customer.firm.name) : 'N/A',
-                    `${getStringValue(customer.customerName)} ${customerType}`,
-                    getStringValue(customer.contactPerson),
-                    getStringValue(customer.mobileNumber),
-                    getAddressString(customer),
-                    customer.city ? getStringValue(customer.city.name) : 'N/A',
-                    getStringValue(customer.schoolCode),
-                    getStringValue(customer.gstNumber),
-                    getStringValue(customer.discount),
-                    getStringValue(customer.openingBalance),
-                    customer.salesBy ? getStringValue(customer.salesBy.name) : 'N/A',
-                    getStringValue(customer.returnTime)
-                ];
-                tableRows.push(customerData);
-            });
-
-            // Add the table to the document with professional styling
-            doc.autoTable({
-                head: [tableColumn],
-                body: tableRows,
-                startY: tableStartY, // Use our dynamic start position
-                theme: 'plain', // Changed to 'plain' for a cleaner look like the reference PDF
-                styles: {
-                    font: 'helvetica',
-                    fontSize: 10,
-                    cellPadding: 3,
-                    textColor: [51, 51, 51], // Default text color for body
-                    valign: 'middle',
-                    halign: 'left'
-                },
-                headStyles: {
-                    fillColor: [240, 240, 240], // Light gray header
-                    textColor: [51, 51, 51], // Dark text for header
-                    fontStyle: 'bold',
-                    halign: 'center', // Center align header text
-                    valign: 'middle', // Vertically align header text
-                    lineWidth: 0.1, // Add a thin border to header cells
-                    lineColor: [200, 200, 200] // Light gray border
-                },
-                bodyStyles: {
-                    lineWidth: 0.1, // Add a thin border to body cells
-                    lineColor: [200, 200, 200] // Light gray border
-                },
-                columnStyles: {
-                    0: { cellWidth: 15, halign: 'center' },
-                    1: { cellWidth: 30, halign: 'left' },
-                    2: { cellWidth: 30, halign: 'left' },
-                    3: { cellWidth: 25, halign: 'left' },
-                    4: { cellWidth: 25, halign: 'center' },
-                    5: { cellWidth: 35, halign: 'left' },
-                    6: { cellWidth: 20, halign: 'left' },
-                    7: { cellWidth: 20, halign: 'center' },
-                    8: { cellWidth: 25, halign: 'left' },
-                    9: { cellWidth: 20, halign: 'center' },
-                    10: { cellWidth: 25, halign: 'center' },
-                    11: { cellWidth: 25, halign: 'left' },
-                    12: { cellWidth: 25, halign: 'center' }
-                },
-                didParseCell: function (data) {
-                    if (data.section === 'head' && data.cell.text[0] === "Name (Type)") {
-                        data.cell.text = ["Name", "(Type)"];
-                    }
-                }
-            });
-
-            // Save the PDF
-            doc.save('Customer_List_Report.pdf');
-        };
-
-        // --- Header Generation with Logo and Info ---
-        const img = new Image();
-        img.onload = () => {
-            const imgWidth = 40; // width in mm
-            const imgHeight = (img.height * imgWidth) / img.width;
-            const logoX = 14; // Start X position from left margin
-            const logoY = 10; // Start Y position from top margin
-
-            // Add the image to the PDF
-            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight);
-
-            // Add company name and details next to logo
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30);
-            doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(50, 50, 50);
-            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12); // Address
-            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17); // Mobile
-            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22); // GST No.
-
-            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10);
-            generateReportBody(calculatedStartY); // Pass the calculated Y position
-        };
-        img.onerror = () => {
-            console.warn("Logo image could not be loaded. Generating PDF without logo.");
-            // If logo fails, add only company info block
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30);
-            doc.text(companyName, 14, 20); // Company Name
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(50, 50, 50);
-            doc.text(companyAddress, 14, 27); // Address
-            doc.text(companyMobile, 14, 32); // Mobile
-            doc.text(companyGST, 14, 37); // GST No.
-            const calculatedStartY = 45; // Adjust startY since no logo
-            generateReportBody(calculatedStartY); // Pass the calculated Y position
-        };
-        img.src = companyLogoUrl; // This will now use the imported image data
-
-        // Add generation date/time to the top right (this part can run immediately)
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100); // Gray color for date text
-        doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
+        doc.save(`Customer_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
+        showFlashMessage('Customer list downloaded as PDF!', 'success');
     };
-
     // --- UI Rendering ---
     return (
         <div className="customer-management-container">

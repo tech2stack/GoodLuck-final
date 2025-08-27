@@ -246,7 +246,7 @@ const ClassManagement = ({ showFlashMessage }) => {
         doc.save(`Class_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
         showFlashMessage('Class list downloaded as PDF!', 'success');
     };
-
+    //--UI rendering--
     return (
         <div className="class-management-container">
             <h2 className="main-section-title">Class Management</h2>

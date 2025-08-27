@@ -18,6 +18,7 @@ import '../../styles/Modal.css';
 
 // Import the logo image directly (assuming it exists at this path for PDF)
 import companyLogo from '../../assets/glbs-logo.jpg';
+import { addHeaderAndSetStartY, addReportTitle, addTableToDoc } from '../../utils/pdfTheme';
 
 
 const StationeryItemManagement = ({ showFlashMessage }) => {
@@ -371,161 +372,39 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         }
 
         const doc = new window.jspdf.jsPDF('portrait');
+        let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
+        startY = addReportTitle(doc, startY, "Stationery Item List Report");
 
-        if (typeof doc.autoTable !== 'function') {
-            showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
-            console.error("PDF generation failed: doc.autoTable is not a function. Ensure jspdf.plugin.autotable.min.js is correctly linked and loaded AFTER jspdf.umd.min.js");
-            return;
-        }
+        const tableColumn = [
+        "S.No.", 
+        "Item Name", 
+        "Category", 
+        "Price (Rs.)", 
+        "Margin %", 
+        "Customer Discount %", 
+        "Company Discount %", 
+        "Add Date", 
+        "Status"
+    ];
 
-        const companyName = "GOOD LUCK BOOK STORE";
-        const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
-        const companyMobile = "Mobile Number: 7024136476";
-        const companyGST = "GST NO: 23EAVPP3772F1Z8";
-        const companyLogoUrl = companyLogo;
+    const tableRows = filteredItems.map((item, index) => [
+        index + 1,
+        item.itemName || 'N/A',
+        item.category || 'N/A',
+        (typeof item.price === 'number' && !isNaN(item.price)) ? `Rs ${item.price.toFixed(2)}` : 'N/A',
+        (typeof item.marginPercentage === 'number' && !isNaN(item.marginPercentage)) ? `${item.marginPercentage.toFixed(2)}%` : 'N/A',
+        (typeof item.customerDiscountPercentage === 'number' && !isNaN(item.customerDiscountPercentage)) ? `${item.customerDiscountPercentage.toFixed(2)}%` : 'N/A',
+        (typeof item.companyDiscountPercentage === 'number' && !isNaN(item.companyDiscountPercentage)) ? `${item.companyDiscountPercentage.toFixed(2)}%` : 'N/A',
+        formatDateWithTime(item.createdAt),
+        item.status ? (item.status.charAt(0).toUpperCase() + item.status.slice(1)) : 'N/A'
+    ]);
 
-        const generateReportBody = (startYPositionForTable) => {
-            doc.setFontSize(18);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30);
-            doc.text("Stationery Item List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' });
 
-            doc.setLineWidth(0.5);
-            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15);
+    addTableToDoc(doc, tableColumn, tableRows, startY);
 
-            const tableStartY = startYPositionForTable + 20;
-
-            const tableColumn = ["S.No.", "Item Name", "Category", "Price (Rs.)", "Margin %", "Customer Discount %", "Company Discount %", "Add Date", "Status"]; // NEW: Add new columns
-            const tableRows = [];
-
-            filteredItems.forEach((item, index) => {
-                const formattedPrice = typeof item.price === 'number' && !isNaN(item.price)
-                    ? `Rs ${item.price.toFixed(2)}`
-                    : 'N/A';
-                const formattedMargin = typeof item.marginPercentage === 'number' && !isNaN(item.marginPercentage)
-                    ? `${item.marginPercentage.toFixed(2)}%`
-                    : 'N/A';
-                const formattedCustomerDiscount = typeof item.customerDiscountPercentage === 'number' && !isNaN(item.customerDiscountPercentage)
-                    ? `${item.customerDiscountPercentage.toFixed(2)}%`
-                    : 'N/A';
-                const formattedCompanyDiscount = typeof item.companyDiscountPercentage === 'number' && !isNaN(item.companyDiscountPercentage)
-                    ? `${item.companyDiscountPercentage.toFixed(2)}%`
-                    : 'N/A';
-                const itemData = [
-                    String(index + 1),
-                    String(item.itemName || '').trim(),
-                    String(item.category || '').trim(),
-                    formattedPrice,
-                    formattedMargin, // NEW: Add marginPercentage to row data
-                    formattedCustomerDiscount, // NEW: Add customer discount
-                    formattedCompanyDiscount,  // NEW: Add company discount
-                    formatDateWithTime(item.createdAt),
-                    String(item.status || '').trim().charAt(0).toUpperCase() + String(item.status || '').trim().slice(1)
-                ];
-                tableRows.push(itemData);
-            });
-
-            doc.autoTable({
-                head: [tableColumn],
-                body: tableRows,
-                startY: tableStartY,
-                theme: 'plain',
-                styles: {
-                    font: 'helvetica',
-                    fontSize: 10,
-                    cellPadding: 3,
-                    textColor: [51, 51, 51],
-                    valign: 'middle',
-                    halign: 'left'
-                },
-                headStyles: {
-                    fillColor: [60, 141, 188], // Change this line
-                    textColor: [255, 255, 255], // Optional: Change text color to white for contrast
-                    fontStyle: 'bold',
-                    halign: 'center',
-                    valign: 'middle',
-                    lineWidth: 0.1,
-                    lineColor: [200, 200, 200]
-                },
-                bodyStyles: {
-                    lineWidth: 0.1,
-                    lineColor: [200, 200, 200]
-                },
-                columnStyles: {
-                    0: { cellWidth: 15, halign: 'center' },
-                    1: { cellWidth: 'auto', halign: 'left' },
-                    2: { cellWidth: 'auto', halign: 'left' },
-                    3: { cellWidth: 'auto', halign: 'right' },
-                    4: { cellWidth: 'auto', halign: 'right' }, // NEW: Column style for Margin %
-                    5: { cellWidth: 'auto', halign: 'right' }, // NEW: Column for customer discount
-                    6: { cellWidth: 'auto', halign: 'right' }, // NEW: Column for company discount
-                    7: { halign: 'center' },
-                    8: { halign: 'center' }
-                },
-                margin: { top: 10, right: 14, bottom: 10, left: 14 },
-                didDrawPage: function (data) {
-                    doc.setFontSize(10);
-                    doc.setTextColor(100);
-                    const pageCount = doc.internal.getNumberOfPages();
-                    doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
-                }
-            });
-            doc.save(`Stationery_Item_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
-            showFlashMessage('Stationery Item list downloaded as PDF!', 'success');
-        };
-
-        const img = new Image();
-        img.crossOrigin = 'Anonymous';
-        img.onload = () => {
-            const logoX = 14;
-            const logoY = 10;
-            const imgWidth = 25;
-            const imgHeight = (img.height * imgWidth) / img.width;
-
-            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight);
-
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30);
-            doc.text(companyName, logoX + imgWidth + 5, logoY + 5);
-
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(50, 50, 50);
-            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12);
-            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17);
-            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22);
-
-            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10);
-            generateReportBody(calculatedStartY);
-        };
-
-        img.onerror = () => {
-            console.warn("Logo image could not be loaded. Generating PDF without logo.");
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30);
-            doc.text(companyName, 14, 20);
-
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(50, 50, 50);
-            doc.text(companyAddress, 14, 27);
-            doc.text(companyMobile, 14, 32);
-            doc.text(companyGST, 14, 37);
-
-            const calculatedStartY = 45;
-            generateReportBody(calculatedStartY);
-        };
-
-        img.src = companyLogoUrl;
-
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
+        doc.save(`Customer_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
+        showFlashMessage('Customer list downloaded as PDF!', 'success');
     };
-
     // --- UI Rendering ---
     return (
         <div className="stationery-item-management-container">
