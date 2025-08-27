@@ -226,7 +226,7 @@ const SidebarStockManagerDashboard = ({
           onClick={() => handleNavigationClick('dashboard')}
         >
           <FaChartBar className="text-lg min-w-[1.5rem] mr-3" />
-          <span className="truncate">Dashboard </span>
+          <span className="truncate">Home </span>
         </button>
       </li>
 

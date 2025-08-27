@@ -642,19 +642,36 @@ exports.getAllClassesForDropdown = catchAsync(async (req, res, next) => {
 });
 
 // Get all book catalogs for dropdown, optionally filtered by subtitle
+// Get all book catalogs for dropdown, optionally filtered by subtitle and class
 exports.getAllBookCatalogsForDropdown = catchAsync(async (req, res, next) => {
-    const { subtitleId } = req.query;
+    const { subtitleId, classId } = req.query;
 
     let filter = {};
     if (subtitleId) {
         filter.subtitle = subtitleId;
     }
 
-    const bookCatalogs = await BookCatalog.find(filter).select('bookName subtitle commonPrice').populate('subtitle', 'name').sort('bookName');
+    const bookCatalogs = await BookCatalog.find(filter)
+        .select('bookName subtitle commonPrice pricesByClass bookType')
+        .populate('subtitle', 'name')
+        .sort('bookName');
+
+    // Map book catalogs to include class-specific price if classId is provided
+    const formattedBookCatalogs = bookCatalogs.map(catalog => {
+        const catalogObj = catalog.toObject();
+        if (catalog.bookType === 'default' && classId) {
+            const pricesByClass = Object.fromEntries(catalog.pricesByClass || new Map());
+            catalogObj.classPrice = pricesByClass[classId] || 0;
+        } else {
+            catalogObj.classPrice = catalog.commonPrice || 0;
+        }
+        return catalogObj;
+    });
+
     res.status(200).json({
         status: 'success',
         data: {
-            bookCatalogs
+            bookCatalogs: formattedBookCatalogs
         }
     });
 });

@@ -127,7 +127,7 @@ const StockManagerDashboardSummary = ({ showFlashMessage }) => {
         <SummaryCard title="Total Cities" count={Math.floor(animatedCounts.cities)} icon={FaCity} color="from-emerald-400 to-emerald-600" />
         <SummaryCard title="Total Publications" count={Math.floor(animatedCounts.publications)} icon={FaBook} color="from-indigo-400 to-indigo-600" />
         <SummaryCard title="Total Languages" count={Math.floor(animatedCounts.languages)} icon={FaLanguage} color="from-pink-400 to-pink-600" />
-        <SummaryCard title="Total Book Catalogs" count={Math.floor(animatedCounts.bookCatalogs)} icon={FaBookOpen} color="from-purple-400 to-purple-600" />
+        <SummaryCard title="Total Books Title" count={Math.floor(animatedCounts.bookCatalogs)} icon={FaBookOpen} color="from-purple-400 to-purple-600" />
         <SummaryCard title="Total Stationery Items" count={Math.floor(animatedCounts.stationeryItems)} icon={FaPencilRuler} color="from-yellow-400 to-yellow-600" />
         <SummaryCard title="Total Customers" count={Math.floor(animatedCounts.customers)} icon={FaUserCheck} color="from-blue-400 to-blue-600" />
         <SummaryCard title="Total Transports" count={Math.floor(animatedCounts.transports)} icon={FaTruck} color="from-red-400 to-red-600" />

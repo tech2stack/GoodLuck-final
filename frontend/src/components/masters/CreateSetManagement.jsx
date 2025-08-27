@@ -1,3 +1,4 @@
+
 // src/components/masters/CreateSetManagement.jsx
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -143,6 +144,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
 
     // --- Reset Form ---
     const resetForm = useCallback(() => {
+        console.log('DEBUG: resetForm called');
         setCurrentSetId(null);
         setBooksDetail([]);
         setStationeryDetail([]);
@@ -171,26 +173,53 @@ export default function CreateSetManagement({ showFlashMessage }) {
         fetchDropdownData();
     }, [fetchDropdownData]);
 
-    // --- Fetch Book Catalogs by Subtitle ---
     const fetchBookCatalogsBySubtitle = useCallback(async () => {
-        if (!selectedSubtitle) {
+        if (!selectedSubtitle || !selectedClass) {
             setBookCatalogs([]);
             setSelectedItemToAdd('');
+            setItemPrice('');
             return;
         }
 
         setLoading(true);
         try {
-            const response = await api.get(`/sets/dropdowns/book-catalogs?subtitleId=${selectedSubtitle}`);
+            const response = await api.get(`/sets/dropdowns/book-catalogs?subtitleId=${selectedSubtitle}&classId=${selectedClass}`);
             const validBookCatalogs = (response.data.data.bookCatalogs || []).filter(b => b && b._id);
             setBookCatalogs(validBookCatalogs);
+
+            // If a book is already selected, update its price based on the new book catalog
+            if (selectedItemToAdd) {
+                const selectedBook = validBookCatalogs.find(b => b._id === selectedItemToAdd);
+                if (selectedBook) {
+                    const price = selectedBook.bookType === 'common_price' ? selectedBook.commonPrice : selectedBook.classPrice;
+                    setItemPrice(price?.toString() || '');
+                }
+            }
         } catch (err) {
             console.error('Error fetching book catalogs by subtitle:', err);
             showFlashMessage(err.response?.data?.message || 'Failed to load books for selected subtitle.', 'error');
+            setLocalError('Failed to load books for selected subtitle.');
         } finally {
             setLoading(false);
         }
-    }, [selectedSubtitle, showFlashMessage]);
+    }, [selectedSubtitle, selectedClass, selectedItemToAdd, showFlashMessage]);
+
+    const handleBookSelection = useCallback((bookId) => {
+        setSelectedItemToAdd(bookId);
+        const selectedBook = bookCatalogs.find(b => b._id === bookId);
+        if (selectedBook) {
+            const price = selectedBook.bookType === 'common_price' ? selectedBook.commonPrice : selectedBook.classPrice;
+            setItemPrice(price?.toString() || '');
+        } else {
+            setItemPrice('');
+        }
+    }, [bookCatalogs]);
+
+    useEffect(() => {
+        if (selectedItemType === 'books' && selectedSubtitle && selectedClass) {
+            fetchBookCatalogsBySubtitle();
+        }
+    }, [selectedSubtitle, selectedClass, selectedItemType, fetchBookCatalogsBySubtitle]);
 
     // --- Convert Fetched Data to Local Format ---
     const fetchedToLocalFormat = useCallback((items, type) => {
@@ -227,8 +256,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
             }
         });
     }, [subtitles]);
-
-    // --- Fetch Set Details ---
 
     // --- Fetch Set Quantities ---
     const fetchSetQuantities = useCallback(async () => {
@@ -332,7 +359,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         }
     }, [selectedCustomer, selectedClass, showFlashMessage, resetForm, fetchedToLocalFormat, fetchSetQuantities]);
 
-
     const handleQuantityChange = (classId, value) => {
         const quantity = value === '' ? '' : Math.max(0, parseInt(value) || 0);
         setEditedQuantities(prev => ({
@@ -343,6 +369,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
             setNoOfSets(quantity === '' ? '1' : String(quantity));
         }
     };
+
     // --- Handle Edit Quantity ---
     const handleEditQuantity = (classId, className) => {
         showFlashMessage(`Editing quantity for class ${className}.`, 'info');
@@ -357,67 +384,66 @@ export default function CreateSetManagement({ showFlashMessage }) {
     };
 
     // --- Confirm Delete Quantity ---
-  // --- Confirm Delete Quantity ---
-const confirmDeleteQuantity = async () => {
-    if (!quantityToDelete || !selectedCustomer) {
-        showFlashMessage('Error: No class selected for deletion or customer not selected.', 'error');
-        setShowDeleteQuantityModal(false);
-        setQuantityToDelete(null);
-        return;
-    }
-
-    const { classId, className } = quantityToDelete;
-
-    // Debug: Log the IDs to verify correctness
-    console.log('Attempting to delete quantity for:', {
-        customerId: selectedCustomer,
-        classId,
-        className
-    });
-
-    setLoading(true);
-    try {
-        // Optional: Verify the quantity exists before deleting
-        const checkResponse = await api.get(`/sets/set-quantities/${selectedCustomer}`);
-        const quantityExists = checkResponse.data.status === 'success' &&
-            checkResponse.data.data.setQuantities.some(q => q.classId === classId);
-
-        if (!quantityExists) {
-            showFlashMessage(`No quantity found for class ${className}. It may have already been deleted.`, 'warning');
+    const confirmDeleteQuantity = async () => {
+        if (!quantityToDelete || !selectedCustomer) {
+            showFlashMessage('Error: No class selected for deletion or customer not selected.', 'error');
             setShowDeleteQuantityModal(false);
             setQuantityToDelete(null);
-            await fetchSetQuantities();
             return;
         }
 
-        const response = await api.delete(`/sets/set-quantities/${selectedCustomer}/${classId}`);
-        if (response.status === 204 || response.data.status === 'success') {
-            showFlashMessage(`Quantity for class ${className} deleted successfully!`, 'success');
-            await fetchSetQuantities();
-        } else {
-            throw new Error(response.data.message || 'Failed to delete set quantity.');
-        }
-    } catch (err) {
-        console.error('Error deleting set quantity:', err);
-        let errorMessage = 'Failed to delete set quantity.';
-        if (err.response) {
-            if (err.response.status === 404) {
-                errorMessage = `Set quantity for class ${className} not found on the server. It may have been deleted already.`;
-            } else {
-                errorMessage = err.response.data?.message || `Server error: ${err.response.status}`;
+        const { classId, className } = quantityToDelete;
+
+        // Debug: Log the IDs to verify correctness
+        console.log('Attempting to delete quantity for:', {
+            customerId: selectedCustomer,
+            classId,
+            className
+        });
+
+        setLoading(true);
+        try {
+            // Optional: Verify the quantity exists before deleting
+            const checkResponse = await api.get(`/sets/set-quantities/${selectedCustomer}`);
+            const quantityExists = checkResponse.data.status === 'success' &&
+                checkResponse.data.data.setQuantities.some(q => q.classId === classId);
+
+            if (!quantityExists) {
+                showFlashMessage(`No quantity found for class ${className}. It may have already been deleted.`, 'warning');
+                setShowDeleteQuantityModal(false);
+                setQuantityToDelete(null);
+                await fetchSetQuantities();
+                return;
             }
-        } else if (err.request) {
-            errorMessage = 'No response from server. Please check your network connection.';
-        } else {
-            errorMessage = err.message || 'An unexpected error occurred.';
+
+            const response = await api.delete(`/sets/set-quantities/${selectedCustomer}/${classId}`);
+            if (response.status === 204 || response.data.status === 'success') {
+                showFlashMessage(`Quantity for class ${className} deleted successfully!`, 'success');
+                await fetchSetQuantities();
+            } else {
+                throw new Error(response.data.message || 'Failed to delete set quantity.');
+            }
+        } catch (err) {
+            console.error('Error deleting set quantity:', err);
+            let errorMessage = 'Failed to delete set quantity.';
+            if (err.response) {
+                if (err.response.status === 404) {
+                    errorMessage = `Set quantity for class ${className} not found on the server. It may have been deleted already.`;
+                } else {
+                    errorMessage = err.response.data?.message || `Server error: ${err.response.status}`;
+                }
+            } else if (err.request) {
+                errorMessage = 'No response from server. Please check your network connection.';
+            } else {
+                errorMessage = err.message || 'An unexpected error occurred.';
+            }
+            showFlashMessage(errorMessage, 'error');
+        } finally {
+            setLoading(false);
+            setShowDeleteQuantityModal(false);
+            setQuantityToDelete(null);
         }
-        showFlashMessage(errorMessage, 'error');
-    } finally {
-        setLoading(false);
-        setShowDeleteQuantityModal(false);
-        setQuantityToDelete(null);
-    }
-};
+    };
 
     // --- Save Set Quantities ---
     const saveSetQuantities = useCallback(async () => {
@@ -452,40 +478,29 @@ const confirmDeleteQuantity = async () => {
             setLoading(false);
         }
     }, [selectedCustomer, editedQuantities, showFlashMessage, fetchSetQuantities]);
+
     // --- Effects ---
     useEffect(() => {
         fetchDropdownData();
     }, [fetchDropdownData]);
 
     useEffect(() => {
-        if (selectedItemType === 'books') {
-            fetchBookCatalogsBySubtitle();
-        }
-    }, [fetchBookCatalogsBySubtitle, selectedItemType]);
-
-    useEffect(() => {
         if (selectedItemToAdd) {
             if (selectedItemType === 'stationery') {
                 const itemInfo = stationeryItemsMaster.find(item => item._id === selectedItemToAdd);
-                if (itemInfo) {
-                    if (!(editingItemType === 'stationery' && editingItemId === selectedItemToAdd)) {
-                        setItemQuantity('1');
-                        setItemPrice(String(itemInfo.price || ''));
-                    }
-                } else {
-                    setItemQuantity('');
-                    setItemPrice('');
+                if (itemInfo && !(editingItemType === 'stationery' && editingItemId === selectedItemToAdd)) {
+                    setItemQuantity('1');
+                    setItemPrice(String(itemInfo.price || '0'));
                 }
             } else if (selectedItemType === 'books') {
-                const bookInfo = bookCatalogs.find(book => book._id === selectedItemToAdd);
-                if (bookInfo) {
-                    if (!(editingItemType === 'book' && editingItemId === selectedItemToAdd)) {
+                // Only update price and quantity if not editing an existing item
+                if (!(editingItemType === 'book' && editingItemId === selectedItemToAdd)) {
+                    const bookInfo = bookCatalogs.find(book => book._id === selectedItemToAdd);
+                    if (bookInfo) {
                         setItemQuantity('1');
-                        setItemPrice(String(bookInfo.commonPrice || ''));
+                        const price = bookInfo.bookType === 'common_price' ? bookInfo.commonPrice : bookInfo.classPrice;
+                        setItemPrice(price?.toString() || '0');
                     }
-                } else {
-                    setItemQuantity('');
-                    setItemPrice('');
                 }
             }
         } else {
@@ -494,108 +509,80 @@ const confirmDeleteQuantity = async () => {
         }
     }, [selectedItemType, selectedItemToAdd, stationeryItemsMaster, bookCatalogs, editingItemType, editingItemId]);
 
-    // --- Handlers for Adding/Updating Items ---
-    const handleAddOrUpdateItem = () => {
-        if (!selectedItemToAdd || itemQuantity === '' || itemPrice === '') {
+    // --- Handle Add or Update Item ---
+    const handleAddOrUpdateItem = useCallback(async () => {
+        console.log('DEBUG: handleAddOrUpdateItem called', { selectedItemType, selectedItemToAdd, itemPrice, itemQuantity });
+        if (!selectedItemToAdd || !itemQuantity || !itemPrice) {
             showFlashMessage('Please select an item, quantity, and price.', 'error');
             return;
         }
-        const qty = Number(itemQuantity);
+
+        const quantity = Number(itemQuantity);
         const price = Number(itemPrice);
-        if (isNaN(qty) || qty < 1 || isNaN(price) || price < 0) {
-            showFlashMessage('Please enter valid numbers for quantity and price (min 1 for qty, min 0 for price).', 'error');
+
+        if (quantity <= 0) {
+            showFlashMessage('Quantity must be greater than zero.', 'error');
             return;
         }
 
-        if (selectedItemType === 'stationery') {
-            const itemInfo = stationeryItemsMaster.find(item => item._id === selectedItemToAdd);
-            if (!itemInfo) {
-                showFlashMessage('Selected stationery item not found.', 'error');
-                return;
+        try {
+            setLoading(true);
+            if (editingItemId) {
+                // Update existing item
+                if (selectedItemType === 'books') {
+                    setBooksDetail(prev => prev.map(item =>
+                        item.book._id === editingItemId ? { ...item, quantity, price } : item
+                    ));
+                } else {
+                    setStationeryDetail(prev => prev.map(item =>
+                        item.item._id === editingItemId ? { ...item, quantity, price } : item
+                    ));
+                }
+                showFlashMessage('Item updated successfully.', 'success');
+            } else {
+                // Add new item
+                if (selectedItemType === 'books') {
+                    const book = bookCatalogs.find(b => b._id === selectedItemToAdd);
+                    if (book) {
+                        setBooksDetail(prev => [...prev, {
+                            book: {
+                                _id: selectedItemToAdd,
+                                bookName: book.bookName,
+                                subtitle: subtitles.find(s => s._id === selectedSubtitle)?.name || ''
+                            },
+                            quantity,
+                            price,
+                            status: 'active'
+                        }]);
+                    }
+                } else {
+                    const item = stationeryItemsMaster.find(i => i._id === selectedItemToAdd);
+                    if (item) {
+                        setStationeryDetail(prev => [...prev, {
+                            item: {
+                                _id: selectedItemToAdd,
+                                itemName: item.itemName
+                            },
+                            quantity,
+                            price,
+                            status: 'active'
+                        }]);
+                    }
+                }
+                showFlashMessage('Item added successfully.', 'success');
             }
 
-            if (editingItemType === 'stationery' && editingItemId) {
-                setStationeryDetail(prev => prev.map(item =>
-                    item.item._id === editingItemId ? { ...item, quantity: qty, price: price } : item
-                ));
-                showFlashMessage('Stationery item successfully updated.', 'success');
-            } else {
-                const existingItemIndex = stationeryDetail.findIndex(item => item.item._id === selectedItemToAdd);
-                if (existingItemIndex > -1) {
-                    setStationeryDetail(prev => {
-                        const updatedItems = [...prev];
-                        updatedItems[existingItemIndex] = {
-                            ...updatedItems[existingItemIndex],
-                            quantity: qty,
-                            price: price
-                        };
-                        return updatedItems;
-                    });
-                    showFlashMessage('Stationery item quantity/price updated in list.', 'info');
-                } else {
-                    setStationeryDetail(prev => [
-                        ...prev,
-                        {
-                            item: { _id: selectedItemToAdd, itemName: itemInfo.itemName || 'Unnamed Stationery Item' },
-                            quantity: qty,
-                            price: price,
-                            status: 'pending'
-                        }
-                    ]);
-                    showFlashMessage('Stationery item added to list.', 'success');
-                }
-            }
-        } else {
-            const bookInfo = bookCatalogs.find(book => book._id === selectedItemToAdd);
-            if (!bookInfo) {
-                showFlashMessage('Selected book not found in catalog.', 'error');
-                return;
-            }
-            const subtitleName = subtitles.find(s => s._id === selectedSubtitle)?.name || '';
-
-            if (editingItemType === 'book' && editingItemId) {
-                setBooksDetail(prev => prev.map(item =>
-                    item.book._id === editingItemId ? { ...item, quantity: qty, price: price, book: { ...item.book, subtitle: subtitleName } } : item
-                ));
-                showFlashMessage('Book successfully updated.', 'success');
-            } else {
-                const existingBookIndex = booksDetail.findIndex(item => item.book._id === selectedItemToAdd);
-                if (existingBookIndex > -1) {
-                    setBooksDetail(prev => {
-                        const updatedBooks = [...prev];
-                        updatedBooks[existingBookIndex] = {
-                            ...updatedBooks[existingBookIndex],
-                            quantity: qty,
-                            price: price
-                        };
-                        return updatedBooks;
-                    });
-                    showFlashMessage('Book quantity/price updated in list.', 'info');
-                } else {
-                    setBooksDetail(prev => [
-                        ...prev,
-                        {
-                            book: { _id: selectedItemToAdd, bookName: bookInfo.bookName || 'Unnamed Book', subtitle: subtitleName },
-                            quantity: qty,
-                            price: price,
-                            status: 'pending'
-                        }
-                    ]);
-                    showFlashMessage('Book added to list.', 'success');
-                }
-            }
+            // Preserve itemPrice and selectedItemToAdd
+            setItemQuantity('1');
+            setEditingItemType(null);
+            setEditingItemId(null);
+        } catch (err) {
+            console.error('Error adding/updating item:', err);
+            showFlashMessage(err.response?.data?.message || 'Failed to add/update item.', 'error');
+        } finally {
+            setLoading(false);
         }
-
-        setSelectedSubtitle('');
-        setSelectedItemToAdd('');
-        setItemQuantity('');
-        setItemPrice('');
-        setEditingItemType(null);
-        setEditingItemId(null);
-        setShowAllBooksForSubtitle(false);
-        setShowAllStationery(false);
-        setSelectedStationeryCategories(new Set(stationeryCategories));
-    };
+    }, [selectedItemType, selectedItemToAdd, itemQuantity, itemPrice, bookCatalogs, stationeryItemsMaster, editingItemId, showFlashMessage, selectedSubtitle, subtitles]);
 
     // --- Handlers for Deleting Items ---
     const handleDeleteBook = (bookId, bookName) => {
@@ -1200,7 +1187,7 @@ const confirmDeleteQuantity = async () => {
                 {/* Left Panel: Order Details, Add, Copy */}
                 <div className="left-panel">
                     <section className="section-container">
-                        <h2 className="section-header1">Order Details</h2>
+                        <h2 className="section-header1">Create Set</h2>
                         <div className="form-group">
                             <label htmlFor="customer-select" className="form-label">School Name:</label>
                             <select
@@ -1236,15 +1223,15 @@ const confirmDeleteQuantity = async () => {
 
                             <div>
                                 <button
-                            onClick={() => {
-                                setShowQuantityModal(true);
-                                fetchSetQuantities();
-                            }}
-                            className="btn-primary"
-                            disabled={loading || !selectedCustomer}
-                        >
-                            <FaEdit className="btn-icon-mr" /> Manage Set Quantity
-                        </button>
+                                    onClick={() => {
+                                        setShowQuantityModal(true);
+                                        fetchSetQuantities();
+                                    }}
+                                    className="btn-primary"
+                                    disabled={loading || !selectedCustomer}
+                                >
+                                    <FaEdit className="btn-icon-mr" /> Manage Set Quantity
+                                </button>
                             </div>
                         </div>
                         <div className="form-grid-2-cols">
@@ -1309,7 +1296,7 @@ const confirmDeleteQuantity = async () => {
                     </section>
 
                     <section className="section-container">
-                        <h2 className="section-header1">Add Items to Set</h2>
+                        <h2 className="section-header1">Add Items to Set & Stationery</h2>
                         <div className="form-group">
                             <label className="form-label">Item Type:</label>
                             <div className="flex gap-4 items-center">
@@ -1321,6 +1308,7 @@ const confirmDeleteQuantity = async () => {
                                         value="books"
                                         checked={selectedItemType === 'books'}
                                         onChange={(e) => {
+                                            console.log('DEBUG: Changing itemType to books', { newType: e.target.value });
                                             setSelectedItemType(e.target.value);
                                             setSelectedSubtitle('');
                                             setSelectedItemToAdd('');
@@ -1345,6 +1333,7 @@ const confirmDeleteQuantity = async () => {
                                         value="stationery"
                                         checked={selectedItemType === 'stationery'}
                                         onChange={(e) => {
+                                            console.log('DEBUG: Changing itemType to stationery', { newType: e.target.value });
                                             setSelectedItemType(e.target.value);
                                             setSelectedSubtitle('');
                                             setSelectedItemToAdd('');
@@ -1371,6 +1360,7 @@ const confirmDeleteQuantity = async () => {
                                     id="subtitle-select"
                                     value={selectedSubtitle}
                                     onChange={(e) => {
+                                        console.log('DEBUG: Changing subtitle', { newSubtitle: e.target.value });
                                         setSelectedSubtitle(e.target.value);
                                         setSelectedItemToAdd('');
                                         setItemQuantity('');
@@ -1417,17 +1407,6 @@ const confirmDeleteQuantity = async () => {
                                         )}
                                     </div>
                                 </div>
-                                <div className="checkbox-group mb-4">
-                                    <input
-                                        type="checkbox"
-                                        id="show-all-stationery-checkbox"
-                                        checked={showAllStationery}
-                                        onChange={handleShowAllStationeryChange}
-                                        disabled={isAddItemFormDisabled || loading}
-                                        className="checkbox-input"
-                                    />
-                                    <label htmlFor="show-all-stationery-checkbox" className="checkbox-label">Show all stationery items</label>
-                                </div>
                             </>
                         )}
 
@@ -1438,21 +1417,34 @@ const confirmDeleteQuantity = async () => {
                             <select
                                 id="item-select"
                                 value={selectedItemToAdd}
-                                onChange={(e) => setSelectedItemToAdd(e.target.value)}
+                                onChange={(e) => {
+                                    console.log('DEBUG: Changing item selection', { itemType: selectedItemType, itemId: e.target.value });
+                                    if (selectedItemType === 'books') {
+                                        handleBookSelection(e.target.value);
+                                    } else {
+                                        setSelectedItemToAdd(e.target.value);
+                                        const selectedItem = stationeryItemsMaster.find(item => item._id === e.target.value);
+                                        setItemPrice(selectedItem ? selectedItem.price?.toString() || '0' : '');
+                                    }
+                                }}
                                 disabled={isAddItemFormDisabled || (selectedItemType === 'books' && !selectedSubtitle) ||
-                                    (itemDropdownOptions || []).length === 0 || loading
+                                    (selectedItemType === 'books' ? bookCatalogs : stationeryItemsMaster.filter(item =>
+                                        selectedStationeryCategories.size === 0 || selectedStationeryCategories.has(item.category)
+                                    )).length === 0 || loading
                                 }
                                 className="form-select"
                             >
                                 <option value="">-- Select --</option>
                                 {selectedItemType === 'stationery' ? (
-                                    (itemDropdownOptions || []).map(item => (
-                                        <option key={item._id} value={item._id}>
-                                            {item.itemName || 'Unnamed Stationery Item'}
-                                        </option>
-                                    ))
+                                    stationeryItemsMaster
+                                        .filter(item => selectedStationeryCategories.size === 0 || selectedStationeryCategories.has(item.category))
+                                        .map(item => (
+                                            <option key={item._id} value={item._id}>
+                                                {item.itemName || 'Unnamed Stationery Item'}
+                                            </option>
+                                        ))
                                 ) : (
-                                    (itemDropdownOptions || []).map(book => (
+                                    bookCatalogs.map(book => (
                                         <option key={book._id} value={book._id}>
                                             {book.bookName || 'Unnamed Book'}
                                         </option>
@@ -1480,10 +1472,13 @@ const confirmDeleteQuantity = async () => {
                                     type="number"
                                     id="item-quantity"
                                     value={itemQuantity}
-                                    onChange={(e) => setItemQuantity(e.target.value)}
+                                    onChange={(e) => {
+                                        console.log('DEBUG: Changing itemQuantity', { newQuantity: e.target.value });
+                                        setItemQuantity(e.target.value);
+                                    }}
                                     onBlur={() => {
                                         if (!itemQuantity || Number(itemQuantity) < 1) {
-                                            setItemQuantity("1");
+                                            setItemQuantity('1');
                                         }
                                     }}
                                     min="1"
@@ -1497,7 +1492,10 @@ const confirmDeleteQuantity = async () => {
                                     type="number"
                                     id="item-price"
                                     value={itemPrice}
-                                    onChange={(e) => setItemPrice(String(Math.max(0, Number(e.target.value || 0))))}
+                                    onChange={(e) => {
+                                        console.log('DEBUG: Changing itemPrice manually', { newPrice: e.target.value });
+                                        setItemPrice(String(Math.max(0, Number(e.target.value || 0))));
+                                    }}
                                     min="0"
                                     disabled={isAddItemFormDisabled || !selectedItemToAdd || loading}
                                     className="form-input"
@@ -1505,7 +1503,6 @@ const confirmDeleteQuantity = async () => {
                             </div>
                         </div>
 
-                        
                         <button
                             onClick={handleAddOrUpdateItem}
                             disabled={isAddItemButtonDisabled || loading}
@@ -1772,6 +1769,7 @@ const confirmDeleteQuantity = async () => {
                 </div>
             )}
 
+        
             {showQuantityModal && (
                 <div className="modal-overlay">
                     <div className="modal-content">
@@ -1892,4 +1890,4 @@ const confirmDeleteQuantity = async () => {
             )}
         </div>
     );
-}
+} 
