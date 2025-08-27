@@ -229,19 +229,33 @@ exports.copySet = catchAsync(async (req, res, next) => {
         return next(new AppError('Source Set ID, Target Customer ID, and Target Class ID are required for copying.', 400));
     }
 
-    const sourceSet = await Set.findById(sourceSetId);
+    const sourceSet = await Set.findById(sourceSetId).populate('books.book');
     if (!sourceSet) {
         console.log('DEBUG: copySet - Source set not found for ID:', sourceSetId);
         return next(new AppError('Source set not found.', 404));
     }
     console.log('DEBUG: copySet - Source Set Found:', sourceSet._id);
 
-    // Map books from the source set to the new set, resetting status to 'pending'
-    const newBooks = sourceSet.books.map(bookItem => ({
-        book: bookItem.book,
-        quantity: bookItem.quantity,
-        price: bookItem.price,
-        status: 'pending'
+    // Map books from the source set to the new set, adjusting prices based on target class
+    const newBooks = await Promise.all(sourceSet.books.map(async (bookItem) => {
+        const bookCatalog = bookItem.book; // Already populated
+        let newPrice;
+
+        if (bookCatalog.bookType === 'common_price') {
+            // Retain original price for common price books
+            newPrice = bookItem.price;
+        } else {
+            // Check for class-specific price in pricesByClass
+            const pricesByClass = Object.fromEntries(bookCatalog.pricesByClass || new Map());
+            newPrice = pricesByClass[targetClassId] !== undefined ? pricesByClass[targetClassId] : undefined;
+        }
+
+        return {
+            book: bookItem.book._id,
+            quantity: bookItem.quantity,
+            price: newPrice,
+            status: 'pending'
+        };
     }));
     console.log('DEBUG: copySet - New Books prepared:', newBooks);
 

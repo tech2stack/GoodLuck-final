@@ -27,8 +27,8 @@ const setSchema = new mongoose.Schema({
             },
             price: {
                 type: Number,
-                required: [true, 'Book price is required'],
-                min: [0, 'Price cannot be negative']
+                min: [0, 'Price cannot be negative'], // Validator applies only when price is provided
+                default: null // Allows null/undefined for books without a class-specific price
             },
             status: {
                 type: String,
@@ -83,7 +83,7 @@ const setSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Indexing for faster queries
+// Indexing for faster queries and to enforce uniqueness on customer-class combination
 setSchema.index({ customer: 1, class: 1 }, { unique: true });
 
 // Middleware to update `updatedAt` field on save

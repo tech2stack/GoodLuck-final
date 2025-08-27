@@ -1,4 +1,3 @@
-
 // src/components/masters/CreateSetManagement.jsx
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -72,15 +71,21 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const [setQuantities, setSetQuantities] = useState([]);
     const [editedQuantities, setEditedQuantities] = useState({});
 
-    // --- Calculated Totals ---
-    const totalAmount = booksDetail.reduce((sum, item) => sum + (item.quantity * item.price), 0) +
+    const totalAmount = booksDetail.reduce((sum, item) => {
+        const price = item.price ?? 0; // Use 0 for undefined/null prices in calculations
+        return sum + (item.quantity * price);
+    }, 0) +
         stationeryDetail.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+
     const totalItems = booksDetail.length + stationeryDetail.length;
     const totalQuantity = booksDetail.reduce((sum, item) => sum + item.quantity, 0) +
         stationeryDetail.reduce((sum, item) => sum + item.quantity, 0);
 
     // --- Helper Functions ---
-    const getStringValue = (field) => field ? String(field).trim() : 'N/A';
+    const getStringValue = (field) => {
+        if (field === null || field === undefined) return 'N/A';
+        return String(field).trim() || 'N/A';
+    };
 
     const formatDateWithTime = (dateString) => {
         if (!dateString) return 'N/A';
@@ -187,7 +192,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
             const validBookCatalogs = (response.data.data.bookCatalogs || []).filter(b => b && b._id);
             setBookCatalogs(validBookCatalogs);
 
-            // If a book is already selected, update its price based on the new book catalog
             if (selectedItemToAdd) {
                 const selectedBook = validBookCatalogs.find(b => b._id === selectedItemToAdd);
                 if (selectedBook) {
@@ -221,7 +225,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         }
     }, [selectedSubtitle, selectedClass, selectedItemType, fetchBookCatalogsBySubtitle]);
 
-    // --- Convert Fetched Data to Local Format ---
     const fetchedToLocalFormat = useCallback((items, type) => {
         return (items || []).map(item => {
             if (type === 'book') {
@@ -240,7 +243,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         subtitle: subtitleName
                     },
                     quantity: item.quantity,
-                    price: item.price || 0,
+                    price: item.price ?? null,
                     status: item.status
                 };
             } else {
@@ -257,7 +260,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         });
     }, [subtitles]);
 
-    // --- Fetch Set Quantities ---
     const fetchSetQuantities = useCallback(async () => {
         if (!selectedCustomer) {
             setSetQuantities([]);
@@ -272,7 +274,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 const fetchedQuantities = response.data.data.setQuantities || [];
                 setSetQuantities(fetchedQuantities);
 
-                // Initialize editedQuantities with all classes
                 const initialQuantities = {};
                 classes.forEach(cls => {
                     const existingQuantity = fetchedQuantities.find(sq => sq.classId === cls._id);
@@ -280,7 +281,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 });
                 setEditedQuantities(initialQuantities);
 
-                // Update noOfSets if selectedClass has a quantity
                 if (selectedClass) {
                     const classQuantity = fetchedQuantities.find(sq => sq.classId === selectedClass);
                     setNoOfSets(classQuantity ? String(classQuantity.quantity) : '1');
@@ -294,7 +294,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
             console.error('Error fetching set quantities:', err);
             showFlashMessage(err.response?.data?.message || 'Failed to fetch set quantities.', 'error');
 
-            // Initialize editedQuantities with all classes set to empty
             const initialQuantities = {};
             classes.forEach(cls => {
                 initialQuantities[cls._id] = '';
@@ -302,7 +301,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
             setEditedQuantities(initialQuantities);
             setSetQuantities([]);
             if (selectedClass) {
-                setNoOfSets('1'); // Reset to default
+                setNoOfSets('1');
             }
         } finally {
             setLoading(false);
@@ -341,7 +340,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 showFlashMessage('No existing set found for the selected criteria. You can create a new one.', 'info');
             }
 
-            // Fetch quantities separately to ensure noOfSets is updated
             await fetchSetQuantities();
         } catch (err) {
             console.error('Error fetching set details:', err);
@@ -353,7 +351,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
             setStationeryDetail([]);
             setIsEditMode(false);
             setNoOfSets('1');
-            await fetchSetQuantities(); // Still attempt to fetch quantities
+            await fetchSetQuantities();
         } finally {
             setLoading(false);
         }
@@ -370,20 +368,17 @@ export default function CreateSetManagement({ showFlashMessage }) {
         }
     };
 
-    // --- Handle Edit Quantity ---
     const handleEditQuantity = (classId, className) => {
         showFlashMessage(`Editing quantity for class ${className}.`, 'info');
         const input = document.querySelector(`input[value="${editedQuantities[classId] ?? ''}"]`);
         if (input) input.focus();
     };
 
-    // --- Handle Delete Quantity ---
     const handleDeleteQuantity = (classId, className) => {
         setQuantityToDelete({ classId, className });
         setShowDeleteQuantityModal(true);
     };
 
-    // --- Confirm Delete Quantity ---
     const confirmDeleteQuantity = async () => {
         if (!quantityToDelete || !selectedCustomer) {
             showFlashMessage('Error: No class selected for deletion or customer not selected.', 'error');
@@ -394,7 +389,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
 
         const { classId, className } = quantityToDelete;
 
-        // Debug: Log the IDs to verify correctness
         console.log('Attempting to delete quantity for:', {
             customerId: selectedCustomer,
             classId,
@@ -403,7 +397,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
 
         setLoading(true);
         try {
-            // Optional: Verify the quantity exists before deleting
             const checkResponse = await api.get(`/sets/set-quantities/${selectedCustomer}`);
             const quantityExists = checkResponse.data.status === 'success' &&
                 checkResponse.data.data.setQuantities.some(q => q.classId === classId);
@@ -445,7 +438,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         }
     };
 
-    // --- Save Set Quantities ---
     const saveSetQuantities = useCallback(async () => {
         if (!selectedCustomer) {
             showFlashMessage('Please select a customer to manage quantities.', 'warning');
@@ -470,7 +462,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
             await api.post(`/sets/set-quantities/${selectedCustomer}`, { classQuantities });
             showFlashMessage('Set quantities updated successfully!', 'success');
             setShowQuantityModal(false);
-            await fetchSetQuantities(); // Refresh quantities after saving
+            await fetchSetQuantities();
         } catch (err) {
             console.error('Error saving set quantities:', err);
             showFlashMessage(err.response?.data?.message || 'Failed to save set quantities.', 'error');
@@ -479,7 +471,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         }
     }, [selectedCustomer, editedQuantities, showFlashMessage, fetchSetQuantities]);
 
-    // --- Effects ---
     useEffect(() => {
         fetchDropdownData();
     }, [fetchDropdownData]);
@@ -493,7 +484,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     setItemPrice(String(itemInfo.price || '0'));
                 }
             } else if (selectedItemType === 'books') {
-                // Only update price and quantity if not editing an existing item
                 if (!(editingItemType === 'book' && editingItemId === selectedItemToAdd)) {
                     const bookInfo = bookCatalogs.find(book => book._id === selectedItemToAdd);
                     if (bookInfo) {
@@ -509,82 +499,169 @@ export default function CreateSetManagement({ showFlashMessage }) {
         }
     }, [selectedItemType, selectedItemToAdd, stationeryItemsMaster, bookCatalogs, editingItemType, editingItemId]);
 
-    // --- Handle Add or Update Item ---
-    const handleAddOrUpdateItem = useCallback(async () => {
-        console.log('DEBUG: handleAddOrUpdateItem called', { selectedItemType, selectedItemToAdd, itemPrice, itemQuantity });
-        if (!selectedItemToAdd || !itemQuantity || !itemPrice) {
-            showFlashMessage('Please select an item, quantity, and price.', 'error');
-            return;
-        }
 
-        const quantity = Number(itemQuantity);
-        const price = Number(itemPrice);
+const handleAddOrUpdateItem = useCallback(async () => {
+    console.log('DEBUG: handleAddOrUpdateItem called', { selectedItemType, selectedItemToAdd, itemPrice, itemQuantity });
 
-        if (quantity <= 0) {
-            showFlashMessage('Quantity must be greater than zero.', 'error');
-            return;
-        }
+    if (!selectedItemToAdd || !itemQuantity) {
+        showFlashMessage('Please select an item and quantity.', 'error');
+        return;
+    }
 
-        try {
-            setLoading(true);
-            if (editingItemId) {
-                // Update existing item
-                if (selectedItemType === 'books') {
-                    setBooksDetail(prev => prev.map(item =>
-                        item.book._id === editingItemId ? { ...item, quantity, price } : item
-                    ));
-                } else {
-                    setStationeryDetail(prev => prev.map(item =>
-                        item.item._id === editingItemId ? { ...item, quantity, price } : item
-                    ));
-                }
-                showFlashMessage('Item updated successfully.', 'success');
+    const quantity = Number(itemQuantity);
+    if (quantity <= 0) {
+        showFlashMessage('Quantity must be greater than zero.', 'error');
+        return;
+    }
+
+    if (selectedItemType === 'books' && !itemPrice && itemPrice !== '0') {
+        showFlashMessage('Please provide a price for the book or confirm if it should be unset.', 'warning');
+        return;
+    }
+    if (selectedItemType === 'stationery' && (!itemPrice || Number(itemPrice) <= 0)) {
+        showFlashMessage('Please provide a valid price for the stationery item.', 'error');
+        return;
+    }
+
+    // Check for duplicate book when adding (not editing)
+    if (selectedItemType === 'books' && !editingItemId && booksDetail.some(item => item.book._id === selectedItemToAdd)) {
+        showFlashMessage('This book is already added to the set.', 'warning');
+        return;
+    }
+
+    const price = itemPrice ? Number(itemPrice) : null;
+
+    try {
+        setLoading(true);
+
+        if (editingItemId) {
+            if (selectedItemType === 'books') {
+                setBooksDetail(prev => prev.map(item =>
+                    item.book._id === editingItemId ? { ...item, quantity, price } : item
+                ));
             } else {
-                // Add new item
-                if (selectedItemType === 'books') {
-                    const book = bookCatalogs.find(b => b._id === selectedItemToAdd);
-                    if (book) {
-                        setBooksDetail(prev => [...prev, {
-                            book: {
-                                _id: selectedItemToAdd,
-                                bookName: book.bookName,
-                                subtitle: subtitles.find(s => s._id === selectedSubtitle)?.name || ''
-                            },
-                            quantity,
-                            price,
-                            status: 'active'
-                        }]);
-                    }
-                } else {
-                    const item = stationeryItemsMaster.find(i => i._id === selectedItemToAdd);
-                    if (item) {
-                        setStationeryDetail(prev => [...prev, {
-                            item: {
-                                _id: selectedItemToAdd,
-                                itemName: item.itemName
-                            },
-                            quantity,
-                            price,
-                            status: 'active'
-                        }]);
-                    }
-                }
-                showFlashMessage('Item added successfully.', 'success');
+                setStationeryDetail(prev => prev.map(item =>
+                    item.item._id === editingItemId ? { ...item, quantity, price } : item
+                ));
             }
-
-            // Preserve itemPrice and selectedItemToAdd
-            setItemQuantity('1');
-            setEditingItemType(null);
-            setEditingItemId(null);
-        } catch (err) {
-            console.error('Error adding/updating item:', err);
-            showFlashMessage(err.response?.data?.message || 'Failed to add/update item.', 'error');
-        } finally {
-            setLoading(false);
+            showFlashMessage('Item updated successfully.', 'success');
+        } else {
+            if (selectedItemType === 'books') {
+                const book = bookCatalogs.find(b => b._id === selectedItemToAdd);
+                if (book) {
+                    setBooksDetail(prev => [...prev, {
+                        book: {
+                            _id: selectedItemToAdd,
+                            bookName: book.bookName,
+                            subtitle: subtitles.find(s => s._id === selectedSubtitle)?.name || ''
+                        },
+                        quantity,
+                        price,
+                        status: 'active'
+                    }]);
+                }
+            } else {
+                const item = stationeryItemsMaster.find(i => i._id === selectedItemToAdd);
+                if (item) {
+                    setStationeryDetail(prev => [...prev, {
+                        item: {
+                            _id: selectedItemToAdd,
+                            itemName: item.itemName
+                        },
+                        quantity,
+                        price,
+                        status: 'active'
+                    }]);
+                }
+            }
+            showFlashMessage('Item added successfully.', 'success');
         }
-    }, [selectedItemType, selectedItemToAdd, itemQuantity, itemPrice, bookCatalogs, stationeryItemsMaster, editingItemId, showFlashMessage, selectedSubtitle, subtitles]);
 
-    // --- Handlers for Deleting Items ---
+        const payload = {
+            customer: selectedCustomer,
+            class: selectedClass,
+            books: booksDetail.map(b => ({
+                book: b.book._id,
+                quantity: b.quantity,
+                price: b.price != null ? b.price : null,
+                status: b.status
+            })),
+            stationeryItems: stationeryDetail.map(s => ({
+                item: s.item._id,
+                quantity: s.quantity,
+                price: s.price,
+                status: s.status
+            })),
+            quantity: Number(noOfSets) || 1
+        };
+
+        if (selectedItemType === 'books') {
+            const existingBookIndex = payload.books.findIndex(b => b.book === selectedItemToAdd);
+            if (existingBookIndex !== -1 && editingItemId) {
+                payload.books[existingBookIndex] = {
+                    book: selectedItemToAdd,
+                    quantity,
+                    price,
+                    status: 'active'
+                };
+            } else if (existingBookIndex === -1) {
+                payload.books.push({
+                    book: selectedItemToAdd,
+                    quantity,
+                    price,
+                    status: 'active'
+                });
+            }
+        } else {
+            const existingStationeryIndex = payload.stationeryItems.findIndex(s => s.item === selectedItemToAdd);
+            if (existingStationeryIndex !== -1 && editingItemId) {
+                payload.stationeryItems[existingStationeryIndex] = {
+                    item: selectedItemToAdd,
+                    quantity,
+                    price,
+                    status: 'active'
+                };
+            } else {
+                payload.stationeryItems.push({
+                    item: selectedItemToAdd,
+                    quantity,
+                    price,
+                    status: 'active'
+                });
+            }
+        }
+
+        let response;
+        if (currentSetId) {
+            response = await api.patch(`/sets/${currentSetId}`, payload);
+        } else {
+            response = await api.post('/sets', payload);
+        }
+
+        if (response.data.status === 'success') {
+            const updatedSet = response.data.data.set;
+            setCurrentSetId(updatedSet._id);
+            setBooksDetail(fetchedToLocalFormat(updatedSet.books, 'book'));
+            setStationeryDetail(fetchedToLocalFormat(updatedSet.stationeryItems, 'stationery'));
+            setNoOfSets(updatedSet.quantity);
+            setIsEditMode(true);
+            showFlashMessage(currentSetId ? 'Set updated successfully!' : 'Set created successfully!', 'success');
+        } else {
+            throw new Error(response.data.message || 'Failed to save set.');
+        }
+
+        setItemQuantity('1');
+        setItemPrice('');
+        setEditingItemType(null);
+        setEditingItemId(null);
+    } catch (err) {
+        console.error('Error adding/updating item:', err);
+        showFlashMessage(err.response?.data?.message || 'Failed to add/update item.', 'error');
+    } finally {
+        setLoading(false);
+    }
+}, [selectedItemType, selectedItemToAdd, itemQuantity, itemPrice, bookCatalogs, stationeryItemsMaster, editingItemId, showFlashMessage, selectedSubtitle, subtitles, selectedCustomer, selectedClass, booksDetail, stationeryDetail, noOfSets, currentSetId, fetchedToLocalFormat]);
+
     const handleDeleteBook = (bookId, bookName) => {
         if (!currentSetId) {
             setBooksDetail(prev => prev.filter(item => item.book._id !== bookId));
@@ -605,7 +682,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setShowConfirmModal(true);
     };
 
-    // --- Confirm Deletion ---
     const confirmDeletion = async () => {
         if (!itemToDelete || !currentSetId) {
             showFlashMessage('Error: No item selected for deletion or set not loaded.', 'error');
@@ -660,7 +736,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         showFlashMessage('Deletion cancelled.', 'info');
     };
 
-    // --- Handlers for Editing Items ---
     const handleEditBook = (bookItem) => {
         const foundSubtitle = subtitles.find(s => s.name === bookItem.book.subtitle);
         const subtitleIdToSet = foundSubtitle ? foundSubtitle._id : '';
@@ -669,7 +744,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setSelectedSubtitle(subtitleIdToSet);
         setSelectedItemToAdd(bookItem.book._id);
         setItemQuantity(String(bookItem.quantity));
-        setItemPrice(String(bookItem.price));
+        setItemPrice(bookItem.price != null ? String(bookItem.price) : '');
         setEditingItemType('book');
         setEditingItemId(bookItem.book._id);
         setShowAllBooksForSubtitle(true);
@@ -690,7 +765,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         showFlashMessage('Stationery item loaded for editing.', 'info');
     };
 
-    // --- Handle Delete Set ---
     const handleDeleteSet = async (setId) => {
         setLoading(true);
         setLocalError(null);
@@ -712,7 +786,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         }
     };
 
-    // --- Save/Update Set ---
     const handleSaveSet = async () => {
         if (!selectedCustomer || !selectedClass) {
             showFlashMessage('Please select School Name and Class.', 'error');
@@ -777,51 +850,44 @@ export default function CreateSetManagement({ showFlashMessage }) {
         }
     };
 
-    // --- Handle Copy Set ---
     const handleCopySet = async () => {
-        if (!currentSetId) {
-            showFlashMessage('Please load an existing set to copy from.', 'error');
-            return;
-        }
-        if (!copyToClass || !selectedCustomer) {
-            showFlashMessage('Please select a target class for copying, and ensure School Name is selected.', 'error');
-            return;
-        }
-        if (existingSetsClasses.has(copyToClass)) {
-            showFlashMessage('A set already exists for the target class. Please select a different class or update the existing set.', 'error');
+        if (!currentSetId || !copyToClass) {
+            showFlashMessage('Please select a class to copy to.', 'warning');
             return;
         }
 
         setLoading(true);
-        setLocalError(null);
-
-        const copyPayload = {
-            sourceSetId: currentSetId,
-            targetCustomerId: selectedCustomer,
-            targetClassId: copyToClass,
-            copyStationery: copyStationery
-        };
-
         try {
-            const response = await api.post(`/sets/copy`, copyPayload);
+            const payload = {
+                sourceSetId: currentSetId,
+                targetCustomerId: selectedCustomer,
+                targetClassId: copyToClass,
+                copyStationery
+            };
 
+            const response = await api.post('/sets/copy', payload);
             if (response.data.status === 'success') {
-                showFlashMessage(response.data.message, 'success');
-                resetForm();
+                showFlashMessage('Set copied successfully! Some book prices may be unset and need to be updated.', 'success');
+                setSelectedClass(copyToClass);
+                setCopyToClass('');
+                setCopyStationery(false);
+                await fetchSetDetails();
+                const updatedSet = response.data.data.set;
+                const hasNullPrices = updatedSet.books.some(book => book.price == null);
+                if (hasNullPrices) {
+                    showFlashMessage('Some books in the copied set have unset prices. Please review and update them.', 'warning');
+                }
             } else {
                 throw new Error(response.data.message || 'Failed to copy set.');
             }
         } catch (err) {
             console.error('Error copying set:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to copy set due to network error.';
-            setLocalError(errorMessage);
-            showFlashMessage(errorMessage, 'error');
+            showFlashMessage(err.response?.data?.message || 'Failed to copy set.', 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    // --- Handle Download ---
     const handleDownload = (type) => {
         setShowDownloadDropdown(false);
 
@@ -957,7 +1023,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
             const tableColumn = ["S.No.", "Sub Title", "Book", "QTY", "Price", "Total"];
             const tableRows = [];
             booksDetail.forEach((item, index) => {
-                const itemTotal = item.quantity * item.price;
+                const itemTotal = item.price != null ? item.quantity * item.price : 0;
                 totalQty += item.quantity;
                 totalAmt += itemTotal;
                 tableRows.push([
@@ -965,8 +1031,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     getStringValue(item.book.subtitle),
                     getStringValue(item.book.bookName),
                     item.quantity,
-                    `Rs.${item.price.toFixed(2)}`,
-                    `Rs.${itemTotal.toFixed(2)}`
+                    item.price != null ? `Rs.${item.price.toFixed(2)}` : 'N/A',
+                    item.price != null ? `Rs.${itemTotal.toFixed(2)}` : 'N/A'
                 ]);
             });
             tableRows.push([
@@ -1075,7 +1141,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         img.src = companyLogo;
     };
 
-    // --- Memoized Item Dropdown Options ---
     const itemDropdownOptions = useMemo(() => {
         if (selectedItemType === 'stationery') {
             if (showAllStationery) {
@@ -1123,7 +1188,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         return [];
     }, [selectedItemType, selectedSubtitle, isEditMode, showAllBooksForSubtitle, showAllStationery, selectedStationeryCategories, stationeryItemsMaster, booksDetail, bookCatalogs, subtitles, editingItemType, editingItemId]);
 
-    // --- UI States ---
     const isFormDisabled = !selectedCustomer;
     const isAddItemFormDisabled = !selectedCustomer;
     const isAddItemButtonDisabled = isAddItemFormDisabled || !selectedItemToAdd || itemQuantity === '' || itemPrice === '' || (selectedItemType === 'books' && !selectedSubtitle);
@@ -1135,7 +1199,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         return !currentSetId || !selectedCustomer || !copyToClass || availableClassesForCopy.length === 0;
     }, [currentSetId, selectedCustomer, copyToClass, availableClassesForCopy]);
 
-    // --- Handle Category Change ---
     const handleCategoryChange = (category) => {
         setSelectedStationeryCategories(prev => {
             const newSet = new Set(prev);
@@ -1161,7 +1224,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         }
     };
 
-    // --- Close Download Dropdown on Outside Click ---
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (downloadDropdownRef.current && !downloadDropdownRef.current.contains(event.target)) {
@@ -1184,7 +1246,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
             )}
 
             <div className="main-grid">
-                {/* Left Panel: Order Details, Add, Copy */}
                 <div className="left-panel">
                     <section className="section-container">
                         <h2 className="section-header1">Create Set</h2>
@@ -1576,7 +1637,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     </div>
                 </div>
 
-                {/* Right Panel: Books and Stationery Tables */}
                 <div className="right-panel">
                     <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-200">
                         <h2 className="section-header"> </h2>
@@ -1624,76 +1684,88 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             </div>
                         </header>
 
-                        <div className="table-container">
-                            <h2 className="section-header">Books List Details</h2>
-                            <table className="app-table">
-                                <thead className="table-header-group">
-                                    <tr>
-                                        <th className="table-header-cell">No.</th>
-                                        <th className="table-header-cell">Sub Title</th>
-                                        <th className="table-header-cell">Book</th>
-                                        <th className="table-header-cell">QTY</th>
-                                        <th className="table-header-cell">Price</th>
-                                        <th className="table-header-cell">Total</th>
-                                        <th className="table-header-cell table-cell-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="table-body">
-                                    {(booksDetail || []).length === 0 ? (
-                                        <tr>
-                                            <td colSpan="7" className="text-center">No books added yet.</td>
-                                        </tr>
-                                    ) : (
-                                        booksDetail.map((item, index) => (
-                                            <tr key={item.book._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
-                                                <td className="table-cell whitespace-nowrap font-medium">{index + 1}</td>
-                                                <td className="table-cell whitespace-nowrap">{getStringValue(item.book.subtitle)}</td>
-                                                <td className="table-cell whitespace-normal">{getStringValue(item.book.bookName)}</td>
-                                                <td className="table-cell whitespace-nowrap">{item.quantity}</td>
-                                                <td className="table-cell whitespace-nowrap">Rs.{item.price.toFixed(2)}</td>
-                                                <td className="table-cell whitespace-nowrap">Rs.{(item.quantity * item.price).toFixed(2)}</td>
-                                                <td className="table-cell whitespace-nowrap text-center">
-                                                    <button
-                                                        onClick={() => handleEditBook(item)}
-                                                        className="table-action-btn edit-btn"
-                                                        title="Edit Book"
-                                                        disabled={loading}
-                                                    >
-                                                        <FaEdit className="table-action-icon" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteBook(item.book._id, item.book.bookName)}
-                                                        className="table-action-btn delete-btn"
-                                                        title="Delete Book"
-                                                        disabled={loading}
-                                                    >
-                                                        <FaTrashAlt className="table-action-icon" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                                <tfoot>
-                                    <tr className="table-footer-row">
-                                        <td colSpan="3" className="table-footer-cell text-right">Total QTY/Amount</td>
-                                        <td className="table-footer-cell text-left">{booksDetail.reduce((sum, item) => sum + item.quantity, 0)}</td>
-                                        <td colSpan="2" className="table-footer-cell text-left">Rs.{booksDetail.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)}</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
+                       
                     </section>
 
                     {(booksDetail.length > 0 || stationeryDetail.length > 0) && (
                         <section className="section-container">
                             <div className="table-container">
-                                <h2 className="section-header">Stationery Item Details</h2>
+                                <h2 className="section-header">Books Details</h2>
                                 <table className="app-table">
                                     <thead className="table-header-group">
                                         <tr>
                                             <th className="table-header-cell">No.</th>
-                                            <th className="table-header-cell">Item</th>
+                                            <th className="table-header-cell">Subtitle</th>
+                                            <th className="table-header-cell">Book Name</th>
+                                            <th className="table-header-cell">QTY</th>
+                                            <th className="table-header-cell">Price</th>
+                                            <th className="table-header-cell">Total</th>
+                                            <th className="table-header-cell table-cell-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="table-body">
+                                        {(booksDetail || []).length === 0 ? (
+                                            <tr>
+                                                <td colSpan="7" className="text-center">No books added yet.</td>
+                                            </tr>
+                                        ) : (
+                                            booksDetail.map((item, index) => (
+                                                <tr key={item.book._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
+                                                    <td className="table-cell whitespace-nowrap font-medium">{index + 1}</td>
+                                                    <td className="table-cell whitespace-nowrap">{getStringValue(item.book.subtitle)}</td>
+                                                    <td className="table-cell whitespace-normal">{getStringValue(item.book.bookName)}</td>
+                                                    <td className="table-cell whitespace-nowrap">{item.quantity}</td>
+                                                    <td className="table-cell whitespace-nowrap">
+                                                        {item.price != null ? `Rs.${item.price.toFixed(2)}` : 'N/A'}
+                                                    </td>
+                                                    <td className="table-cell whitespace-nowrap">
+                                                        {item.price != null ? `Rs.${(item.quantity * item.price).toFixed(2)}` : 'N/A'}
+                                                    </td>
+                                                    <td className="table-cell whitespace-nowrap text-center">
+                                                        <button
+                                                            onClick={() => handleEditBook(item)}
+                                                            className="table-action-btn edit-btn"
+                                                            title="Edit Book"
+                                                            disabled={loading}
+                                                        >
+                                                            <FaEdit className="table-action-icon" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteBook(item.book._id, item.book.bookName)}
+                                                            className="table-action-btn delete-btn"
+                                                            title="Delete Book"
+                                                            disabled={loading}
+                                                        >
+                                                            <FaTrashAlt className="table-action-icon" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="table-footer-row">
+                                            <td colSpan="3" className="table-footer-cell                                             text-right">Total QTY/Amount</td>
+                                            <td className="table-footer-cell text-left">{booksDetail.reduce((sum, item) => sum + item.quantity, 0)}</td>
+                                            <td colSpan="2" className="table-footer-cell text-left">
+                                                Rs.{booksDetail.reduce((sum, item) => {
+                                                    const price = item.price ?? 0;
+                                                    return sum + (item.quantity * price);
+                                                }, 0).toFixed(2)}
+                                            </td>
+                                            <td className="table-footer-cell"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                            <div className="table-container mt-6">
+                                <h2 className="section-header">Stationery Items Details</h2>
+                                <table className="app-table">
+                                    <thead className="table-header-group">
+                                        <tr>
+                                            <th className="table-header-cell">No.</th>
+                                            <th className="table-header-cell">Item Name</th>
                                             <th className="table-header-cell">QTY</th>
                                             <th className="table-header-cell">Price</th>
                                             <th className="table-header-cell">Total</th>
@@ -1739,7 +1811,10 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         <tr className="table-footer-row">
                                             <td colSpan="2" className="table-footer-cell text-right">Total QTY/Amount</td>
                                             <td className="table-footer-cell text-left">{stationeryDetail.reduce((sum, item) => sum + item.quantity, 0)}</td>
-                                            <td colSpan="2" className="table-footer-cell text-left">Rs.{stationeryDetail.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)}</td>
+                                            <td colSpan="2" className="table-footer-cell text-left">
+                                                Rs.{stationeryDetail.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)}
+                                            </td>
+                                            <td className="table-footer-cell"></td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -1749,140 +1824,143 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 </div>
             </div>
 
-            {/* Item Deletion Confirmation Modal */}
-            {showConfirmModal && itemToDelete && (
+            {showConfirmModal && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h3 className="modal-header">Confirm Deletion</h3>
-                        <p className="modal-body">
-                            Are you sure you want to delete the {itemToDelete.type} "{itemToDelete.name}" from this set? This action cannot be undone.
+                        <h2 className="modal-title">Confirm Deletion</h2>
+                        <p className="modal-message">
+                            Are you sure you want to delete {itemToDelete?.name || 'this item'} from the set?
                         </p>
-                        <div className="modal-footer">
-                            <button onClick={cancelDeletion} className="btn-secondary mr-2" disabled={loading}>
-                                Cancel
+                        <div className="modal-buttons">
+                            <button
+                                onClick={confirmDeletion}
+                                disabled={loading}
+                                className="btn-danger"
+                            >
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Confirm'}
                             </button>
-                            <button onClick={confirmDeletion} className="btn-danger" disabled={loading}>
-                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Confirm Delete'}
+                            <button
+                                onClick={cancelDeletion}
+                                disabled={loading}
+                                className="btn-secondary"
+                            >
+                                Cancel
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-        
             {showQuantityModal && (
                 <div className="modal-overlay">
-                    <div className="modal-content">
-                        <h3 className="modal-header">Manage Set Quantities</h3>
-                        <div className="modal-body">
-                            <p>Update quantities for sets associated with the selected school.</p>
-                            {classes.length === 0 ? (
-                                <p>No classes available to manage quantities.</p>
-                            ) : (
-                                <table className="app-table">
-                                    <thead className="table-header-group">
+                    <div className="modal-content modal-content-wide">
+                        <h2 className="modal-title">Manage Set Quantities</h2>
+                        <p className="modal-message">Update the number of sets for each class for {customers.find(c => c._id === selectedCustomer)?.customerName || 'the selected school'}.</p>
+                        <div className="table-container">
+                            <table className="app-table">
+                                <thead className="table-header-group">
+                                    <tr>
+                                        <th className="table-header-cell">Class</th>
+                                        <th className="table-header-cell">Quantity</th>
+                                        <th className="table-header-cell table-cell-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="table-body">
+                                    {(classes || []).length === 0 ? (
                                         <tr>
-                                            <th className="table-header-cell">Class</th>
-                                            <th className="table-header-cell">Quantity</th>
-                                            <th className="table-header-cell table-cell-center">Action</th>
+                                            <td colSpan="3" className="text-center">No classes available.</td>
                                         </tr>
-                                    </thead>
-                                    <tbody className="table-body">
-                                        {classes.map((cls, index) => {
-                                            const classId = cls._id;
-                                            const className = cls.name;
-                                            const quantity = editedQuantities[classId] ?? '';
-                                            return (
-                                                <tr key={classId} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
-                                                    <td className="table-cell">{className}</td>
-                                                    <td className="table-cell">
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            value={quantity}
-                                                            onChange={(e) => handleQuantityChange(classId, e.target.value)}
-                                                            onBlur={() => {
-                                                                if (quantity === '' || Number(quantity) < 0) {
-                                                                    handleQuantityChange(classId, '');
-                                                                }
-                                                            }}
-                                                            disabled={loading}
-                                                            className="form-input w-full"
-                                                        />
-                                                    </td>
-                                                    <td className="table-cell whitespace-nowrap text-center">
-                                                        <button
-                                                            onClick={() => handleEditQuantity(classId, className)}
-                                                            className="table-action-btn edit-btn"
-                                                            title="Edit Quantity"
-                                                            disabled={loading}
-                                                        >
-                                                            <FaEdit className="table-action-icon" />
-                                                        </button>
-                                                        {setQuantities.some(sq => sq.classId === classId) && (
-                                                            <button
-                                                                onClick={() => handleDeleteQuantity(classId, className)}
-                                                                className="table-action-btn delete-btn"
-                                                                title="Delete Quantity"
-                                                                disabled={loading}
-                                                            >
-                                                                <FaTrashAlt className="table-action-icon" />
-                                                            </button>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            )}
+                                    ) : (
+                                        classes.map((cls, index) => (
+                                            <tr key={cls._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
+                                                <td className="table-cell whitespace-nowrap">{cls.name}</td>
+                                                <td className="table-cell whitespace-nowrap">
+                                                    <input
+                                                        type="number"
+                                                        value={editedQuantities[cls._id] ?? ''}
+                                                        onChange={(e) => handleQuantityChange(cls._id, e.target.value)}
+                                                        onBlur={() => {
+                                                            if (!editedQuantities[cls._id] || Number(editedQuantities[cls._id]) < 0) {
+                                                                handleQuantityChange(cls._id, '');
+                                                            }
+                                                        }}
+                                                        min="0"
+                                                        disabled={loading}
+                                                        className="form-input w-20"
+                                                    />
+                                                </td>
+                                                <td className="table-cell whitespace-nowrap text-center">
+                                                    <button
+                                                        onClick={() => handleEditQuantity(cls._id, cls.name)}
+                                                        className="table-action-btn edit-btn"
+                                                        title="Edit Quantity"
+                                                        disabled={loading}
+                                                    >
+                                                        <FaEdit className="table-action-icon" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteQuantity(cls._id, cls.name)}
+                                                        className="table-action-btn delete-btn"
+                                                        title="Delete Quantity"
+                                                        disabled={loading || !editedQuantities[cls._id]}
+                                                    >
+                                                        <FaTrashAlt className="table-action-icon" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
-                        <div className="modal-footer">
-                            <button
-                                onClick={() => setShowQuantityModal(false)}
-                                className="btn-secondary mr-2"
-                                disabled={loading}
-                            >
-                                Cancel
-                            </button>
+                        <div className="modal-buttons">
                             <button
                                 onClick={saveSetQuantities}
-                                className="btn-primary"
-                                disabled={loading || !Object.values(editedQuantities).some(qty => qty !== '' && qty >= 0)}
+                                disabled={loading || Object.values(editedQuantities).every(q => !q || Number(q) <= 0)}
+                                className="btn-success"
                             >
                                 {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Save Quantities'}
                             </button>
+                            <button
+                                onClick={() => {
+                                    setShowQuantityModal(false);
+                                    setEditedQuantities({});
+                                    setSetQuantities([]);
+                                }}
+                                disabled={loading}
+                                className="btn-secondary"
+                            >
+                                Cancel
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Set Quantity Deletion Confirmation Modal */}
-            {showDeleteQuantityModal && quantityToDelete && (
+            {showDeleteQuantityModal && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h3 className="modal-header">Confirm Delete Quantity</h3>
-                        <p className="modal-body">
-                            Are you sure you want to delete the set quantity for class "{quantityToDelete.className}"? This action cannot be undone.
+                        <h2 className="modal-title">Confirm Quantity Deletion</h2>
+                        <p className="modal-message">
+                            Are you sure you want to delete the quantity for {quantityToDelete?.className || 'this class'}?
                         </p>
-                        <div className="modal-footer">
+                        <div className="modal-buttons">
+                            <button
+                                onClick={confirmDeleteQuantity}
+                                disabled={loading}
+                                className="btn-danger"
+                            >
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Confirm'}
+                            </button>
                             <button
                                 onClick={() => {
                                     setShowDeleteQuantityModal(false);
                                     setQuantityToDelete(null);
-                                    showFlashMessage('Deletion cancelled.', 'info');
                                 }}
-                                className="btn-secondary mr-2"
                                 disabled={loading}
+                                className="btn-secondary"
                             >
                                 Cancel
-                            </button>
-                            <button
-                                onClick={confirmDeleteQuantity}
-                                className="btn-danger"
-                                disabled={loading}
-                            >
-                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Confirm Delete'}
                             </button>
                         </div>
                     </div>
@@ -1890,4 +1968,4 @@ export default function CreateSetManagement({ showFlashMessage }) {
             )}
         </div>
     );
-} 
+}
