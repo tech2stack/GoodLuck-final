@@ -9,6 +9,7 @@ import '../../styles/Table.css';
 import '../../styles/Modal.css';
 
 import companyLogo from '../../assets/glbs-logo.jpg';
+import { addHeaderAndSetStartY, addReportTitle, addTableToDoc } from '../../utils/pdfTheme';
 
 const ClassManagement = ({ showFlashMessage }) => {
     const [classes, setClasses] = useState([]);
@@ -228,131 +229,22 @@ const ClassManagement = ({ showFlashMessage }) => {
         }
 
         const doc = new window.jspdf.jsPDF();
-        if (typeof doc.autoTable !== 'function') {
-            showFlashMessage('PDF generation failed: The table plugin is not loaded. Please check your script links.', 'error');
-            console.error("PDF generation failed: doc.autoTable is not a function. Ensure jspdf.plugin.autotable.min.js is linked AFTER jspdf.umd.min.js.");
-            return;
-        }
+        
+        let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
+        startY = addReportTitle(doc, startY, "Class List Report");
 
-        const companyName = "GOOD LUCK BOOK STORE";
-        const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
-        const companyMobile = "Mobile Number: 7024136476";
-        const companyGST = "GST NO: 23EAVPP3772F1Z8";
-        const companyLogoUrl = companyLogo;
+        const tableColumn = ["S.No.", "Class Name", "Status", "Add Date"];
+        const tableRows = filteredClasses.map((classItem, index) => [
+            index + 1,
+            classItem.name,
+            classItem.status.charAt(0).toUpperCase() + classItem.status.slice(1),
+            formatDateWithTime(classItem.createdAt)
+        ]);
+        
+        addTableToDoc(doc, tableColumn, tableRows, startY);
 
-        const generateReportBody = (startYPositionForTable) => {
-            doc.setFontSize(18);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30);
-            doc.text("Class List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' });
-
-            doc.setLineWidth(0.5);
-            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15);
-
-            const tableStartY = startYPositionForTable + 20;
-
-            const tableColumn = ["S.No.", "Class Name", "Status", "Add Date"];
-            const tableRows = filteredClasses.map((classItem, index) => [
-                index + 1,
-                classItem.name,
-                classItem.status.charAt(0).toUpperCase() + classItem.status.slice(1),
-                formatDateWithTime(classItem.createdAt)
-            ]);
-
-            doc.autoTable({
-                head: [tableColumn],
-                body: tableRows,
-                startY: tableStartY,
-                theme: 'plain',
-                styles: {
-                    font: 'helvetica',
-                    fontSize: 10,
-                    cellPadding: 3,
-                    textColor: [51, 51, 51],
-                    valign: 'middle',
-                    halign: 'left'
-                },
-                headStyles: {
-                    fillColor: [60, 141, 188], // Change this line
-                    textColor: [255, 255, 255], // Optional: Change text color to white for contrast
-                    fontStyle: 'bold',
-                    halign: 'center',
-                    valign: 'middle',
-                    lineWidth: 0.1,
-                    lineColor: [200, 200, 200]
-                },
-                bodyStyles: {
-                    lineWidth: 0.1,
-                    lineColor: [200, 200, 200]
-                },
-                columnStyles: {
-                    0: { cellWidth: 15, halign: 'center' },
-                    1: { cellWidth: 'auto', halign: 'left' },
-                    2: { halign: 'center' },
-                    3: { halign: 'center' }
-                },
-                margin: { top: 10, right: 14, bottom: 10, left: 14 },
-                didDrawPage: function (data) {
-                    doc.setFontSize(10);
-                    doc.setTextColor(100);
-                    const pageCount = doc.internal.getNumberOfPages();
-                    doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
-                }
-            });
-            doc.save(`Class_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
-            showFlashMessage('Class list downloaded as PDF!', 'success');
-        };
-
-        const img = new Image();
-        img.crossOrigin = 'Anonymous';
-        img.onload = () => {
-            const logoX = 14;
-            const logoY = 10;
-            const imgWidth = 25;
-            const imgHeight = (img.height * imgWidth) / img.width;
-
-            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight);
-
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30);
-            doc.text(companyName, logoX + imgWidth + 5, logoY + 5);
-
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(50, 50, 50);
-            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12);
-            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17);
-            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22);
-
-            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10);
-            generateReportBody(calculatedStartY);
-        };
-
-        img.onerror = () => {
-            console.warn("Logo image could not be loaded. Generating PDF without logo.");
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30);
-            doc.text(companyName, 14, 20);
-
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(50, 50, 50);
-            doc.text(companyAddress, 14, 27);
-            doc.text(companyMobile, 14, 32);
-            doc.text(companyGST, 14, 37);
-
-            const calculatedStartY = 45;
-            generateReportBody(calculatedStartY);
-        };
-
-        img.src = companyLogoUrl;
-
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
+        doc.save(`Class_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
+        showFlashMessage('Class list downloaded as PDF!', 'success');
     };
 
     return (

@@ -18,6 +18,7 @@ import '../../styles/Modal.css';
 import '../../styles/BookCatalogManagement.css';
 
 import companyLogo from '../../assets/glbs-logo.jpg';
+import { addHeaderAndSetStartY, addReportTitle, addTableToDoc } from '../../utils/pdfTheme';
 
 const BookCatalogManagement = ({ showFlashMessage }) => {
   const [bookCatalogs, setBookCatalogs] = useState([]);
@@ -518,176 +519,42 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
 
     // --- PDF Download Functionality ---
-    const downloadPdf = () => {
-        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF !== 'function') {
-            showFlashMessage('PDF generation libraries not fully loaded or accessible. Check console for details.', 'error');
-            console.error("PDF generation failed: window.jspdf or window.jspdf.jsPDF is not available/callable. Ensure CDNs are correctly linked in public/index.html");
-            return;
-        }
+    // --- PDF Download Functionality ---
+const downloadPdf = () => {
+    if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF !== 'function') {
+        showFlashMessage('PDF generation failed: Core libraries are not loaded. Please check your script links.', 'error');
+        console.error("PDF generation failed: window.jspdf is not available. Ensure CDNs for jsPDF are correctly linked in your HTML file.");
+        return;
+    }
 
-        const doc = new window.jspdf.jsPDF('portrait', 'mm', 'a4');
+    const doc = new window.jspdf.jsPDF('l', 'mm', 'a4');
 
+    let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
+    startY = addReportTitle(doc, startY, "Book Catalog Report");
 
-        if (typeof doc.autoTable !== 'function') {
-            showFlashMessage('PDF Table plugin (jspdf-autotable) not loaded or accessible. Check console for details.', 'error');
-            console.error("PDF generation failed: doc.autoTable is not a function. Ensure jspdf.plugin.autotable.min.js is correctly linked and loaded AFTER jspdf.umd.min.js.");
-            return;
-        }
+    const tableColumn = ["S.No.", "Publication", "Subtitle", "Book Name", "Language", "ISBN No.", "Discount"];
+    const tableRows = filteredBookCatalogs.map((book, index) => [
+        index + 1,
+        book.publication ? book.publication.name : 'N/A',
+        book.subtitle ? book.subtitle.name : 'N/A',
+        book.bookName,
+        book.language ? book.language.name : 'N/A',
+        // Corrected line: Join ISBNs from pricesByClass, or use commonIsbn
+        book.bookType === 'common_price'
+            ? book.commonIsbn || 'N/A'
+            : Object.entries(book.isbnByClass)
+                  .filter(([classId, isbn]) => isbn)
+                  .map(([classId, isbn]) => `${getClassName(classId)}/${isbn}`)
+                  .join(', '),
+        // Corrected line: Format discount percentage
+        `${book.discountPercentage?.toFixed(2) || '0.00'}%`
+    ]);
 
-        // Define company details for PDF header
-        const companyName = "GOOD LUCK BOOK STORE";
-        const companyAddress = "Shop NO. 2, Shriji Tower, Ashoka Garden, Bhopal";
-        const companyMobile = "Mobile Number: 7024136476";
-        const companyGST = "GST NO: 23EAVPP3772F1Z8";
-        const companyLogoUrl = companyLogo; // Use the imported logo directly
+    addTableToDoc(doc, tableColumn, tableRows, startY);
 
-        // Function to generate the main report content (title, line, table, save)
-        // This function now accepts the dynamic startYPositionForTable as an argument
-        const generateReportBody = (startYPositionForTable) => {
-            // Add a professional report title (centered, below company info)
-            doc.setFontSize(18);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30); // Dark gray for title
-            // Adjust Y position for the report title to be below company info
-            doc.text("Book Catalog List Report", doc.internal.pageSize.width / 2, startYPositionForTable + 10, { align: 'center' });
-
-            // Add a line separator below the main title
-            doc.setLineWidth(0.5);
-            doc.line(14, startYPositionForTable + 15, doc.internal.pageSize.width - 14, startYPositionForTable + 15); // Line spanning almost full width
-
-            // Update startYPositionForTable for autoTable
-            const tableStartY = startYPositionForTable + 20;
-
-
-            // Generate table data
-            const tableColumn = [
-                "S.No.", "Name", "Publisher", "Subtitle", "Language", "Price",
-                "ISBN", "Status"
-            ];
-            const tableRows = filteredBookCatalogs.map((bookItem, index) => [
-                // S.No. is always index + 1 for the filtered data for PDF
-                index + 1, // Use index + 1 for S.No.
-                String(bookItem.bookName || '').trim(),
-                String(bookItem.publication?.name || bookItem.publication || '').trim(),
-                String(bookItem.subtitle?.name || bookItem.subtitle || '').trim(),
-                String(bookItem.language?.name || bookItem.language || '').trim(), // Ensure language is displayed
-                bookItem.bookType === 'common_price'
-                    ? `${bookItem.commonPrice?.toFixed(2) || '0.00'}`
-                    : Object.entries(bookItem.pricesByClass).map(([classId, price]) => `${classes.find(c => c._id === classId)?.name || 'Unknown'}/${price?.toFixed(2) || '0.00'}`).join(', '),
-                bookItem.bookType === 'common_price'
-                    ? bookItem.commonIsbn || 'N/A'
-                    : Object.entries(bookItem.isbnByClass).map(([classId, isbn]) => `${classes.find(c => c._id === classId)?.name || 'Unknown'}: ${isbn || 'N/A'}`).join(', '),
-                // bookItem.createdAt ? formatDateWithTime(bookItem.createdAt) : 'N/A',
-                (bookItem.status?.charAt(0).toUpperCase() + bookItem.status?.slice(1)) || 'N/A'
-            ]);
-
-            // Add the table to the document with professional styling
-            doc.autoTable({
-                head: [tableColumn],
-                body: tableRows,
-                startY: tableStartY, // Use our dynamic start position
-                theme: 'plain', // Changed to 'plain' for a cleaner look like the reference PDF
-                styles: {
-                    font: 'helvetica',
-                    fontSize: 10,
-                    cellPadding: 3,
-                    textColor: [51, 51, 51], // Default text color for body
-                    valign: 'middle',
-                    halign: 'left'
-                },
-                headStyles: {
-                    fillColor: [60, 141, 188], // Change this line
-        textColor: [255, 255, 255], // Optional: Change text color to white for contrast
-                    fontStyle: 'bold',
-                    halign: 'center', // Center align header text
-                    valign: 'middle', // Vertically align header text
-                    lineWidth: 0.1, // Add a thin border to header cells
-                    lineColor: [200, 200, 200] // Light gray border
-                },
-                bodyStyles: {
-                    lineWidth: 0.1, // Add a thin border to body cells
-                    lineColor: [200, 200, 200] // Light gray border
-                },
-                columnStyles: {
-                    0: { cellWidth: 15, halign: 'center' }, 1: { cellWidth: 'auto', halign: 'left' },
-                    2: { cellWidth: 'auto', halign: 'left' }, 3: { cellWidth: 'auto', halign: 'left' },
-                    4: { cellWidth: 'auto', halign: 'left' }, 5: { cellWidth: 'auto', halign: 'right' },
-                    6: { cellWidth: 'auto', halign: 'center' }, 7: { halign: 'center' }
-                },
-                margin: { top: 10, right: 14, bottom: 10, left: 14 },
-                didDrawPage: function (data) {
-                    // Add footer on each page
-                    doc.setFontSize(10);
-                    doc.setTextColor(100); // Gray color for footer text
-                    const pageCount = doc.internal.getNumberOfPages();
-                    doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
-                }
-            });
-
-            // Save the PDF
-            // The toLocaleDateString('en-CA') gives YYYY-MM-DD, then replace hyphens with underscores for filename
-            doc.save(`Book_Catalog_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
-            showFlashMessage('Book Catalog list downloaded as PDF!', 'success');
-        };
-
-        // 5. **Handle Logo Loading Asynchronously:**
-        const img = new Image();
-        img.crossOrigin = 'Anonymous'; // Important for CORS if using a different domain
-        img.onload = () => {
-            const logoX = 14; // Left margin for logo
-            const logoY = 10; // Top margin for logo
-            const imgWidth = 25; // Changed: Reduced logo width
-            const imgHeight = (img.height * imgWidth) / img.width; // Maintain aspect ratio
-
-            // Add the logo at the top-left
-            doc.addImage(img, 'JPEG', logoX, logoY, imgWidth, imgHeight);
-
-            // Add company name and details next to logo
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30);
-            doc.text(companyName, logoX + imgWidth + 5, logoY + 5); // Company Name
-
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(50, 50, 50);
-            doc.text(companyAddress, logoX + imgWidth + 5, logoY + 12); // Address
-            doc.text(companyMobile, logoX + imgWidth + 5, logoY + 17); // Mobile
-            doc.text(companyGST, logoX + imgWidth + 5, logoY + 22); // GST No.
-
-            // Calculate startYPositionForTable based on logo and company info block
-            const calculatedStartY = Math.max(logoY + imgHeight + 10, logoY + 22 + 10); // Ensure enough space
-            generateReportBody(calculatedStartY); // Pass the calculated Y position
-        };
-
-        img.onerror = () => {
-            console.warn("Logo image could not be loaded. Generating PDF without logo.");
-            // If logo fails, add only company info block
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 30, 30);
-            doc.text(companyName, 14, 20); // Company Name
-
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(50, 50, 50);
-            doc.text(companyAddress, 14, 27); // Address
-            doc.text(companyMobile, 14, 32); // Mobile
-            doc.text(companyGST, 14, 37); // GST No.
-
-            const calculatedStartY = 45; // Adjust startY since no logo
-            generateReportBody(calculatedStartY); // Pass the calculated Y position
-        };
-
-        img.src = companyLogoUrl; // This will now use the imported image data
-
-        // Add generation date/time to the top right (this part can run immediately)
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100); // Gray color for date text
-        doc.text(`Date: ${formatDateWithTime(new Date())}`, doc.internal.pageSize.width - 14, 20, { align: 'right' });
-    };
-
+    doc.save(`Book_Catalog_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
+    showFlashMessage('Book catalog list downloaded as PDF!', 'success');
+};
     // --- UI Rendering ---
     return (
         <div className="book-catalog-management-container">
