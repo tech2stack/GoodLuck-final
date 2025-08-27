@@ -286,7 +286,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     setNoOfSets(classQuantity ? String(classQuantity.quantity) : '1');
                 }
 
-                showFlashMessage('Set quantities fetched successfully!', 'success');
+                // showFlashMessage('Set quantities fetched successfully!', 'success');
             } else {
                 throw new Error(response.data.message || 'Failed to fetch set quantities.');
             }
@@ -337,7 +337,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 setBooksDetail([]);
                 setStationeryDetail([]);
                 setIsEditMode(false);
-                showFlashMessage('No existing set found for the selected criteria. You can create a new one.', 'info');
+                // showFlashMessage('No existing set found for the selected criteria. You can create a new one.', 'info');
             }
 
             await fetchSetQuantities();
@@ -474,6 +474,12 @@ export default function CreateSetManagement({ showFlashMessage }) {
     useEffect(() => {
         fetchDropdownData();
     }, [fetchDropdownData]);
+
+    useEffect(() => {
+    if (selectedCustomer && selectedClass) {
+        fetchSetDetails();
+    }
+}, [selectedCustomer, selectedClass, fetchSetDetails]);
 
     useEffect(() => {
         if (selectedItemToAdd) {
@@ -1347,13 +1353,13 @@ const handleAddOrUpdateItem = useCallback(async () => {
                                 />
                             </div>
                         </div>
-                        <button
+                        {/* <button
                             onClick={fetchSetDetails}
                             disabled={isFormDisabled || !selectedClass || loading}
                             className="btn-primary"
                         >
                             {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : <FaSearch className="btn-icon-mr" />} Show Info
-                        </button>
+                        </button> */}
                     </section>
 
                     <section className="section-container">
