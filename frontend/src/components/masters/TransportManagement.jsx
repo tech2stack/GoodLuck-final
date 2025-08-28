@@ -50,52 +50,44 @@ const TransportManagement = ({ showFlashMessage }) => {
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
 
-    const fetchTransports = useCallback(async (scrollToNew = false) => {
-        setLoading(true);
-        setLocalError(null);
-        try {
-            const response = await api.get('/transports');
-            if (response.data.status === 'success' && Array.isArray(response.data.data.transports)) {
-                setTransports(response.data.data.transports);
+const fetchTransports = useCallback(async () => {
+    setLoading(true);
+    setLocalError(null);
+    try {
+        const response = await api.get('/transports');
+        if (
+            response.data.status === 'success' &&
+            Array.isArray(response.data.data.transports)
+        ) {
+            // ✅ Sort latest-first
+            const sorted = response.data.data.transports.sort(
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            );
+            setTransports(sorted);
 
-                const totalPagesCalculated = Math.ceil(response.data.data.transports.length / itemsPerPage);
-                if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
-                    setCurrentPage(totalPagesCalculated);
-                } else if (response.data.data.transports.length === 0) {
-                    setCurrentPage(1);
-                }
-
-                if (scrollToNew && tableBodyRef.current) {
-                    setTimeout(() => {
-                        const lastPageIndex = Math.ceil(response.data.data.transports.length / itemsPerPage);
-                        if (currentPage !== lastPageIndex) {
-                            setCurrentPage(lastPageIndex);
-                            setTimeout(() => {
-                                if (tableBodyRef.current.lastElementChild) {
-                                    tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                } else {
-                                    tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                                }
-                            }, 50);
-                        } else {
-                            if (tableBodyRef.current.lastElementChild) {
-                                tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                            } else {
-                                tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                            }
-                        }
-                    }, 100);
-                }
-            } else {
-                setLocalError(response.data.message || 'Failed to fetch transports due to unexpected response structure.');
+            const totalPagesCalculated = Math.ceil(sorted.length / itemsPerPage);
+            if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
+                setCurrentPage(totalPagesCalculated);
+            } else if (sorted.length === 0) {
+                setCurrentPage(1);
             }
-        } catch (err) {
-            console.error('Error fetching transports:', err);
-            setLocalError(err.response?.data?.message || 'Failed to load transports due to network error.');
-        } finally {
-            setLoading(false);
+        } else {
+            setLocalError(
+                response.data.message ||
+                'Failed to fetch transports due to unexpected response structure.'
+            );
         }
-    }, [currentPage, itemsPerPage]);
+    } catch (err) {
+        console.error('Error fetching transports:', err);
+        setLocalError(
+            err.response?.data?.message ||
+            'Failed to load transports due to network error.'
+        );
+    } finally {
+        setLoading(false);
+    }
+}, [currentPage, itemsPerPage]);
+
 
     useEffect(() => {
         fetchTransports();
@@ -109,53 +101,68 @@ const TransportManagement = ({ showFlashMessage }) => {
         }));
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setLocalError(null);
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setLocalError(null);
 
-        if (!formData.transportName.trim() || !formData.person.trim() || !formData.mobile.trim() || !formData.address.trim()) {
-            setLocalError('Please fill in all required fields.');
-            showFlashMessage('Please fill in all required fields.', 'error');
-            setLoading(false);
-            return;
-        }
+    if (
+        !formData.transportName.trim() ||
+        !formData.person.trim() ||
+        !formData.mobile.trim() ||
+        !formData.address.trim()
+    ) {
+        setLocalError('Please fill in all required fields.');
+        showFlashMessage('Please fill in all required fields.', 'error');
+        setLoading(false);
+        return;
+    }
 
-        try {
-            let response;
-            if (editingTransportId) {
-                response = await api.patch(`/transports/${editingTransportId}`, formData);
-                if (response.data.status === 'success') {
-                    showFlashMessage('Transport updated successfully!', 'success');
-                } else {
-                    throw new Error(response.data.message || 'Failed to update transport.');
-                }
+    try {
+        let response;
+        if (editingTransportId) {
+            // Update
+            response = await api.patch(`/transports/${editingTransportId}`, formData);
+            if (response.data.status === 'success') {
+                showFlashMessage('Transport updated successfully!', 'success');
+                fetchTransports(); // re-fetch sorted
             } else {
-                response = await api.post('/transports', formData);
-                if (response.data.status === 'success') {
-                    showFlashMessage('Transport created successfully!', 'success');
-                } else {
-                    throw new Error(response.data.message || 'Failed to create transport.');
-                }
+                throw new Error(response.data.message || 'Failed to update transport.');
             }
-            setFormData({
-                transportName: '',
-                person: '',
-                mobile: '',
-                address: '',
-                status: 'active',
-            });
-            setEditingTransportId(null);
-            fetchTransports(true);
-        } catch (err) {
-            console.error('Error saving transport:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to save transport. Please check your input and ensure the name is unique.';
-            setLocalError(errorMessage);
-            showFlashMessage(errorMessage, 'error');
-        } finally {
-            setLoading(false);
+        } else {
+            // ✅ Create new → add at top & reset page 1
+            response = await api.post('/transports', formData);
+            if (response.data.status === 'success') {
+                showFlashMessage('Transport created successfully!', 'success');
+                setTransports(prev => [response.data.data.transport, ...prev]); // add new at top
+                setCurrentPage(1); // reset to first page
+            } else {
+                throw new Error(response.data.message || 'Failed to create transport.');
+            }
         }
-    };
+
+        // Reset form
+        setFormData({
+            transportName: '',
+            person: '',
+            mobile: '',
+            address: '',
+            status: 'active',
+        });
+        setEditingTransportId(null);
+
+    } catch (err) {
+        console.error('Error saving transport:', err);
+        const errorMessage =
+            err.response?.data?.message ||
+            'Failed to save transport. Please check your input and ensure the name is unique.';
+        setLocalError(errorMessage);
+        showFlashMessage(errorMessage, 'error');
+    } finally {
+        setLoading(false);
+    }
+};
+
 
     const handleEdit = (transport) => {
         setFormData({

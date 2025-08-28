@@ -97,114 +97,150 @@ export default function PendingBookManagement({ showFlashMessage }) {
         }
     }, [showFlashMessage]);
 
-    // --- Fetch Books for Selected School Customer (across all classes) ---
-    const fetchBooks = useCallback(async () => {
-        if (!selectedSchoolCustomer) {
-            setBooks([]);
-            showFlashMessage('Please select a School Name to view books.', 'warning');
-            return;
-        }
+    //fetch books
+const fetchBooks = useCallback(async () => {
+    if (!selectedSchoolCustomer) {
+        setBooks([]);
+        showFlashMessage('Please select a School Name to view books.', 'warning');
+        return;
+    }
 
-        setLoading(true);
-        setLocalError(null);
-        try {
-            const queryParams = new URLSearchParams({
-                customerId: selectedSchoolCustomer,
-            });
+    setLoading(true);
+    setLocalError(null);
+    try {
+        const queryParams = new URLSearchParams({
+            customerId: selectedSchoolCustomer,
+        });
 
-            const booksResponse = await api.get(`/sets/books-by-school?${queryParams.toString()}`);
+        const booksResponse = await api.get(`/sets/books-by-school?${queryParams.toString()}`);
 
-            if (booksResponse.data.status === 'success') {
-                const fetchedBooks = (booksResponse.data.data.books || []).map(item => ({
-                    ...item,
-                    status: item.status || 'active'
-                }));
-                const groupedBooks = {};
-                fetchedBooks.forEach(bookItem => {
-                    if (bookItem && bookItem.book) { // Add null check here
-                        const bookId = bookItem.book._id;
-                        if (!groupedBooks[bookId]) {
-                            groupedBooks[bookId] = {
-                                ...bookItem,
-                                classes: [bookItem.class?.name].filter(Boolean),
-                                setIds: [bookItem.setId]
-                            };
-                        } else {
-                            if (bookItem.class?.name && !groupedBooks[bookId].classes.includes(bookItem.class.name)) {
-                                groupedBooks[bookId].classes.push(bookItem.class.name);
-                            }
-                            if (bookItem.setId && !groupedBooks[bookId].setIds.includes(bookItem.setId)) {
-                                groupedBooks[bookId].setIds.push(bookItem.setId);
-                            }
+        if (booksResponse.data.status === 'success') {
+            const fetchedBooks = (booksResponse.data.data.books || []).map(item => ({
+                ...item,
+                status: item.status || 'active',
+            }));
+
+            // ✅ Group books by unique bookId
+            const groupedBooks = {};
+            fetchedBooks.forEach(bookItem => {
+                if (bookItem && bookItem.book) {
+                    const bookId = bookItem.book._id;
+                    if (!groupedBooks[bookId]) {
+                        groupedBooks[bookId] = {
+                            ...bookItem,
+                            classes: [bookItem.class?.name].filter(Boolean),
+                            setIds: [bookItem.setId],
+                        };
+                    } else {
+                        if (
+                            bookItem.class?.name &&
+                            !groupedBooks[bookId].classes.includes(bookItem.class.name)
+                        ) {
+                            groupedBooks[bookId].classes.push(bookItem.class.name);
+                        }
+                        if (
+                            bookItem.setId &&
+                            !groupedBooks[bookId].setIds.includes(bookItem.setId)
+                        ) {
+                            groupedBooks[bookId].setIds.push(bookItem.setId);
                         }
                     }
-                });
-                setBooks(Object.values(groupedBooks));
-                showFlashMessage('Books loaded successfully!', 'success');
-            } else {
-                setBooks([]);
-                showFlashMessage('No books found for the selected school.', 'info');
-            }
-        } catch (err) {
-            console.error('Error fetching books:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to fetch books due to network error.';
-            setLocalError(errorMessage);
-            showFlashMessage(errorMessage, 'error');
+                }
+            });
+
+            // ✅ Convert grouped values to array
+            let finalBooks = Object.values(groupedBooks);
+
+            // ✅ Sort latest-first (if createdAt available, else fallback name)
+            finalBooks = finalBooks.sort(
+                (a, b) =>
+                    new Date(b.book?.createdAt || 0) - new Date(a.book?.createdAt || 0)
+            );
+
+            setBooks(finalBooks);
+            setCurrentPage(1); // reset page after fetch
+            showFlashMessage('Books loaded successfully!', 'success');
+        } else {
             setBooks([]);
-        } finally {
-            setLoading(false);
+            showFlashMessage('No books found for the selected school.', 'info');
+            setCurrentPage(1);
         }
-    }, [selectedSchoolCustomer, showFlashMessage]);
+    } catch (err) {
+        console.error('Error fetching books:', err);
+        const errorMessage =
+            err.response?.data?.message || 'Failed to fetch books due to network error.';
+        setLocalError(errorMessage);
+        showFlashMessage(errorMessage, 'error');
+        setBooks([]);
+        setCurrentPage(1);
+    } finally {
+        setLoading(false);
+    }
+}, [selectedSchoolCustomer, showFlashMessage]);
+
 
     // --- Handle Status Change for a Book (3-state toggle: Active -> Pending -> Clear -> Active) ---
-    const handleStatusChange = useCallback(async (bookId, currentStatus, setIds) => {
-        if (!setIds || setIds.length === 0) {
-            showFlashMessage('Error: Cannot update book status. Set ID not found for this book.', 'error');
-            return;
-        }
+const handleStatusChange = useCallback(async (bookId, currentStatus, setIds) => {
+    if (!setIds || setIds.length === 0) {
+        showFlashMessage(
+            'Error: Cannot update book status. Set ID not found for this book.',
+            'error'
+        );
+        return;
+    }
 
-        let newStatus;
-        if (currentStatus === 'active') {
-            newStatus = 'pending';
-        } else if (currentStatus === 'pending') {
-            newStatus = 'clear';
-        } else if (currentStatus === 'clear') {
-            newStatus = 'active';
-        } else {
-            newStatus = 'active';
-        }
+    let newStatus;
+    if (currentStatus === 'active') newStatus = 'pending';
+    else if (currentStatus === 'pending') newStatus = 'clear';
+    else if (currentStatus === 'clear') newStatus = 'active';
+    else newStatus = 'active';
 
-        setLoading(true);
-        setLocalError(null);
+    setLoading(true);
+    setLocalError(null);
 
-        try {
-            const updatePromises = setIds.map(setId =>
-                api.patch(`/sets/${setId}/item-status`, {
-                    itemId: bookId,
-                    itemType: 'book',
-                    status: newStatus
-                })
+    try {
+        const updatePromises = setIds.map(setId =>
+            api.patch(`/sets/${setId}/item-status`, {
+                itemId: bookId,
+                itemType: 'book',
+                status: newStatus,
+            })
+        );
+
+        await Promise.all(updatePromises);
+
+        // ✅ Update state instantly
+        setBooks(prevBooks => {
+            const updated = prevBooks.map(bookItem =>
+                bookItem.book._id === bookId
+                    ? { ...bookItem, status: newStatus }
+                    : bookItem
             );
 
-            await Promise.all(updatePromises);
-
-            setBooks(prevBooks =>
-                prevBooks.map(bookItem =>
-                    bookItem.book._id === bookId
-                        ? { ...bookItem, status: newStatus }
-                        : bookItem
-                )
+            // ✅ Keep latest-first sorting
+            return updated.sort(
+                (a, b) =>
+                    new Date(b.book?.createdAt || 0) - new Date(a.book?.createdAt || 0)
             );
-            showFlashMessage(`Book status updated to "${newStatus.toUpperCase()}"!`, 'success');
-        } catch (err) {
-            console.error('Error updating book status:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to update book status due to network error.';
-            setLocalError(errorMessage);
-            showFlashMessage(errorMessage, 'error');
-        } finally {
-            setLoading(false);
-        }
-    }, [showFlashMessage]);
+        });
+
+        setCurrentPage(1); // reset to first page so user sees update immediately
+        showFlashMessage(
+            `Book status updated to "${newStatus.toUpperCase()}"!`,
+            'success'
+        );
+    } catch (err) {
+        console.error('Error updating book status:', err);
+        const errorMessage =
+            err.response?.data?.message ||
+            'Failed to update book status due to network error.';
+        setLocalError(errorMessage);
+        showFlashMessage(errorMessage, 'error');
+    } finally {
+        setLoading(false);
+    }
+}, [showFlashMessage]);
+
 
 
     // --- Effects ---

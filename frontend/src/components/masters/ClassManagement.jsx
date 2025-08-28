@@ -45,42 +45,31 @@ const ClassManagement = ({ showFlashMessage }) => {
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
 
-    const fetchClasses = useCallback(async (scrollToNew = false) => {
+    const fetchClasses = useCallback(async (scrollToNew = false, resetToFirstPage = false) => {
         setLoading(true);
         setLocalError(null);
         try {
             const response = await api.get('/classes');
             if (response.data.status === 'success') {
-                setClasses(response.data.data.classes);
+                // ✅ Sort by createdAt (latest first)
+                const sortedClasses = response.data.data.classes.sort(
+                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                );
+                setClasses(sortedClasses);
 
-                const totalPagesCalculated = Math.ceil(response.data.data.classes.length / itemsPerPage);
+                const totalPagesCalculated = Math.ceil(sortedClasses.length / itemsPerPage);
                 if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
                     setCurrentPage(totalPagesCalculated);
-                } else if (response.data.data.classes.length === 0) {
+                } else if (sortedClasses.length === 0) {
                     setCurrentPage(1);
                 }
 
-                if (scrollToNew && tableBodyRef.current) {
-                    setTimeout(() => {
-                        const lastPageIndex = Math.ceil(response.data.data.classes.length / itemsPerPage);
-                        if (currentPage !== lastPageIndex) {
-                            setCurrentPage(lastPageIndex);
-                            setTimeout(() => {
-                                if (tableBodyRef.current.lastElementChild) {
-                                    tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                } else {
-                                    tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                                }
-                            }, 50);
-                        } else {
-                            if (tableBodyRef.current.lastElementChild) {
-                                tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                            } else {
-                                tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                            }
-                        }
-                    }, 100);
+                // ✅ Agar nayi class add ho rahi hai, to hamesha pehle page par hi set kare
+                if (resetToFirstPage) {
+                    setCurrentPage(1);
                 }
+
+                // purana scrollToNew logic ab use nahi karna (kyunki hamesha first page chahiye)
             } else {
                 setLocalError(response.data.message || 'Failed to fetch classes.');
             }
@@ -138,7 +127,8 @@ const ClassManagement = ({ showFlashMessage }) => {
                 status: 'active',
             });
             setEditingClassId(null);
-            fetchClasses(true);
+            // ✅ Always reset to first page when adding new class
+            fetchClasses(false, true);
         } catch (err) {
             console.error('Error saving class:', err);
             const errorMessage = err.response?.data?.message || 'Failed to save class. Please check your input and ensure class name is unique.';
@@ -245,6 +235,7 @@ const ClassManagement = ({ showFlashMessage }) => {
         doc.save(`Class_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
         showFlashMessage('Class list downloaded as PDF!', 'success');
     };
+
     //--UI rendering--
     return (
         <div className="class-management-container">
@@ -310,8 +301,6 @@ const ClassManagement = ({ showFlashMessage }) => {
                     </form>
                 </div>
                 <div className="table-container">
-                    {/* <h3 className="table-title">Existing Classes</h3> */}
-
                     <div className="table-controls">
                         <div className="search-input-group">
                             <FaSearch className="search-icon" />
@@ -387,7 +376,11 @@ const ClassManagement = ({ showFlashMessage }) => {
                                         <FaChevronLeft className="icon" /> Previous
                                     </button>
                                     <span>Page {currentPage} of {totalPages}</span>
-                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn-page">
+                                    <button
+                                        onClick={goToNextPage}
+                                        disabled={currentPage === totalPages || loading}
+                                        className="btn-page"
+                                    >
                                         Next <FaChevronRight className="icon" />
                                     </button>
                                 </div>

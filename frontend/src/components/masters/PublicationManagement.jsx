@@ -76,6 +76,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
 
     // States for Search
     const [searchTerm, setSearchTerm] = useState('');
+    const [publicationTypeFilter, setPublicationTypeFilter] = useState('all'); // Default to 'all' for no filter
 
     // States for Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -104,41 +105,24 @@ const PublicationManagement = ({ showFlashMessage }) => {
     };
 
     // --- Fetch Publications ---
-    const fetchPublications = useCallback(async (scrollToNew = false) => {
+    // --- Fetch Publications ---
+    const fetchPublications = useCallback(async () => {
         setLoading(true);
         setLocalError(null);
         try {
-            const response = await api.get(`/publications`); // Fetch all publications for client-client-side filtering/pagination
+            const response = await api.get(`/publications`);
             if (response.data.status === 'success') {
-                setPublications(response.data.data.publications);
+                // ✅ Sort by latest createdAt first
+                const sorted = response.data.data.publications.sort(
+                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                );
+                setPublications(sorted);
 
-                const totalPagesCalculated = Math.ceil(response.data.data.publications.length / itemsPerPage);
+                const totalPagesCalculated = Math.ceil(sorted.length / itemsPerPage);
                 if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
                     setCurrentPage(totalPagesCalculated);
-                } else if (response.data.data.publications.length === 0) {
+                } else if (sorted.length === 0) {
                     setCurrentPage(1);
-                }
-
-                if (scrollToNew && tableBodyRef.current) {
-                    setTimeout(() => {
-                        const lastPageIndex = Math.ceil(response.data.data.publications.length / itemsPerPage);
-                        if (currentPage !== lastPageIndex) {
-                            setCurrentPage(lastPageIndex);
-                            setTimeout(() => {
-                                if (tableBodyRef.current.lastElementChild) {
-                                    tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                } else {
-                                    tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                                }
-                            }, 50);
-                        } else {
-                            if (tableBodyRef.current.lastElementChild) {
-                                tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                            } else {
-                                tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                            }
-                        }
-                    }, 100);
                 }
             } else {
                 setLocalError(response.data.message || 'Failed to fetch publications.');
@@ -149,7 +133,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, itemsPerPage]); // Re-fetch when page or itemsPerPage changes (searchTerm is handled by filteredPublications)
+    }, [currentPage, itemsPerPage]);
 
     // --- Fetch Cities for Lookup ---
     const fetchCitiesForLookup = useCallback(async () => {
@@ -195,12 +179,12 @@ const PublicationManagement = ({ showFlashMessage }) => {
         }));
     };
 
+    // --- Submit Form ---
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setLocalError(null);
 
-        // Basic validation for required fields
         if (!formData.name || !formData.personName || !formData.mobileNumber || !formData.address || !formData.city.trim()) {
             setLocalError('Please fill all required fields.');
             showFlashMessage('Please fill all required fields.', 'error');
@@ -212,74 +196,61 @@ const PublicationManagement = ({ showFlashMessage }) => {
         const enteredCityName = formData.city.trim();
 
         try {
-            // 1. Check if city exists in the fetched list
-            // Safeguard: Ensure c and c.name are not null/undefined
             let existingCity = cities.find(c => c && c.name && c.name.toLowerCase() === enteredCityName.toLowerCase());
-
             if (existingCity) {
                 cityIdToUse = existingCity._id;
             } else {
-                // 2. If city doesn't exist, create it
-                const newCityResponse = await api.post('/cities', {
-                    name: enteredCityName,
-                    status: 'active' // Default status for newly created cities
-                });
+                const newCityResponse = await api.post('/cities', { name: enteredCityName, status: 'active' });
                 if (newCityResponse.data.status === 'success') {
                     cityIdToUse = newCityResponse.data.data.city._id;
                     showFlashMessage(`New city "${enteredCityName}" created successfully!`, 'success');
-                    // Re-fetch cities list to include the newly added city for future lookups
                     await fetchCitiesForLookup();
                 } else {
                     throw new Error(newCityResponse.data.message || 'Failed to create new city.');
                 }
             }
 
-            // Prepare data for publication submission
-            // Ensure formData.city (name) is replaced with cityIdToUse (_id)
-            const publicationData = { ...formData, city: cityIdToUse }; // Subtitles are not part of main form submission initially
+            const publicationData = { ...formData, city: cityIdToUse };
 
             let response;
             if (editingPublicationId) {
-                // Update existing publication
+                // Update case
                 response = await api.patch(`/publications/${editingPublicationId}`, publicationData);
                 if (response.data.status === 'success') {
                     showFlashMessage('Publication updated successfully!', 'success');
-                    // Reset form after successful update
+                    fetchPublications();
                     setFormData(initialFormData);
                     setEditingPublicationId(null);
                     setSelectedPublicationForSubtitle(null);
-                    setNewPublicationSubtitles([]); // Clear any temporary subtitles if they were somehow left over
+                    setNewPublicationSubtitles([]);
                 } else {
                     throw new Error(response.data.message || 'Failed to update publication.');
                 }
             } else {
-                // Create new publication
-                // Include temporarily added subtitles (only send their names and discount)
+                // ✅ Create case → Insert at top + reset to page 1
                 const newPublicationData = {
                     ...publicationData,
                     subtitles: newPublicationSubtitles.map(s => ({ name: s.name, discount: s.discount }))
                 };
                 response = await api.post('/publications', newPublicationData);
                 if (response.data.status === 'success') {
-                    showFlashMessage('Publication created successfully! You can now continue adding subtitles to this new publication or reset the form.', 'success');
-                    // Clear temporary subtitles after successful save
+                    showFlashMessage('Publication created successfully!', 'success');
+                    setPublications(prev => [response.data.data.publication, ...prev]); // insert at top
+                    setCurrentPage(1); // reset to first page
                     setNewPublicationSubtitles([]);
-                    // Set the newly created publication as the one being edited
                     setEditingPublicationId(response.data.data.publication._id);
                     setSelectedPublicationForSubtitle(response.data.data.publication);
-                    // Update formData to reflect the full data of the newly created publication
                     setFormData({
                         ...response.data.data.publication,
-                        city: response.data.data.publication.city ? response.data.data.publication.city.name : '' // Ensure city name is set for the input
+                        city: response.data.data.publication.city ? response.data.data.publication.city.name : ''
                     });
                 } else {
                     throw new Error(response.data.message || 'Failed to create publication.');
                 }
             }
-            fetchPublications(true); // Re-fetch and indicate to scroll
         } catch (err) {
             console.error('Error saving publication:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to save publication. Please check your input and ensure data is valid.';
+            const errorMessage = err.response?.data?.message || 'Failed to save publication. Please check your input.';
             setLocalError(errorMessage);
             showFlashMessage(errorMessage, 'error');
         } finally {
@@ -492,16 +463,35 @@ const PublicationManagement = ({ showFlashMessage }) => {
     };
 
     // --- Search Filtering ---
-    const filteredPublications = publications.filter(publicationItem =>
-        publicationItem && (
+    const filteredPublications = publications.filter((publicationItem) => {
+        // Ensure publicationItem exists and has required fields
+        if (!publicationItem) return false;
+
+        // Apply publicationType filter
+        const matchesType =
+            publicationTypeFilter === 'all' ||
+            publicationItem.publicationType === publicationTypeFilter;
+
+        // Apply search term filter
+        const matchesSearch =
             publicationItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             publicationItem.personName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (publicationItem.city && publicationItem.city.name && publicationItem.city.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (publicationItem.mobileNumber && publicationItem.mobileNumber.includes(searchTerm)) ||
-            (publicationItem.gstin && publicationItem.gstin.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (Array.isArray(publicationItem.subtitles) && publicationItem.subtitles.some(sub => sub && sub.name && sub.name.toLowerCase().includes(searchTerm.toLowerCase())))
-        )
-    );
+            (publicationItem.city &&
+                publicationItem.city.name &&
+                publicationItem.city.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (publicationItem.mobileNumber &&
+                publicationItem.mobileNumber.includes(searchTerm)) ||
+            (publicationItem.gstin &&
+                publicationItem.gstin.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (Array.isArray(publicationItem.subtitles) &&
+                publicationItem.subtitles.some(
+                    (sub) =>
+                        sub && sub.name && sub.name.toLowerCase().includes(searchTerm.toLowerCase())
+                ));
+
+        // Return true only if both conditions are satisfied
+        return matchesType && matchesSearch;
+    });
 
     // --- Pagination Logic ---
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -851,7 +841,29 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     />
                                     <FaSearch className="search-icon" />
                                 </div>
-                                <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredPublications.length === 0}>
+                                {/* NEW: Publication Type Filter Dropdown */}
+                                <div className="publication-type-filter">
+                                    <label htmlFor="publicationTypeFilter" className="mr-2"></label>
+                                    <select
+                                        id="publicationTypeFilter"
+                                        value={publicationTypeFilter}
+                                        onChange={(e) => {
+                                            setPublicationTypeFilter(e.target.value);
+                                            setCurrentPage(1); // Reset to first page when filter changes
+                                        }}
+                                        className="form-select"
+                                    >
+                                        <option value="all">All Types</option>
+                                        <option value="Private Pub">Private</option>
+                                        <option value="Govt. Pub">Government</option>
+                                        <option value="Other Pub">Other</option>
+                                    </select>
+                                </div>
+                                <button
+                                    onClick={downloadPdf}
+                                    className="btn btn-info download-pdf-btn"
+                                    disabled={loading || filteredPublications.length === 0}
+                                >
                                     <FaFilePdf className="mr-2" /> Download PDF
                                 </button>
                             </div>
@@ -979,12 +991,18 @@ const PublicationManagement = ({ showFlashMessage }) => {
 
             {/* Subtitle Management Modal */}
             {showSubtitleModal && (
-                <div className="modal-backdrop">
-                    <div className="modal-content">
+                <div
+                    className="modal-backdrop"
+                    onClick={closeSubtitleModal} // close on outside click
+                >
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()} // prevent close when clicking inside
+                    >
                         <h3>{editingSubtitleId ? 'Edit Subtitle' : 'Add Subtitle'}</h3>
                         <form onSubmit={handleAddSubtitle}>
                             <div className="form-group">
-                                <label htmlFor="newSubtitleName" className="font-bold" >Subtitle Name:</label>
+                                <label htmlFor="newSubtitleName" className="font-bold">Subtitle Name:</label>
                                 <input
                                     type="text"
                                     id="newSubtitleName"
@@ -997,7 +1015,8 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-                            {/* NEW: Discount input in the modal */}
+
+                            {/* Discount input */}
                             <div className="form-group">
                                 <label htmlFor="newSubtitleDiscount">Discount (%):</label>
                                 <input
@@ -1013,14 +1032,23 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
+
                             {subtitleModalError && (
                                 <p className="error-message text-center">{subtitleModalError}</p>
                             )}
+
                             <div className="form-actions">
                                 <button type="submit" className="btn btn-primary" disabled={subtitleModalLoading}>
-                                    {subtitleModalLoading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingSubtitleId ? 'Update Subtitle' : 'Add Subtitle')}
+                                    {subtitleModalLoading
+                                        ? <FaSpinner className="btn-icon-mr animate-spin" />
+                                        : (editingSubtitleId ? 'Update Subtitle' : 'Add Subtitle')}
                                 </button>
-                                <button type="button" className="btn btn-secondary" onClick={closeSubtitleModal} disabled={subtitleModalLoading}>
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={closeSubtitleModal}
+                                    disabled={subtitleModalLoading}
+                                >
                                     Cancel
                                 </button>
                             </div>
@@ -1028,6 +1056,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                     </div>
                 </div>
             )}
+
         </div>
     );
 };

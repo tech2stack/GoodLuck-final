@@ -58,54 +58,35 @@ const LanguageManagement = ({ showFlashMessage }) => {
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
 
-    // --- Fetch Languages ---
-    const fetchLanguages = useCallback(async (scrollToNew = false) => {
-        setLoading(true);
-        setLocalError(null);
-        try {
-            const response = await api.get(`/languages`); // Fetch all languages
-            if (response.data.status === 'success') {
-                setLanguages(response.data.data.languages);
-                
-                // Client-client side pagination adjustment
-                const totalPagesCalculated = Math.ceil(response.data.data.languages.length / itemsPerPage);
-                if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
-                    setCurrentPage(totalPagesCalculated);
-                } else if (response.data.data.languages.length === 0) {
-                    setCurrentPage(1);
-                }
-                
-                if (scrollToNew && tableBodyRef.current) {
-                    setTimeout(() => {
-                        const lastPageIndex = Math.ceil(response.data.data.languages.length / itemsPerPage);
-                        if (currentPage !== lastPageIndex) {
-                           setCurrentPage(lastPageIndex);
-                           setTimeout(() => {
-                                if (tableBodyRef.current.lastElementChild) {
-                                    tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                } else {
-                                    tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                                }
-                           }, 50);
-                        } else {
-                            if (tableBodyRef.current.lastElementChild) {
-                                tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                            } else {
-                                tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                            }
-                        }
-                    }, 100);
-                }
-            } else {
-                setLocalError(response.data.message || 'Failed to fetch languages.');
+// --- Fetch Languages ---
+const fetchLanguages = useCallback(async () => {
+    setLoading(true);
+    setLocalError(null);
+    try {
+        const response = await api.get(`/languages`);
+        if (response.data.status === 'success') {
+            // ✅ Latest language sabse upar
+            const sorted = response.data.data.languages.sort(
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            );
+            setLanguages(sorted);
+
+            const totalPagesCalculated = Math.ceil(sorted.length / itemsPerPage);
+            if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
+                setCurrentPage(totalPagesCalculated);
+            } else if (sorted.length === 0) {
+                setCurrentPage(1);
             }
-        } catch (err) {
-            console.error('Error fetching languages:', err);
-            setLocalError(err.response?.data?.message || 'Failed to load languages due to network error.');
-        } finally {
-            setLoading(false);
+        } else {
+            setLocalError(response.data.message || 'Failed to fetch languages.');
         }
-    }, [currentPage, itemsPerPage]); // Re-fetch when page or itemsPerPage changes
+    } catch (err) {
+        console.error('Error fetching languages:', err);
+        setLocalError(err.response?.data?.message || 'Failed to load languages due to network error.');
+    } finally {
+        setLoading(false);
+    }
+}, [currentPage, itemsPerPage]);
 
     // Fetch languages on component mount
     useEffect(() => {
@@ -129,54 +110,58 @@ const LanguageManagement = ({ showFlashMessage }) => {
         }));
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setLocalError(null);
+// --- Handle Submit (Create/Update) ---
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setLocalError(null);
 
-        // Basic validation for required fields
-        if (!formData.name.trim()) {
-            setLocalError('Language name cannot be empty.');
-            showFlashMessage('Language name cannot be empty.', 'error');
-            setLoading(false);
-            return;
-        }
+    if (!formData.name.trim()) {
+        setLocalError('Language name cannot be empty.');
+        showFlashMessage('Language name cannot be empty.', 'error');
+        setLoading(false);
+        return;
+    }
 
-        try {
-            let response;
-            if (editingLanguageId) {
-                // Update existing language
-                response = await api.patch(`/languages/${editingLanguageId}`, formData);
-                if (response.data.status === 'success') {
-                    showFlashMessage('Language updated successfully!', 'success');
-                } else {
-                    throw new Error(response.data.message || 'Failed to update language.');
-                }
+    try {
+        let response;
+        if (editingLanguageId) {
+            // Update existing language
+            response = await api.patch(`/languages/${editingLanguageId}`, formData);
+            if (response.data.status === 'success') {
+                showFlashMessage('Language updated successfully!', 'success');
+                // Re-fetch after update
+                fetchLanguages();
             } else {
-                // Create new language
-                response = await api.post('/languages', formData);
-                if (response.data.status === 'success') {
-                    showFlashMessage('Language created successfully!', 'success');
-                } else {
-                    throw new Error(response.data.message || 'Failed to create language.');
-                }
+                throw new Error(response.data.message || 'Failed to update language.');
             }
-            // Reset form and re-fetch languages
-            setFormData({
-                name: '',
-                status: 'active',
-            });
-            setEditingLanguageId(null);
-            fetchLanguages(true); // Re-fetch and indicate to scroll
-        } catch (err) {
-            console.error('Error saving language:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to save language. Please check your input and ensure language name is unique.';
-            setLocalError(errorMessage);
-            showFlashMessage(errorMessage, 'error');
-        } finally {
-            setLoading(false);
+        } else {
+            // ✅ Create case → add new language at top & reset page
+            response = await api.post('/languages', formData);
+            if (response.data.status === 'success') {
+                showFlashMessage('Language created successfully!', 'success');
+
+                setLanguages(prev => [response.data.data.language, ...prev]); // insert at top
+                setCurrentPage(1); // reset pagination to first page
+            } else {
+                throw new Error(response.data.message || 'Failed to create language.');
+            }
         }
-    };
+
+        // Reset form
+        setFormData({ name: '', status: 'active' });
+        setEditingLanguageId(null);
+
+    } catch (err) {
+        console.error('Error saving language:', err);
+        const errorMessage = err.response?.data?.message ||
+            'Failed to save language. Please check your input and ensure language name is unique.';
+        setLocalError(errorMessage);
+        showFlashMessage(errorMessage, 'error');
+    } finally {
+        setLoading(false);
+    }
+};
 
     // --- Edit and Delete Operations ---
     const handleEdit = (languageItem) => {

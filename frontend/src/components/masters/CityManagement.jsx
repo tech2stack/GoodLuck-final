@@ -13,12 +13,12 @@ import { addHeaderAndSetStartY, addReportTitle, addTableToDoc } from '../../util
 const CityManagement = ({ showFlashMessage }) => {
     const [cities, setCities] = useState([]);
     const [zones, setZones] = useState([]);
-    const [salesRepresentatives, setSalesRepresentatives] = useState([]); // New state for sales reps
+    const [salesRepresentatives, setSalesRepresentatives] = useState([]);
     const [formData, setFormData] = useState({
         name: '',
         zone: '',
         status: 'active',
-        assignedSalesRepresentative: '', // New field for sales rep ID
+        assignedSalesRepresentative: '',
     });
     const [loading, setLoading] = useState(false);
     const [localError, setLocalError] = useState(null);
@@ -31,7 +31,6 @@ const CityManagement = ({ showFlashMessage }) => {
     const tableBodyRef = useRef(null);
 
     const [searchTerm, setSearchTerm] = useState('');
-
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
@@ -48,40 +47,22 @@ const CityManagement = ({ showFlashMessage }) => {
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
 
-    const fetchCities = useCallback(async (scrollToNew = false) => {
+    // ✅ Fetch Cities with latest-first order
+    const fetchCities = useCallback(async () => {
         setLoading(true);
         setLocalError(null);
         try {
             const response = await api.get('/cities');
             if (response.data.status === 'success') {
-                setCities(response.data.data.cities);
-                const totalPages = Math.ceil(response.data.data.cities.length / itemsPerPage);
+                const sorted = response.data.data.cities.sort(
+                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                );
+                setCities(sorted);
+                const totalPages = Math.ceil(sorted.length / itemsPerPage);
                 if (currentPage > totalPages && totalPages > 0) {
                     setCurrentPage(totalPages);
                 } else if (totalPages === 0) {
                     setCurrentPage(1);
-                }
-
-                if (scrollToNew && tableBodyRef.current) {
-                    setTimeout(() => {
-                        const lastPageIndex = Math.ceil(response.data.data.cities.length / itemsPerPage);
-                        if (currentPage !== lastPageIndex) {
-                            setCurrentPage(lastPageIndex);
-                            setTimeout(() => {
-                                if (tableBodyRef.current.lastElementChild) {
-                                    tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                } else {
-                                    tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                                }
-                            }, 50);
-                        } else {
-                            if (tableBodyRef.current.lastElementChild) {
-                                tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                            } else {
-                                tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                            }
-                        }
-                    }, 100);
                 }
             } else {
                 setLocalError(response.data.message || 'Failed to fetch cities.');
@@ -157,13 +138,17 @@ const CityManagement = ({ showFlashMessage }) => {
                 response = await api.patch(`/cities/${editingCityId}`, formData);
                 if (response.data.status === 'success') {
                     showFlashMessage('Updated successfully!', 'success');
+                    fetchCities();
                 } else {
                     throw new Error(response.data.message || 'Failed to update city.');
                 }
             } else {
                 response = await api.post('/cities', formData);
                 if (response.data.status === 'success') {
-                    showFlashMessage(' Created successfully!', 'success');
+                    showFlashMessage('Created successfully!', 'success');
+                    // ✅ Insert new city at top & reset to page 1
+                    setCities(prev => [response.data.data.city, ...prev]);
+                    setCurrentPage(1);
                 } else {
                     throw new Error(response.data.message || 'Failed to create city.');
                 }
@@ -175,10 +160,9 @@ const CityManagement = ({ showFlashMessage }) => {
                 assignedSalesRepresentative: '',
             });
             setEditingCityId(null);
-            fetchCities(true);
         } catch (err) {
             console.error('Error saving city:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to save city. Please check your input and ensure the city name is unique within its zone.';
+            const errorMessage = err.response?.data?.message || 'Failed to save city. Please check your input.';
             setLocalError(errorMessage);
             showFlashMessage(errorMessage, 'error');
         } finally {
@@ -189,7 +173,6 @@ const CityManagement = ({ showFlashMessage }) => {
     const handleEdit = (cityItem) => {
         setFormData({
             name: cityItem.name,
-            // Use optional chaining or a conditional check to safely access _id
             zone: cityItem.zone?._id || '',
             status: cityItem.status,
             assignedSalesRepresentative: cityItem.assignedSalesRepresentative?._id || '',
@@ -215,7 +198,6 @@ const CityManagement = ({ showFlashMessage }) => {
         setLoading(true);
         setLocalError(null);
         closeConfirmModal();
-
         try {
             const response = await api.delete(`/cities/${cityToDeleteId}`);
             if (response.status === 204) {
@@ -252,26 +234,18 @@ const CityManagement = ({ showFlashMessage }) => {
     const totalPages = Math.ceil(filteredCities.length / itemsPerPage);
 
     const goToNextPage = () => {
-        if (currentPage < totalPages) {
-            setCurrentPage(prev => prev + 1);
-        }
+        if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
     };
-
     const goToPrevPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(prev => prev - 1);
-        }
+        if (currentPage > 1) setCurrentPage(prev => prev - 1);
     };
 
     const downloadPdf = () => {
         if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF !== 'function') {
-            showFlashMessage('PDF generation failed: Core libraries are not loaded. Please check your script links.', 'error');
-            console.error("PDF generation failed: window.jspdf is not available. Ensure CDNs for jsPDF are correctly linked in your HTML file.");
+            showFlashMessage('PDF generation failed.', 'error');
             return;
         }
-
         const doc = new window.jspdf.jsPDF();
-        
         let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
         startY = addReportTitle(doc, startY, "Zone List Report");
 
@@ -285,11 +259,9 @@ const CityManagement = ({ showFlashMessage }) => {
         ]);
 
         addTableToDoc(doc, tableColumn, tableRows, startY);
-
         doc.save(`Zone_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
         showFlashMessage('Zone list downloaded as PDF!', 'success');
-    };
-
+    };
 
     return (
         <div className="city-management-container">

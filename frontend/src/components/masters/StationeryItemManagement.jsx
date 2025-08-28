@@ -45,6 +45,9 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
     const [itemToDeleteId, setItemToDeleteId] = useState(null);
     const [itemToDeleteName, setItemToDeleteName] = useState('');
 
+// Category filter for table view
+const [categoryFilter, setCategoryFilter] = useState('');
+
     // Ref for scrolling to the new item in the table (if needed)
     const tableBodyRef = useRef(null);
 
@@ -93,53 +96,39 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
     }, [formData.customerDiscountPercentage, formData.companyDiscountPercentage]);
 
 
-    // --- Fetch Stationery Items ---
-    const fetchStationeryItems = useCallback(async (scrollToNew = false) => {
-        setLoading(true);
-        setLocalError(null);
-        try {
-            const response = await api.get('/stationery-items');
-            if (response.data.status === 'success') {
-                setStationeryItems(response.data.data.stationeryItems);
+// --- Fetch Stationery Items ---
+const fetchStationeryItems = useCallback(async () => {
+    setLoading(true);
+    setLocalError(null);
+    try {
+        const response = await api.get('/stationery-items');
+        if (response.data.status === 'success') {
+            // ✅ Sort latest-first
+            const sorted = response.data.data.stationeryItems.sort(
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            );
+            setStationeryItems(sorted);
 
-                const totalPagesCalculated = Math.ceil(response.data.data.stationeryItems.length / itemsPerPage);
-                if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
-                    setCurrentPage(totalPagesCalculated);
-                } else if (response.data.data.stationeryItems.length === 0) {
-                    setCurrentPage(1);
-                }
-
-                if (scrollToNew && tableBodyRef.current) {
-                    setTimeout(() => {
-                        const lastPageIndex = Math.ceil(response.data.data.stationeryItems.length / itemsPerPage);
-                        if (currentPage !== lastPageIndex) {
-                            setCurrentPage(lastPageIndex);
-                            setTimeout(() => {
-                                if (tableBodyRef.current.lastElementChild) {
-                                    tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                } else {
-                                    tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                                }
-                            }, 50);
-                        } else {
-                            if (tableBodyRef.current.lastElementChild) {
-                                tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                            } else {
-                                tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                            }
-                        }
-                    }, 100);
-                }
-            } else {
-                setLocalError(response.data.message || 'Failed to fetch stationery items.');
+            const totalPagesCalculated = Math.ceil(sorted.length / itemsPerPage);
+            if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
+                setCurrentPage(totalPagesCalculated);
+            } else if (sorted.length === 0) {
+                setCurrentPage(1);
             }
-        } catch (err) {
-            console.error('Error fetching stationery items:', err);
-            setLocalError(err.response?.data?.message || 'Failed to load stationery items due to network error.');
-        } finally {
-            setLoading(false);
+        } else {
+            setLocalError(response.data.message || 'Failed to fetch stationery items.');
+            showFlashMessage(response.data.message || 'Failed to fetch stationery items.', 'error');
         }
-    }, [currentPage, itemsPerPage, showFlashMessage]);
+    } catch (err) {
+        console.error('Error fetching stationery items:', err);
+        const errorMessage = err.response?.data?.message || 'Failed to load stationery items due to network error.';
+        setLocalError(errorMessage);
+        showFlashMessage(errorMessage, 'error');
+    } finally {
+        setLoading(false);
+    }
+}, [currentPage, itemsPerPage, showFlashMessage]);
+
 
     // Fetch stationery items on component mount
     useEffect(() => {
@@ -218,46 +207,57 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         }
 
 
-        try {
-            let response;
-            const dataToSend = {
-                itemName: formData.itemName,
-                category: selectedCategory, // Use the globally selected category
-                price: parseFloat(formData.price),
-                marginPercentage: parseFloat(formData.marginPercentage), // NEW: Add marginPercentage to dataToSend
-                customerDiscountPercentage: parseFloat(formData.customerDiscountPercentage), // NEW: Add to dataToSend
-                companyDiscountPercentage: parseFloat(formData.companyDiscountPercentage),  // NEW: Add to dataToSend
-                status: formData.status
-            };
+ try {
+        let response;
+        const dataToSend = {
+            itemName: formData.itemName,
+            category: selectedCategory,
+            price: parseFloat(formData.price),
+            marginPercentage: parseFloat(formData.marginPercentage),
+            customerDiscountPercentage: parseFloat(formData.customerDiscountPercentage),
+            companyDiscountPercentage: parseFloat(formData.companyDiscountPercentage),
+            status: formData.status
+        };
 
-            if (editingItemId) {
-                response = await api.patch(`/stationery-items/${editingItemId}`, dataToSend);
-                if (response.data.status === 'success') {
-                    showFlashMessage('Stationery Item updated successfully!', 'success');
-                } else {
-                    throw new Error(response.data.message || 'Failed to update stationery item.');
-                }
+        if (editingItemId) {
+            // Update existing
+            response = await api.patch(`/stationery-items/${editingItemId}`, dataToSend);
+            if (response.data.status === 'success') {
+                showFlashMessage('Stationery Item updated successfully!', 'success');
+                fetchStationeryItems(); // re-fetch
             } else {
-                response = await api.post('/stationery-items', dataToSend);
-                if (response.data.status === 'success') {
-                    showFlashMessage('Stationery Item created successfully!', 'success');
-                } else {
-                    throw new Error(response.data.message || 'Failed to create stationery item.');
-                }
+                throw new Error(response.data.message || 'Failed to update stationery item.');
             }
-            // Reset form and re-fetch stationery items
-            setFormData({ itemName: '', price: '', marginPercentage: '', customerDiscountPercentage: '', companyDiscountPercentage: '', status: 'active' }); // NEW: Reset all fields
-            setEditingItemId(null);
-            fetchStationeryItems(true);
-        } catch (err) {
-            console.error('Error saving stationery item:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to save stationery item. Please check your input and ensure item name is unique.';
-            setLocalError(errorMessage);
-            showFlashMessage(errorMessage, 'error');
-        } finally {
-            setLoading(false);
+        } else {
+            // ✅ Create case → add entry at top & reset to first page
+            response = await api.post('/stationery-items', dataToSend);
+            if (response.data.status === 'success') {
+                showFlashMessage('Stationery Item created successfully!', 'success');
+
+                setStationeryItems(prev => [response.data.data.stationeryItem, ...prev]); // add at top
+                setCurrentPage(1); // reset to page 1
+            } else {
+                throw new Error(response.data.message || 'Failed to create stationery item.');
+            }
         }
-    };
+
+        // Reset form
+        setFormData({
+            itemName: '', price: '', marginPercentage: '',
+            customerDiscountPercentage: '', companyDiscountPercentage: '', status: 'active'
+        });
+        setSelectedCategory('');
+        setEditingItemId(null);
+
+    } catch (err) {
+        console.error('Error saving stationery item:', err);
+        const errorMessage = err.response?.data?.message || 'Failed to save stationery item.';
+        setLocalError(errorMessage);
+        showFlashMessage(errorMessage, 'error');
+    } finally {
+        setLoading(false);
+    }
+};
 
     // --- Edit and Delete Operations ---
     const handleEdit = (item) => {
@@ -318,32 +318,32 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
     };
 
     // --- Search Filtering ---
-    const filteredItems = useMemo(() => {
-        const lowercasedSearchTerm = searchTerm.toLowerCase();
-        return stationeryItems.filter(item => {
-            const itemName = item.itemName ? String(item.itemName).toLowerCase() : '';
-            const category = item.category ? String(item.category).toLowerCase() : '';
-            const price = item.price !== undefined && item.price !== null ? String(item.price).toLowerCase() : '';
-            const marginPercentage = item.marginPercentage !== undefined && item.marginPercentage !== null ? String(item.marginPercentage).toLowerCase() : ''; // NEW: Include marginPercentage in search
-            const customerDiscountPercentage = item.customerDiscountPercentage !== undefined && item.customerDiscountPercentage !== null ? String(item.customerDiscountPercentage).toLowerCase() : ''; // NEW: Include in search
-            const companyDiscountPercentage = item.companyDiscountPercentage !== undefined && item.companyDiscountPercentage !== null ? String(item.companyDiscountPercentage).toLowerCase() : ''; // NEW: Include in search
-            const status = item.status ? String(item.status).toLowerCase() : '';
+const filteredItems = useMemo(() => {
+  const lowercasedSearchTerm = searchTerm.toLowerCase();
+  return stationeryItems.filter(item => {
+    const itemName = (item.itemName || '').toLowerCase();
+    const category = (item.category || '').toLowerCase();
+    const price = item.price ? String(item.price).toLowerCase() : '';
+    const marginPercentage = item.marginPercentage ? String(item.marginPercentage).toLowerCase() : '';
+    const customerDiscountPercentage = item.customerDiscountPercentage ? String(item.customerDiscountPercentage).toLowerCase() : '';
+    const companyDiscountPercentage = item.companyDiscountPercentage ? String(item.companyDiscountPercentage).toLowerCase() : '';
+    const status = (item.status || '').toLowerCase();
 
-            const matchesSearchTerm = (
-                itemName.includes(lowercasedSearchTerm) ||
-                category.includes(lowercasedSearchTerm) ||
-                price.includes(lowercasedSearchTerm) ||
-                marginPercentage.includes(lowercasedSearchTerm) || // NEW: Search by marginPercentage
-                customerDiscountPercentage.includes(lowercasedSearchTerm) || // NEW: Search by this field
-                companyDiscountPercentage.includes(lowercasedSearchTerm) || // NEW: Search by this field
-                status.includes(lowercasedSearchTerm)
-            );
+    const matchesSearchTerm =
+      itemName.includes(lowercasedSearchTerm) ||
+      category.includes(lowercasedSearchTerm) ||
+      price.includes(lowercasedSearchTerm) ||
+      marginPercentage.includes(lowercasedSearchTerm) ||
+      customerDiscountPercentage.includes(lowercasedSearchTerm) ||
+      companyDiscountPercentage.includes(lowercasedSearchTerm) ||
+      status.includes(lowercasedSearchTerm);
 
-            const matchesCategory = selectedCategory ? category.includes(selectedCategory.toLowerCase()) : true;
+    const matchesCategory = categoryFilter ? category === categoryFilter.toLowerCase() : true;
 
-            return matchesSearchTerm && matchesCategory;
-        });
-    }, [stationeryItems, searchTerm, selectedCategory]);
+    return matchesSearchTerm && matchesCategory;
+  });
+}, [stationeryItems, searchTerm, categoryFilter]);
+
 
     // --- Pagination Logic ---
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -387,8 +387,8 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
         index + 1,
         item.itemName || 'N/A',
         item.category || 'N/A',
-        (typeof item.price === 'number' && !isNaN(item.price)) ? `Rs ${item.price.toFixed(2)}` : 'N/A',
-        (typeof item.marginPercentage === 'number' && !isNaN(item.marginPercentage)) ? `${item.marginPercentage.toFixed(2)}%` : 'N/A',
+        (typeof item.price === 'number' && !isNaN(item.price)) ? `Rs ${item.price}` : 'N/A',
+        (typeof item.marginPercentage === 'number' && !isNaN(item.marginPercentage)) ? `${item.marginPercentage}%` : 'N/A',
     ]);
 
 
@@ -459,7 +459,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                                 onChange={handleChange}
                                 placeholder="e.g., 10.00, 500.00"
                                 min="0"
-                                step="0.01"
+                                // step="0.01"
                                 required
                                 disabled={loading}
                                 className="form-input"
@@ -477,7 +477,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                                 onChange={handleChange}
                                 placeholder="e.g., 20"
                                 min="0"
-                                step="0.01"
+                                // step="0.01"
                                 required
                                 disabled={loading}
                                 className="form-input"
@@ -495,7 +495,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                                 onChange={handleChange}
                                 placeholder="e.g., 10"
                                 min="0"
-                                step="0.01"
+                                // step="0.01"
                                 required
                                 disabled={loading}
                                 className="form-input"
@@ -513,7 +513,7 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                                 placeholder="e.g., 70"
                                 min="0"
                                 max="100"
-                                step="0.01"
+                                // step="0.01"
                                 required
                                 disabled={true} // This field is now read-only and automatically calculated
                                 className="form-input"
@@ -572,6 +572,23 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                             />
                             {/* <FaSearch className="search-icon" /> */}
                         </div>
+                        <div className="form-group">
+  <select
+    value={categoryFilter}
+    onChange={(e) => {
+      setCategoryFilter(e.target.value);
+      setCurrentPage(1); // reset pagination
+    }}
+    className="search-input"
+    disabled={loading}
+  >
+    <option value="">All Categories</option>
+    {categories.map(cat => (
+      <option key={cat} value={cat}>{cat}</option>
+    ))}
+  </select>
+</div>
+
 
                         <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredItems.length === 0}>
                             <FaFilePdf className="btn-icon-mr" /> Download PDF
@@ -609,27 +626,27 @@ const StationeryItemManagement = ({ showFlashMessage }) => {
                                             <td>{item.category}</td>
                                             <td>
                                                 {typeof item.price === 'number' && !isNaN(item.price)
-                                                    ? `Rs ${item.price.toFixed(2)}`
+                                                    ? `Rs ${item.price}`
                                                     : 'N/A'
                                                 }
                                             </td>
                                             {/* NEW: Display customerDiscountPercentage */}
                                             <td>
                                                 {typeof item.customerDiscountPercentage === 'number' && !isNaN(item.customerDiscountPercentage)
-                                                    ? `${item.customerDiscountPercentage.toFixed(2)}%`
+                                                    ? `${item.customerDiscountPercentage}%`
                                                     : 'N/A'
                                                 }
                                             </td>
                                             {/* NEW: Display companyDiscountPercentage */}
                                             <td>
                                                 {typeof item.companyDiscountPercentage === 'number' && !isNaN(item.companyDiscountPercentage)
-                                                    ? `${item.companyDiscountPercentage.toFixed(2)}%`
+                                                    ? `${item.companyDiscountPercentage}%`
                                                     : 'N/A'
                                                 }
                                             </td>
                                             <td>{/* NEW: Display marginPercentage in a cell */}
                                                 {typeof item.marginPercentage === 'number' && !isNaN(item.marginPercentage)
-                                                    ? `${item.marginPercentage.toFixed(2)}%`
+                                                    ? `${item.marginPercentage}%`
                                                     : 'N/A'
                                                 }
                                             </td>

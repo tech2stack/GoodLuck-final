@@ -128,9 +128,13 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
     // States for Search
     const [searchTerm, setSearchTerm] = useState('');
+    // --- Filter States ---
+    const [selectedBranchFilter, setSelectedBranchFilter] = useState('');
+    const [selectedFirmFilter, setSelectedFirmFilter] = useState('');
+    const [selectedCityFilter, setSelectedCityFilter] = useState('');
+    const [selectedSalesRepFilter, setSelectedSalesRepFilter] = useState('');
+    const [selectedCustomerTypeFilter, setSelectedCustomerTypeFilter] = useState('');
 
-    // State for Branch Filter
-    const [selectedBranchFilter, setSelectedBranchFilter] = useState(''); // Stores branch ID for filtering
 
     // States for Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -190,51 +194,51 @@ const CustomerManagement = ({ showFlashMessage }) => {
     }, [fetchFirms]);
 
     // --- Handle Firm Submit (Add/Update) ---
-   const handleFirmSubmit = async (e) => {
-    e.preventDefault();
-    if (!firmName) {
-        showFlashMessage('Firm name is required.', 'error');
-        return;
-    }
-
-    const firmFormData = new FormData();
-    firmFormData.append('name', firmName);
-    firmFormData.append('address', firmAddress || '');
-    firmFormData.append('remark', firmRemark || '');
-    firmFormData.append('gstin', firmGstin || '');
-    if (selectedFirmLogo) {
-        firmFormData.append('logo', selectedFirmLogo);
-        console.log('Logo file:', selectedFirmLogo.name, selectedFirmLogo.size); // Debug
-    } else {
-        console.log('No logo file selected');
-    }
-
-    try {
-        if (editingFirmId) {
-            await api.patch(`/firms/${editingFirmId}`, firmFormData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            showFlashMessage('Firm updated successfully!', 'success');
-        } else {
-            await api.post('/firms', firmFormData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            showFlashMessage('Firm added successfully!', 'success');
+    const handleFirmSubmit = async (e) => {
+        e.preventDefault();
+        if (!firmName) {
+            showFlashMessage('Firm name is required.', 'error');
+            return;
         }
-        fetchFirms();
-        setFirmName('');
-        setFirmAddress('');
-        setFirmRemark('');
-        setFirmGstin('');
-        setSelectedFirmLogo(null);
-        setFirmLogoPreviewUrl('');
-        setEditingFirmId(null);
-        setShowFirmModal(false);
-    } catch (err) {
-        console.error('Firm submit error:', err.response?.data || err.message); // Debug
-        showFlashMessage(err.response?.data?.message || 'Failed to save firm.', 'error');
-    }
-};
+
+        const firmFormData = new FormData();
+        firmFormData.append('name', firmName);
+        firmFormData.append('address', firmAddress || '');
+        firmFormData.append('remark', firmRemark || '');
+        firmFormData.append('gstin', firmGstin || '');
+        if (selectedFirmLogo) {
+            firmFormData.append('logo', selectedFirmLogo);
+            console.log('Logo file:', selectedFirmLogo.name, selectedFirmLogo.size); // Debug
+        } else {
+            console.log('No logo file selected');
+        }
+
+        try {
+            if (editingFirmId) {
+                await api.patch(`/firms/${editingFirmId}`, firmFormData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                showFlashMessage('Firm updated successfully!', 'success');
+            } else {
+                await api.post('/firms', firmFormData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                showFlashMessage('Firm added successfully!', 'success');
+            }
+            fetchFirms();
+            setFirmName('');
+            setFirmAddress('');
+            setFirmRemark('');
+            setFirmGstin('');
+            setSelectedFirmLogo(null);
+            setFirmLogoPreviewUrl('');
+            setEditingFirmId(null);
+            setShowFirmModal(false);
+        } catch (err) {
+            console.error('Firm submit error:', err.response?.data || err.message); // Debug
+            showFlashMessage(err.response?.data?.message || 'Failed to save firm.', 'error');
+        }
+    };
 
     const openFirmLogoModal = (firm) => {
         setCurrentAttachmentUrls({
@@ -262,12 +266,12 @@ const CustomerManagement = ({ showFlashMessage }) => {
         setLocalError(null);
         try {
             const queryParams = new URLSearchParams();
-            if (selectedBranchFilter) {
-                queryParams.append('branch', selectedBranchFilter);
-            }
-            if (searchTerm) {
-                queryParams.append('search', searchTerm);
-            }
+            if (selectedBranchFilter) queryParams.append('branch', selectedBranchFilter);
+            if (selectedFirmFilter) queryParams.append('firm', selectedFirmFilter);
+            if (selectedCityFilter) queryParams.append('city', selectedCityFilter);
+            if (selectedSalesRepFilter) queryParams.append('salesBy', selectedSalesRepFilter);
+            if (selectedCustomerTypeFilter) queryParams.append('customerType', selectedCustomerTypeFilter);
+            if (searchTerm) queryParams.append('search', searchTerm);
 
             const response = await api.get(`/customers?${queryParams.toString()}`);
             if (response.data.status === 'success' && response.data.data && Array.isArray(response.data.data.customers)) {
@@ -310,7 +314,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, itemsPerPage, selectedBranchFilter, searchTerm]);
+    }, [currentPage, itemsPerPage, selectedBranchFilter, selectedFirmFilter, selectedCityFilter, selectedSalesRepFilter, selectedCustomerTypeFilter, searchTerm]);
 
     // --- Fetch Branches, Cities, and Sales Representatives for Dropdowns ---
     const fetchDropdownData = useCallback(async () => {
@@ -523,12 +527,14 @@ const CustomerManagement = ({ showFlashMessage }) => {
         setLoading(true);
         setLocalError(null);
 
-        // Derive final customerType from the two states
-        const finalCustomerType = formData.primaryCustomerType === 'School'
-            ? `School-${formData.secondaryCustomerType}`
-            : formData.primaryCustomerType === 'Dealer'
-                ? `Dealer-${formData.secondaryCustomerType || 'Retail'}`
-                : '';
+        // customerType derive
+        const finalCustomerType =
+            formData.primaryCustomerType === 'School'
+                ? `School-${formData.secondaryCustomerType}`
+                : formData.primaryCustomerType === 'Dealer'
+                    ? `Dealer-${formData.secondaryCustomerType || 'Retail'}`
+                    : '';
+
 
         // Basic validation
         if (!formData.firm) {
@@ -559,74 +565,68 @@ const CustomerManagement = ({ showFlashMessage }) => {
         }
 
         const dataToSend = new FormData();
-        // Append all form data fields
         for (const key in formData) {
             const value = formData[key];
             if (value !== null && value !== undefined) {
-                // For the `salesBy` field, we will send the selected ID
                 dataToSend.append(key, String(value));
             }
         }
-        // IMPORTANT: Append the combined customerType field for the backend
         if (finalCustomerType) {
             dataToSend.append('customerType', finalCustomerType);
         }
 
-        // Append image files
-        if (selectedChequeFile) {
-            dataToSend.append('chequeImage', selectedChequeFile);
-        }
-        if (selectedPassportFile) {
-            dataToSend.append('passportImage', selectedPassportFile);
-        }
-        if (selectedOtherFile) { // NEW: Append other attachment file
-            dataToSend.append('otherAttachment', selectedOtherFile);
-        }
+        if (selectedChequeFile) dataToSend.append('chequeImage', selectedChequeFile);
+        if (selectedPassportFile) dataToSend.append('passportImage', selectedPassportFile);
+        if (selectedOtherFile) dataToSend.append('otherAttachment', selectedOtherFile);
 
         try {
             let response;
             if (editingCustomerId) {
-                // Update existing customer
+                // Update existing
                 response = await api.patch(`/customers/${editingCustomerId}`, dataToSend, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                 });
                 if (response.data.status === 'success') {
                     showFlashMessage('Customer updated successfully!', 'success');
+                    fetchCustomers(); // re-fetch
                 } else {
                     throw new Error(response.data.message || 'Failed to update customer.');
                 }
             } else {
-                // Create new customer
+                // ✅ Create new → add at top & reset to page 1
                 response = await api.post('/customers', dataToSend, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                 });
                 if (response.data.status === 'success') {
                     showFlashMessage('Customer created successfully!', 'success');
+                    setCustomers(prev => [response.data.data.customer, ...prev]); // add at top
+                    setCurrentPage(1); // reset to page 1
                 } else {
                     throw new Error(response.data.message || 'Failed to create customer.');
                 }
             }
-            console.log('Customer saved successfully. Response:', response.data);
-            // Reset form and re-fetch customers
+
+            // Reset form
             setFormData(initialFormData);
             setSelectedChequeFile(null);
             setSelectedPassportFile(null);
-            setSelectedOtherFile(null); // NEW: Reset other attachment state
+            setSelectedOtherFile(null);
             setChequeImagePreviewUrl('');
             setPassportImagePreviewUrl('');
-            setOtherAttachmentPreviewUrl(''); // NEW: Reset other attachment preview URL
+            setOtherAttachmentPreviewUrl('');
             setEditingCustomerId(null);
-            fetchCustomers(true); // Re-fetch and indicate to scroll
+
         } catch (err) {
             console.error('Error saving customer:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to save customer. Please check your input and ensure unique fields (Name, Mobile, Email, GST, Aadhar, PAN) are not duplicated.';
+            const errorMessage =
+                err.response?.data?.message ||
+                'Failed to save customer. Please check your input and ensure unique fields (Name, Mobile, Email, GST, Aadhar, PAN) are not duplicated.';
             setLocalError(errorMessage);
             showFlashMessage(errorMessage, 'error');
         } finally {
             setLoading(false);
         }
     };
-
     // --- Edit and Delete Operations ---
     const handleEdit = (customerItem) => {
         let primaryType = null;
@@ -919,6 +919,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     )}
                                 </select>
                             </div>
+
                             <div className="form-group customer-type-group">
                                 <label>Customer Type (Primary):</label>
                                 <select
@@ -1001,34 +1002,23 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-textarea"
                                 ></textarea>
                             </div>
+
                             <div className="form-group">
-                                <label htmlFor="profitMargin">Profit Margin (%):</label>
+                                <label htmlFor="mobileNumber">Mobile Number:</label>
                                 <input
-                                    type="number"
-                                    id="profitMargin"
-                                    name="profitMargin"
-                                    value={formData.profitMargin}
+                                    type="text"
+                                    id="mobileNumber"
+                                    name="mobileNumber"
+                                    value={formData.mobileNumber}
                                     onChange={handleChange}
-                                    placeholder="Enter profit margin"
+                                    placeholder="e.g., 9876543210"
+                                    required
                                     disabled={loading}
                                     className="form-input"
                                 />
                             </div>
                         </div>
-                        <div className="form-group">
-                            <label htmlFor="mobileNumber">Mobile Number:</label>
-                            <input
-                                type="text"
-                                id="mobileNumber"
-                                name="mobileNumber"
-                                value={formData.mobileNumber}
-                                onChange={handleChange}
-                                placeholder="e.g., 9876543210"
-                                required
-                                disabled={loading}
-                                className="form-input"
-                            />
-                        </div>
+
                         {/* Conditional rendering for School/Retail fields */}
                         {formData.primaryCustomerType === 'School' && (
                             <div className="form-row">
@@ -1134,6 +1124,19 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
                         <div className="form-row">
                             <div className="form-group">
+                                <label htmlFor="profitMargin">Profit Margin (%):</label>
+                                <input
+                                    type="number"
+                                    id="profitMargin"
+                                    name="profitMargin"
+                                    value={formData.profitMargin}
+                                    onChange={handleChange}
+                                    placeholder="Enter profit margin"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group">
                                 <label htmlFor="discount">Discount:</label>
                                 <input
                                     type="number"
@@ -1146,19 +1149,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-                            <div className="form-group">
-                                <label htmlFor="returnTime">Return Time:</label>
-                                <input
-                                    type="text"
-                                    id="returnTime"
-                                    name="returnTime"
-                                    value={formData.returnTime}
-                                    onChange={handleChange}
-                                    placeholder="e.g., 7 days"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
+
                         </div>
 
                         <div className="form-row">
@@ -1188,6 +1179,19 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     <option value="Dr.">Dr.</option>
                                     <option value="Cr.">Cr.</option>
                                 </select>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="returnTime">Return Time:</label>
+                                <input
+                                    type="text"
+                                    id="returnTime"
+                                    name="returnTime"
+                                    value={formData.returnTime}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 7 days"
+                                    disabled={loading}
+                                    className="form-input"
+                                />
                             </div>
                         </div>
                         <h3 className="form-title">Add Bank Details</h3>
@@ -1443,25 +1447,88 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             <FaSearch className="search-icon" />
                         </div>
                         <div className="filter-group">
-                            {/* <label htmlFor="branchFilter" className="sr-only" >Filter by Branch:</label> */}
                             <select
                                 id="branchFilter"
                                 value={selectedBranchFilter}
+                                onChange={(e) => { setSelectedBranchFilter(e.target.value); setCurrentPage(1); }}
+                                className="search-input" disabled={loading || branches.length === 0} >
+                                <option value="">All Branches </option> {branches.map(branch => (<option key={branch._id} value={branch._id}> {branch.name} </option>))}
+                            </select>
+                        </div>
+                        <div className="filter-group">
+                            <select
+                                id="firmFilter"
+                                value={selectedFirmFilter}
                                 onChange={(e) => {
-                                    setSelectedBranchFilter(e.target.value);
+                                    setSelectedFirmFilter(e.target.value);
                                     setCurrentPage(1);
                                 }}
                                 className="search-input"
-                                disabled={loading || branches.length === 0}
+                                disabled={loading || firms.length === 0}
                             >
-                                <option value="">All Branches </option>
-                                {branches.map(branch => (
-                                    <option key={branch._id} value={branch._id}>
-                                        {branch.name}
-                                    </option>
+                                <option value="">Firms-All</option>
+                                {firms.map(firm => (
+                                    <option key={firm._id} value={firm._id}>{firm.name}</option>
                                 ))}
                             </select>
                         </div>
+
+                        <div className="filter-group">
+                            <select
+                                id="cityFilter"
+                                value={selectedCityFilter}
+                                onChange={(e) => {
+                                    setSelectedCityFilter(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="search-input"
+                                disabled={loading || cities.length === 0}
+                            >
+                                <option value="">All Cities</option>
+                                {cities.map(city => (
+                                    <option key={city._id} value={city._id}>{city.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="filter-group">
+                            <select
+                                id="salesRepFilter"
+                                value={selectedSalesRepFilter}
+                                onChange={(e) => {
+                                    setSelectedSalesRepFilter(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="search-input"
+                                disabled={loading || salesRepresentatives.length === 0}
+                            >
+                                <option value="">All Sales Reps</option>
+                                {salesRepresentatives.map(rep => (
+                                    <option key={rep._id} value={rep._id}>{rep.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="filter-group">
+                            <select
+                                id="customerTypeFilter"
+                                value={selectedCustomerTypeFilter}
+                                onChange={(e) => {
+                                    setSelectedCustomerTypeFilter(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="search-input"
+                                disabled={loading}
+                            >
+                                <option value="">All Customer Types</option>
+                                <option value="Dealer-Retail">Dealer - Retail</option>
+                                <option value="Dealer-Supply">Dealer - Supply</option>
+                                <option value="School-Retail">School - Retail</option>
+                                <option value="School-Supply">School - Supply</option>
+                                <option value="School-Both">School - Both</option>
+                            </select>
+                        </div>
+
                         <button onClick={downloadPdf} className="download-pdf-btn" disabled={loading || customers.length === 0}>
                             <FaFilePdf className="icon mr-2" /> Download PDF
                         </button>
@@ -1606,10 +1673,17 @@ const CustomerManagement = ({ showFlashMessage }) => {
             )}
 
             {/* Attachment Modal */}
+            {/* Attachment Modal */}
             {showAttachmentModal && (
-                <div className="modal-backdrop">
-                    <div className="modal-content">
-                        <h3>Attachments</h3> {/* Changed to generic title */}
+                <div
+                    className="modal-backdrop"
+                    onClick={() => setShowAttachmentModal(false)} // close when clicking outside
+                >
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+                    >
+                        <h3>Attachments</h3>
                         <div className="attachment-list">
                             {currentAttachmentUrls.logo && (
                                 <div className="attachment-item">
@@ -1655,21 +1729,43 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     </a>
                                 </div>
                             )}
-                            {(!currentAttachmentUrls.logo && !currentAttachmentUrls.cheque && !currentAttachmentUrls.passport && !currentAttachmentUrls.other) && (
-                                <p>No attachments found.</p>
-                            )}
+                            {(!currentAttachmentUrls.logo &&
+                                !currentAttachmentUrls.cheque &&
+                                !currentAttachmentUrls.passport &&
+                                !currentAttachmentUrls.other) && (
+                                    <p>No attachments found.</p>
+                                )}
                         </div>
                         <div className="modal-actions mt-4">
-                            <button onClick={() => setShowAttachmentModal(false)} className="btn-secondary">Close</button>
+                            <button onClick={() => setShowAttachmentModal(false)} className="btn-secondary">
+                                Close
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
+
             {/* Firm Management Modal */}
             {showFirmModal && (
-                <div className="modal-backdrop">
-                    <div className="modal-content">
+                <div
+                    className="modal-backdrop"
+                    onClick={() => {
+                        // Close when clicking outside modal content
+                        setShowFirmModal(false);
+                        setFirmName('');
+                        setFirmAddress('');
+                        setFirmRemark('');
+                        setFirmGstin('');
+                        setSelectedFirmLogo(null);
+                        setFirmLogoPreviewUrl('');
+                        setEditingFirmId(null);
+                    }}
+                >
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+                    >
                         <h3>{editingFirmId ? 'Update Firm' : 'Add Firm'}</h3>
                         <form onSubmit={handleFirmSubmit}>
                             <div className="form-group">

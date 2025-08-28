@@ -476,10 +476,10 @@ export default function CreateSetManagement({ showFlashMessage }) {
     }, [fetchDropdownData]);
 
     useEffect(() => {
-    if (selectedCustomer && selectedClass) {
-        fetchSetDetails();
-    }
-}, [selectedCustomer, selectedClass, fetchSetDetails]);
+        if (selectedCustomer && selectedClass) {
+            fetchSetDetails();
+        }
+    }, [selectedCustomer, selectedClass, fetchSetDetails]);
 
     useEffect(() => {
         if (selectedItemToAdd) {
@@ -506,167 +506,167 @@ export default function CreateSetManagement({ showFlashMessage }) {
     }, [selectedItemType, selectedItemToAdd, stationeryItemsMaster, bookCatalogs, editingItemType, editingItemId]);
 
 
-const handleAddOrUpdateItem = useCallback(async () => {
-    console.log('DEBUG: handleAddOrUpdateItem called', { selectedItemType, selectedItemToAdd, itemPrice, itemQuantity });
+    const handleAddOrUpdateItem = useCallback(async () => {
+        console.log('DEBUG: handleAddOrUpdateItem called', { selectedItemType, selectedItemToAdd, itemPrice, itemQuantity });
 
-    if (!selectedItemToAdd || !itemQuantity) {
-        showFlashMessage('Please select an item and quantity.', 'error');
-        return;
-    }
+        if (!selectedItemToAdd || !itemQuantity) {
+            showFlashMessage('Please select an item and quantity.', 'error');
+            return;
+        }
 
-    const quantity = Number(itemQuantity);
-    if (quantity <= 0) {
-        showFlashMessage('Quantity must be greater than zero.', 'error');
-        return;
-    }
+        const quantity = Number(itemQuantity);
+        if (quantity <= 0) {
+            showFlashMessage('Quantity must be greater than zero.', 'error');
+            return;
+        }
 
-    if (selectedItemType === 'books' && !itemPrice && itemPrice !== '0') {
-        showFlashMessage('Please provide a price for the book or confirm if it should be unset.', 'warning');
-        return;
-    }
-    if (selectedItemType === 'stationery' && (!itemPrice || Number(itemPrice) <= 0)) {
-        showFlashMessage('Please provide a valid price for the stationery item.', 'error');
-        return;
-    }
+        if (selectedItemType === 'books' && !itemPrice && itemPrice !== '0') {
+            showFlashMessage('Please provide a price for the book or confirm if it should be unset.', 'warning');
+            return;
+        }
+        if (selectedItemType === 'stationery' && (!itemPrice || Number(itemPrice) <= 0)) {
+            showFlashMessage('Please provide a valid price for the stationery item.', 'error');
+            return;
+        }
 
-    // Check for duplicate book when adding (not editing)
-    if (selectedItemType === 'books' && !editingItemId && booksDetail.some(item => item.book._id === selectedItemToAdd)) {
-        showFlashMessage('This book is already added to the set.', 'warning');
-        return;
-    }
+        // Check for duplicate book when adding (not editing)
+        if (selectedItemType === 'books' && !editingItemId && booksDetail.some(item => item.book._id === selectedItemToAdd)) {
+            showFlashMessage('This book is already added to the set.', 'warning');
+            return;
+        }
 
-    const price = itemPrice ? Number(itemPrice) : null;
+        const price = itemPrice ? Number(itemPrice) : null;
 
-    try {
-        setLoading(true);
+        try {
+            setLoading(true);
 
-        if (editingItemId) {
-            if (selectedItemType === 'books') {
-                setBooksDetail(prev => prev.map(item =>
-                    item.book._id === editingItemId ? { ...item, quantity, price } : item
-                ));
+            if (editingItemId) {
+                if (selectedItemType === 'books') {
+                    setBooksDetail(prev => prev.map(item =>
+                        item.book._id === editingItemId ? { ...item, quantity, price } : item
+                    ));
+                } else {
+                    setStationeryDetail(prev => prev.map(item =>
+                        item.item._id === editingItemId ? { ...item, quantity, price } : item
+                    ));
+                }
+                showFlashMessage('Item updated successfully.', 'success');
             } else {
-                setStationeryDetail(prev => prev.map(item =>
-                    item.item._id === editingItemId ? { ...item, quantity, price } : item
-                ));
+                if (selectedItemType === 'books') {
+                    const book = bookCatalogs.find(b => b._id === selectedItemToAdd);
+                    if (book) {
+                        setBooksDetail(prev => [...prev, {
+                            book: {
+                                _id: selectedItemToAdd,
+                                bookName: book.bookName,
+                                subtitle: subtitles.find(s => s._id === selectedSubtitle)?.name || ''
+                            },
+                            quantity,
+                            price,
+                            status: 'active'
+                        }]);
+                    }
+                } else {
+                    const item = stationeryItemsMaster.find(i => i._id === selectedItemToAdd);
+                    if (item) {
+                        setStationeryDetail(prev => [...prev, {
+                            item: {
+                                _id: selectedItemToAdd,
+                                itemName: item.itemName
+                            },
+                            quantity,
+                            price,
+                            status: 'active'
+                        }]);
+                    }
+                }
+                showFlashMessage('Item added successfully.', 'success');
             }
-            showFlashMessage('Item updated successfully.', 'success');
-        } else {
+
+            const payload = {
+                customer: selectedCustomer,
+                class: selectedClass,
+                books: booksDetail.map(b => ({
+                    book: b.book._id,
+                    quantity: b.quantity,
+                    price: b.price != null ? b.price : null,
+                    status: b.status
+                })),
+                stationeryItems: stationeryDetail.map(s => ({
+                    item: s.item._id,
+                    quantity: s.quantity,
+                    price: s.price,
+                    status: s.status
+                })),
+                quantity: Number(noOfSets) || 1
+            };
+
             if (selectedItemType === 'books') {
-                const book = bookCatalogs.find(b => b._id === selectedItemToAdd);
-                if (book) {
-                    setBooksDetail(prev => [...prev, {
-                        book: {
-                            _id: selectedItemToAdd,
-                            bookName: book.bookName,
-                            subtitle: subtitles.find(s => s._id === selectedSubtitle)?.name || ''
-                        },
+                const existingBookIndex = payload.books.findIndex(b => b.book === selectedItemToAdd);
+                if (existingBookIndex !== -1 && editingItemId) {
+                    payload.books[existingBookIndex] = {
+                        book: selectedItemToAdd,
                         quantity,
                         price,
                         status: 'active'
-                    }]);
-                }
-            } else {
-                const item = stationeryItemsMaster.find(i => i._id === selectedItemToAdd);
-                if (item) {
-                    setStationeryDetail(prev => [...prev, {
-                        item: {
-                            _id: selectedItemToAdd,
-                            itemName: item.itemName
-                        },
+                    };
+                } else if (existingBookIndex === -1) {
+                    payload.books.push({
+                        book: selectedItemToAdd,
                         quantity,
                         price,
                         status: 'active'
-                    }]);
+                    });
+                }
+            } else {
+                const existingStationeryIndex = payload.stationeryItems.findIndex(s => s.item === selectedItemToAdd);
+                if (existingStationeryIndex !== -1 && editingItemId) {
+                    payload.stationeryItems[existingStationeryIndex] = {
+                        item: selectedItemToAdd,
+                        quantity,
+                        price,
+                        status: 'active'
+                    };
+                } else {
+                    payload.stationeryItems.push({
+                        item: selectedItemToAdd,
+                        quantity,
+                        price,
+                        status: 'active'
+                    });
                 }
             }
-            showFlashMessage('Item added successfully.', 'success');
-        }
 
-        const payload = {
-            customer: selectedCustomer,
-            class: selectedClass,
-            books: booksDetail.map(b => ({
-                book: b.book._id,
-                quantity: b.quantity,
-                price: b.price != null ? b.price : null,
-                status: b.status
-            })),
-            stationeryItems: stationeryDetail.map(s => ({
-                item: s.item._id,
-                quantity: s.quantity,
-                price: s.price,
-                status: s.status
-            })),
-            quantity: Number(noOfSets) || 1
-        };
-
-        if (selectedItemType === 'books') {
-            const existingBookIndex = payload.books.findIndex(b => b.book === selectedItemToAdd);
-            if (existingBookIndex !== -1 && editingItemId) {
-                payload.books[existingBookIndex] = {
-                    book: selectedItemToAdd,
-                    quantity,
-                    price,
-                    status: 'active'
-                };
-            } else if (existingBookIndex === -1) {
-                payload.books.push({
-                    book: selectedItemToAdd,
-                    quantity,
-                    price,
-                    status: 'active'
-                });
-            }
-        } else {
-            const existingStationeryIndex = payload.stationeryItems.findIndex(s => s.item === selectedItemToAdd);
-            if (existingStationeryIndex !== -1 && editingItemId) {
-                payload.stationeryItems[existingStationeryIndex] = {
-                    item: selectedItemToAdd,
-                    quantity,
-                    price,
-                    status: 'active'
-                };
+            let response;
+            if (currentSetId) {
+                response = await api.patch(`/sets/${currentSetId}`, payload);
             } else {
-                payload.stationeryItems.push({
-                    item: selectedItemToAdd,
-                    quantity,
-                    price,
-                    status: 'active'
-                });
+                response = await api.post('/sets', payload);
             }
-        }
 
-        let response;
-        if (currentSetId) {
-            response = await api.patch(`/sets/${currentSetId}`, payload);
-        } else {
-            response = await api.post('/sets', payload);
-        }
+            if (response.data.status === 'success') {
+                const updatedSet = response.data.data.set;
+                setCurrentSetId(updatedSet._id);
+                setBooksDetail(fetchedToLocalFormat(updatedSet.books, 'book'));
+                setStationeryDetail(fetchedToLocalFormat(updatedSet.stationeryItems, 'stationery'));
+                setNoOfSets(updatedSet.quantity);
+                setIsEditMode(true);
+                showFlashMessage(currentSetId ? 'Set updated successfully!' : 'Set created successfully!', 'success');
+            } else {
+                throw new Error(response.data.message || 'Failed to save set.');
+            }
 
-        if (response.data.status === 'success') {
-            const updatedSet = response.data.data.set;
-            setCurrentSetId(updatedSet._id);
-            setBooksDetail(fetchedToLocalFormat(updatedSet.books, 'book'));
-            setStationeryDetail(fetchedToLocalFormat(updatedSet.stationeryItems, 'stationery'));
-            setNoOfSets(updatedSet.quantity);
-            setIsEditMode(true);
-            showFlashMessage(currentSetId ? 'Set updated successfully!' : 'Set created successfully!', 'success');
-        } else {
-            throw new Error(response.data.message || 'Failed to save set.');
+            setItemQuantity('1');
+            setItemPrice('');
+            setEditingItemType(null);
+            setEditingItemId(null);
+        } catch (err) {
+            console.error('Error adding/updating item:', err);
+            showFlashMessage(err.response?.data?.message || 'Failed to add/update item.', 'error');
+        } finally {
+            setLoading(false);
         }
-
-        setItemQuantity('1');
-        setItemPrice('');
-        setEditingItemType(null);
-        setEditingItemId(null);
-    } catch (err) {
-        console.error('Error adding/updating item:', err);
-        showFlashMessage(err.response?.data?.message || 'Failed to add/update item.', 'error');
-    } finally {
-        setLoading(false);
-    }
-}, [selectedItemType, selectedItemToAdd, itemQuantity, itemPrice, bookCatalogs, stationeryItemsMaster, editingItemId, showFlashMessage, selectedSubtitle, subtitles, selectedCustomer, selectedClass, booksDetail, stationeryDetail, noOfSets, currentSetId, fetchedToLocalFormat]);
+    }, [selectedItemType, selectedItemToAdd, itemQuantity, itemPrice, bookCatalogs, stationeryItemsMaster, editingItemId, showFlashMessage, selectedSubtitle, subtitles, selectedCustomer, selectedClass, booksDetail, stationeryDetail, noOfSets, currentSetId, fetchedToLocalFormat]);
 
     const handleDeleteBook = (bookId, bookName) => {
         if (!currentSetId) {
@@ -1037,15 +1037,15 @@ const handleAddOrUpdateItem = useCallback(async () => {
                     getStringValue(item.book.subtitle),
                     getStringValue(item.book.bookName),
                     item.quantity,
-                    item.price != null ? `Rs.${item.price.toFixed(2)}` : 'N/A',
-                    item.price != null ? `Rs.${itemTotal.toFixed(2)}` : 'N/A'
+                    item.price != null ? `Rs.${item.price}` : 'N/A',
+                    item.price != null ? `Rs.${itemTotal}` : 'N/A'
                 ]);
             });
             tableRows.push([
                 "", "", "Total QTY/Amount",
                 totalQty,
                 "",
-                `Rs.${totalAmt.toFixed(2)}`
+                `Rs.${totalAmt}`
             ]);
             return { columns: tableColumn, rows: tableRows };
         };
@@ -1063,15 +1063,15 @@ const handleAddOrUpdateItem = useCallback(async () => {
                     index + 1,
                     getStringValue(item.item.itemName),
                     item.quantity,
-                    `Rs.${item.price.toFixed(2)}`,
-                    `Rs.${itemTotal.toFixed(2)}`
+                    `Rs.${item.price}`,
+                    `Rs.${itemTotal}`
                 ]);
             });
             tableRows.push([
                 "", "Total QTY/Amount",
                 totalQty,
                 "",
-                `Rs.${totalAmt.toFixed(2)}`
+                `Rs.${totalAmt}`
             ]);
             return { columns: tableColumn, rows: tableRows };
         };
@@ -1255,40 +1255,46 @@ const handleAddOrUpdateItem = useCallback(async () => {
                 <div className="left-panel">
                     <section className="section-container">
                         <h2 className="section-header1">Create Set</h2>
-                        <div className="form-group">
-                            <label htmlFor="customer-select" className="form-label">School Name:</label>
-                            <select
-                                id="customer-select"
-                                value={selectedCustomer}
-                                onChange={(e) => {
-                                    setSelectedCustomer(e.target.value);
-                                    setCurrentSetId(null);
-                                    setBooksDetail([]);
-                                    setStationeryDetail([]);
-                                    setSelectedClass('');
-                                    setSelectedSubtitle('');
-                                    setSelectedItemToAdd('');
-                                    setItemQuantity('');
-                                    setItemPrice('');
-                                    setIsEditMode(false);
-                                    setEditingItemType(null);
-                                    setEditingItemId(null);
-                                    setShowAllBooksForSubtitle(false);
-                                    setShowAllStationery(false);
-                                    setSelectedStationeryCategories(new Set());
-                                }}
-                                disabled={loading}
-                                className="form-select"
-                            >
-                                <option value="">-- Select --</option>
-                                {(customers || []).map(customer => (
-                                    <option key={customer._id} value={customer._id}>
-                                        {customer.customerName} {customer.schoolCode ? `(${customer.schoolCode})` : ''}
-                                    </option>
-                                ))}
-                            </select>
 
-                            <div>
+                        <div className="form-grid-2x2">
+                            {/* School Name */}
+                            <div className="form-group">
+                                <label htmlFor="customer-select" className="form-label">School Name:</label>
+                                <select
+                                    id="customer-select"
+                                    value={selectedCustomer}
+                                    onChange={(e) => {
+                                        setSelectedCustomer(e.target.value);
+                                        setCurrentSetId(null);
+                                        setBooksDetail([]);
+                                        setStationeryDetail([]);
+                                        setSelectedClass('');
+                                        setSelectedSubtitle('');
+                                        setSelectedItemToAdd('');
+                                        setItemQuantity('');
+                                        setItemPrice('');
+                                        setIsEditMode(false);
+                                        setEditingItemType(null);
+                                        setEditingItemId(null);
+                                        setShowAllBooksForSubtitle(false);
+                                        setShowAllStationery(false);
+                                        setSelectedStationeryCategories(new Set());
+                                    }}
+                                    disabled={loading}
+                                    className="form-select"
+                                >
+                                    <option value="">-- Select --</option>
+                                    {(customers || []).map(customer => (
+                                        <option key={customer._id} value={customer._id}>
+                                            {customer.customerName} {customer.schoolCode ? `(${customer.schoolCode})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Manage Set Quantity Button */}
+                            <div className="form-group">
+                                <label className="form-label">Add Quantities in Class:</label>
                                 <button
                                     onClick={() => {
                                         setShowQuantityModal(true);
@@ -1297,11 +1303,11 @@ const handleAddOrUpdateItem = useCallback(async () => {
                                     className="btn-primary"
                                     disabled={loading || !selectedCustomer}
                                 >
-                                    <FaEdit className="btn-icon-mr" /> Manage Set Quantity
+                                    <FaEdit className="btn-icon-mr" /> Set Quantity
                                 </button>
                             </div>
-                        </div>
-                        <div className="form-grid-2-cols">
+
+                            {/* Class */}
                             <div className="form-group">
                                 <label htmlFor="class-select" className="form-label">Class:</label>
                                 <select
@@ -1326,6 +1332,8 @@ const handleAddOrUpdateItem = useCallback(async () => {
                                     ))}
                                 </select>
                             </div>
+
+                            {/* No. of Sets */}
                             <div className="form-group">
                                 <label htmlFor="no-of-sets" className="form-label">No. of Sets:</label>
                                 <input
@@ -1353,14 +1361,8 @@ const handleAddOrUpdateItem = useCallback(async () => {
                                 />
                             </div>
                         </div>
-                        {/* <button
-                            onClick={fetchSetDetails}
-                            disabled={isFormDisabled || !selectedClass || loading}
-                            className="btn-primary"
-                        >
-                            {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : <FaSearch className="btn-icon-mr" />} Show Info
-                        </button> */}
                     </section>
+
 
                     <section className="section-container">
                         <h2 className="section-header1">Add Items to Set & Stationery</h2>
@@ -1570,7 +1572,7 @@ const handleAddOrUpdateItem = useCallback(async () => {
                             </div>
                         </div>
 
-                        <button
+                        <center><button
                             onClick={handleAddOrUpdateItem}
                             disabled={isAddItemButtonDisabled || loading}
                             className="btn-success"
@@ -1578,51 +1580,67 @@ const handleAddOrUpdateItem = useCallback(async () => {
                             <FaPlusCircle className="btn-icon-mr" />
                             {editingItemId ? 'Update Item' : 'Add Item'}
                         </button>
+                        </center>
                     </section>
-
                     <section className="section-container">
                         <h2 className="section-header1">Copy Set</h2>
-                        <div className="form-group">
-                            <label htmlFor="copy-to-class" className="form-label">Copy To Class:</label>
-                            <select
-                                id="copy-to-class"
-                                value={copyToClass}
-                                onChange={(e) => setCopyToClass(e.target.value)}
-                                disabled={loading || availableClassesForCopy.length === 0 || !selectedCustomer}
-                                className="form-select"
-                            >
-                                <option value="">-- Select --</option>
-                                {availableClassesForCopy.length === 0 ? (
-                                    <option value="" disabled>No available classes for copying</option>
-                                ) : (
-                                    availableClassesForCopy.map(_class => (
-                                        <option key={_class._id} value={_class._id}>
-                                            {_class.name}
-                                        </option>
-                                    ))
-                                )}
-                            </select>
+
+                        <div className="form-grid-left-right">
+                            {/* Left side fields */}
+                            <div className="form-left">
+                                {/* Copy To Class */}
+                                <div className="form-group">
+                                    <label htmlFor="copy-to-class" className="form-label">Copy To Class:</label>
+                                    <select
+                                        id="copy-to-class"
+                                        value={copyToClass}
+                                        onChange={(e) => setCopyToClass(e.target.value)}
+                                        disabled={loading || availableClassesForCopy.length === 0 || !selectedCustomer}
+                                        className="form-select"
+                                    >
+                                        <option value="">-- Select --</option>
+                                        {availableClassesForCopy.length === 0 ? (
+                                            <option value="" disabled>No available classes for copying</option>
+                                        ) : (
+                                            availableClassesForCopy.map(_class => (
+                                                <option key={_class._id} value={_class._id}>
+                                                    {_class.name}
+                                                </option>
+                                            ))
+                                        )}
+                                    </select>
+                                </div>
+
+                                {/* Copy Stationery */}
+                                <div className="checkbox-group">
+                                    <input
+                                        type="checkbox"
+                                        id="copy-stationery-checkbox"
+                                        checked={copyStationery}
+                                        onChange={(e) => setCopyStationery(e.target.checked)}
+                                        disabled={isCopySetButtonDisabled || loading}
+                                        className="checkbox-input"
+                                    />
+                                    <label htmlFor="copy-stationery-checkbox" className="checkbox-label">
+                                        Copy stationery also
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Right side button */}
+                            <div className="form-right">
+                                <button
+                                    onClick={handleCopySet}
+                                    disabled={isCopySetButtonDisabled || loading}
+                                    className="btn-purple"
+                                >
+                                    <FaCopy className="btn-icon-mr" />
+                                    Copy Set
+                                </button>
+                            </div>
                         </div>
-                        <div className="checkbox-group">
-                            <input
-                                type="checkbox"
-                                id="copy-stationery-checkbox"
-                                checked={copyStationery}
-                                onChange={(e) => setCopyStationery(e.target.checked)}
-                                disabled={isCopySetButtonDisabled || loading}
-                                className="checkbox-input"
-                            />
-                            <label htmlFor="copy-stationery-checkbox" className="checkbox-label">Copy stationery also</label>
-                        </div>
-                        <button
-                            onClick={handleCopySet}
-                            disabled={isCopySetButtonDisabled || loading}
-                            className="btn-purple"
-                        >
-                            <FaCopy className="btn-icon-mr" />
-                            Copy Set
-                        </button>
                     </section>
+
 
                     <div className="flex gap-4">
                         <button
@@ -1685,12 +1703,12 @@ const handleAddOrUpdateItem = useCallback(async () => {
                             <h1 className="moved-header-title"> </h1>
                             <div className="moved-header-totals">
                                 <div className="total-item">Items: {totalItems}</div>
-                                <div className="total-item1">Total Set Value: Rs.{totalAmount.toFixed(2)}</div>
+                                <div className="total-item1">Total Set Value: Rs.{totalAmount}</div>
                                 <div className="total-item">Qty: {totalQuantity * noOfSets}</div>
                             </div>
                         </header>
 
-                       
+
                     </section>
 
                     {(booksDetail.length > 0 || stationeryDetail.length > 0) && (
@@ -1722,10 +1740,10 @@ const handleAddOrUpdateItem = useCallback(async () => {
                                                     <td className="table-cell whitespace-normal">{getStringValue(item.book.bookName)}</td>
                                                     <td className="table-cell whitespace-nowrap">{item.quantity}</td>
                                                     <td className="table-cell whitespace-nowrap">
-                                                        {item.price != null ? `Rs.${item.price.toFixed(2)}` : 'N/A'}
+                                                        {item.price != null ? `Rs.${item.price}` : 'N/A'}
                                                     </td>
                                                     <td className="table-cell whitespace-nowrap">
-                                                        {item.price != null ? `Rs.${(item.quantity * item.price).toFixed(2)}` : 'N/A'}
+                                                        {item.price != null ? `Rs.${(item.quantity * item.price)}` : 'N/A'}
                                                     </td>
                                                     <td className="table-cell whitespace-nowrap text-center">
                                                         <button
@@ -1757,7 +1775,7 @@ const handleAddOrUpdateItem = useCallback(async () => {
                                                 Rs.{booksDetail.reduce((sum, item) => {
                                                     const price = item.price ?? 0;
                                                     return sum + (item.quantity * price);
-                                                }, 0).toFixed(2)}
+                                                }, 0)}
                                             </td>
                                             <td className="table-footer-cell"></td>
                                         </tr>
@@ -1789,8 +1807,8 @@ const handleAddOrUpdateItem = useCallback(async () => {
                                                     <td className="table-cell whitespace-nowrap font-medium">{index + 1}</td>
                                                     <td className="table-cell whitespace-normal">{getStringValue(item.item.itemName)}</td>
                                                     <td className="table-cell whitespace-nowrap">{item.quantity}</td>
-                                                    <td className="table-cell whitespace-nowrap">Rs.{item.price.toFixed(2)}</td>
-                                                    <td className="table-cell whitespace-nowrap">Rs.{(item.quantity * item.price).toFixed(2)}</td>
+                                                    <td className="table-cell whitespace-nowrap">Rs.{item.price}</td>
+                                                    <td className="table-cell whitespace-nowrap">Rs.{(item.quantity * item.price)}</td>
                                                     <td className="table-cell whitespace-nowrap text-center">
                                                         <button
                                                             onClick={() => handleEditStationery(item)}
@@ -1818,7 +1836,7 @@ const handleAddOrUpdateItem = useCallback(async () => {
                                             <td colSpan="2" className="table-footer-cell text-right">Total QTY/Amount</td>
                                             <td className="table-footer-cell text-left">{stationeryDetail.reduce((sum, item) => sum + item.quantity, 0)}</td>
                                             <td colSpan="2" className="table-footer-cell text-left">
-                                                Rs.{stationeryDetail.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)}
+                                                Rs.{stationeryDetail.reduce((sum, item) => sum + (item.quantity * item.price), 0)}
                                             </td>
                                             <td className="table-footer-cell"></td>
                                         </tr>
@@ -1858,8 +1876,18 @@ const handleAddOrUpdateItem = useCallback(async () => {
             )}
 
             {showQuantityModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content modal-content-wide">
+                <div
+                    className="modal-overlay"
+                    onClick={() => {
+                        setShowQuantityModal(false);
+                        setEditedQuantities({});
+                        setSetQuantities([]);
+                    }}
+                >
+                    <div
+                        className="modal-content modal-content-wide"
+                        onClick={(e) => e.stopPropagation()} // prevent inside clicks from closing
+                    >
                         <h2 className="modal-title">Manage Set Quantities</h2>
                         <p className="modal-message">Update the number of sets for each class for {customers.find(c => c._id === selectedCustomer)?.customerName || 'the selected school'}.</p>
                         <div className="table-container">
@@ -1925,7 +1953,7 @@ const handleAddOrUpdateItem = useCallback(async () => {
                                 disabled={loading || Object.values(editedQuantities).every(q => !q || Number(q) <= 0)}
                                 className="btn-success"
                             >
-                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Save Quantities'}
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Save '}
                             </button>
                             <button
                                 onClick={() => {
@@ -1944,8 +1972,17 @@ const handleAddOrUpdateItem = useCallback(async () => {
             )}
 
             {showDeleteQuantityModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
+                <div
+                    className="modal-overlay"
+                    onClick={() => {
+                        setShowDeleteQuantityModal(false);
+                        setQuantityToDelete(null);
+                    }}
+                >
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+                    >
                         <h2 className="modal-title">Confirm Quantity Deletion</h2>
                         <p className="modal-message">
                             Are you sure you want to delete the quantity for {quantityToDelete?.className || 'this class'}?
@@ -1972,6 +2009,7 @@ const handleAddOrUpdateItem = useCallback(async () => {
                     </div>
                 </div>
             )}
+
         </div>
     );
 }

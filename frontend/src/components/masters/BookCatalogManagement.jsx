@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import api from '../../utils/api';
 import {
-  FaEdit,
-  FaTrashAlt,
-  FaPlusCircle,
-  FaSearch,
-  FaFilePdf,
-  FaChevronLeft,
-  FaChevronRight,
-  FaSpinner,
-  FaTimesCircle,
+    FaEdit,
+    FaTrashAlt,
+    FaPlusCircle,
+    FaSearch,
+    FaFilePdf,
+    FaChevronLeft,
+    FaChevronRight,
+    FaSpinner,
+    FaTimesCircle,
 } from 'react-icons/fa';
 
 import '../../styles/Form.css';
@@ -21,31 +21,31 @@ import companyLogo from '../../assets/glbs-logo.jpg';
 import { addHeaderAndSetStartY, addReportTitle, addTableToDoc } from '../../utils/pdfTheme';
 
 const BookCatalogManagement = ({ showFlashMessage }) => {
-  const [bookCatalogs, setBookCatalogs] = useState([]);
-  const [publications, setPublications] = useState([]);
-  const [subtitles, setSubtitles] = useState([]);
-  const [languages, setLanguages] = useState([]);
-  const [classes, setClasses] = useState([]);
-  const [isbnVisible, setIsbnVisible] = useState({});
+    const [bookCatalogs, setBookCatalogs] = useState([]);
+    const [publications, setPublications] = useState([]);
+    const [subtitles, setSubtitles] = useState([]);
+    const [languages, setLanguages] = useState([]);
+    const [classes, setClasses] = useState([]);
+    const [isbnVisible, setIsbnVisible] = useState({});
 
 
-  const [formData, setFormData] = useState({
-    bookName: '',
-    publication: '',
-    subtitle: '',
-    language: '',
-    bookType: 'default',
-    commonPrice: 0,
-    pricesByClass: {},
-    isbnByClass: {},
-    status: 'active',
-  });
+    const [formData, setFormData] = useState({
+        bookName: '',
+        publication: '',
+        subtitle: '',
+        language: '',
+        bookType: 'default',
+        commonPrice: 0,
+        pricesByClass: {},
+        isbnByClass: {},
+        status: 'active',
+    });
 
-  const [loading, setLoading] = useState(false);
-  const [localError, setLocalError] = useState(null);
-  const [editingBookCatalogId, setEditingBookCatalogId] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [localError, setLocalError] = useState(null);
+    const [editingBookCatalogId, setEditingBookCatalogId] = useState(null);
 
-  const [currentClassIndex, setCurrentClassIndex] = useState(0); // 🔹 for swipe navigation
+    const [currentClassIndex, setCurrentClassIndex] = useState(0); // 🔹 for swipe navigation
 
     // States for confirmation modal
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -61,6 +61,9 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
     // States for Search
     const [searchTerm, setSearchTerm] = useState('');
+    const [publicationFilter, setPublicationFilter] = useState('all'); // Default to 'all' for no filter
+    const [subtitleFilter, setSubtitleFilter] = useState('all'); // Default to 'all' for no filter
+    const [languageFilter, setLanguageFilter] = useState('all'); // Default to 'all' for no filter
 
     // States for Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -120,72 +123,60 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     }, [showFlashMessage, editingBookCatalogId]);
 
     // --- Fetch Subtitles based on selected Publication (UPDATED LOGIC) ---
-        const fetchSubtitles = useCallback((publicationId, initialSubtitleId = null) => {
-            console.log('Fetching subtitles for publicationId:', publicationId, 'Initial Subtitle ID:', initialSubtitleId); // DEBUG LOG
-            const selectedPub = publications.find(pub => pub._id === publicationId);
-    
+    const fetchSubtitles = useCallback(
+        (publicationId, initialSubtitleId = null) => {
+            console.log('Fetching subtitles for publicationId:', publicationId, 'Initial Subtitle ID:', initialSubtitleId);
+            const selectedPub = publications.find((pub) => pub._id === publicationId);
+
             if (!selectedPub) {
                 setSubtitles([]);
-                setFormData(prev => ({ ...prev, subtitle: '' }));
+                setFormData((prev) => ({ ...prev, subtitle: '' }));
+                if (publicationFilter === 'all') {
+                    setSubtitleFilter('all'); // Reset subtitle filter when no publication is selected
+                }
                 console.log('Subtitle cleared because no publicationId or publication not found.');
                 return;
             }
-    
+
             const fetchedSubtitles = selectedPub.subtitles || [];
             setSubtitles(fetchedSubtitles);
             console.log('Fetched subtitles from state:', fetchedSubtitles);
-    
+
             if (initialSubtitleId) {
-                const subtitleExistsInFetched = fetchedSubtitles.some(sub => sub._id === initialSubtitleId);
+                const subtitleExistsInFetched = fetchedSubtitles.some((sub) => sub._id === initialSubtitleId);
                 if (subtitleExistsInFetched) {
-                    setFormData(prev => ({ ...prev, subtitle: initialSubtitleId }));
+                    setFormData((prev) => ({ ...prev, subtitle: initialSubtitleId }));
                     console.log('Subtitle set to initialSubtitleId:', initialSubtitleId);
                 } else {
-                    setFormData(prev => ({ ...prev, subtitle: '' }));
+                    setFormData((prev) => ({ ...prev, subtitle: '' }));
                     console.log('Initial subtitle ID not found in fetched subtitles for this publication. Clearing subtitle.');
                 }
             } else {
-                setFormData(prev => ({ ...prev, subtitle: fetchedSubtitles[0]?._id || '' }));
+                setFormData((prev) => ({ ...prev, subtitle: fetchedSubtitles[0]?._id || '' }));
                 console.log('Subtitle set to first available or cleared (no initialSubtitleId).');
             }
-    
-        }, [publications]);
+        },
+        [publications, publicationFilter]
+    );
     // --- Fetch Book Catalogs ---
-    const fetchBookCatalogs = useCallback(async (scrollToNew = false) => {
+    // --- Fetch Book Catalogs ---
+    const fetchBookCatalogs = useCallback(async () => {
         setLoading(true);
         setLocalError(null);
         try {
-            const response = await api.get(`/book-catalogs`); // Fetch all book catalogs
+            const response = await api.get(`/book-catalogs`);
             if (response.data.status === 'success') {
-                setBookCatalogs(response.data.data.bookCatalogs);
+                // ✅ Sort by createdAt (latest first)
+                const sorted = response.data.data.bookCatalogs.sort(
+                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                );
+                setBookCatalogs(sorted);
 
-                const totalPagesCalculated = Math.ceil(response.data.data.bookCatalogs.length / itemsPerPage);
+                const totalPagesCalculated = Math.ceil(sorted.length / itemsPerPage);
                 if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
                     setCurrentPage(totalPagesCalculated);
-                } else if (response.data.data.bookCatalogs.length === 0) {
+                } else if (sorted.length === 0) {
                     setCurrentPage(1);
-                }
-
-                if (scrollToNew && tableBodyRef.current) {
-                    setTimeout(() => {
-                        const lastPageIndex = Math.ceil(response.data.data.bookCatalogs.length / itemsPerPage);
-                        if (currentPage !== lastPageIndex) {
-                            setCurrentPage(lastPageIndex);
-                            setTimeout(() => {
-                                if (tableBodyRef.current.lastElementChild) {
-                                    tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                } else {
-                                    tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                                }
-                            }, 50);
-                        } else {
-                            if (tableBodyRef.current.lastElementChild) {
-                                tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                            } else {
-                                tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                            }
-                        }
-                    }, 100);
                 }
             } else {
                 showFlashMessage(response.data.message || 'Failed to fetch book catalogs.', 'error');
@@ -224,41 +215,41 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
 
     // --- Form Handling ---
- const handleChange = (e) => {
-    const { name, value, type } = e.target;
+    const handleChange = (e) => {
+        const { name, value, type } = e.target;
 
-    if (name.startsWith('price_')) {
-      const classId = name.split('_')[1];
-      const numericValue = parseFloat(value);
-      setFormData((prev) => ({
-        ...prev,
-        pricesByClass: {
-          ...prev.pricesByClass,
-          [classId]: isNaN(numericValue) ? '' : numericValue,
-        },
-      }));
-    } else if (name.startsWith('isbn_')) {
-      const classId = name.split('_')[1];
-      setFormData((prev) => ({
-        ...prev,
-        isbnByClass: {
-          ...prev.isbnByClass,
-          [classId]: value,
-        },
-      }));
-    } else if (type === 'number') {
-      const numericValue = parseFloat(value);
-      setFormData((prev) => ({
-        ...prev,
-        [name]: isNaN(numericValue) ? '' : numericValue,
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
-  };
+        if (name.startsWith('price_')) {
+            const classId = name.split('_')[1];
+            const numericValue = parseFloat(value);
+            setFormData((prev) => ({
+                ...prev,
+                pricesByClass: {
+                    ...prev.pricesByClass,
+                    [classId]: isNaN(numericValue) ? '' : numericValue,
+                },
+            }));
+        } else if (name.startsWith('isbn_')) {
+            const classId = name.split('_')[1];
+            setFormData((prev) => ({
+                ...prev,
+                isbnByClass: {
+                    ...prev.isbnByClass,
+                    [classId]: value,
+                },
+            }));
+        } else if (type === 'number') {
+            const numericValue = parseFloat(value);
+            setFormData((prev) => ({
+                ...prev,
+                [name]: isNaN(numericValue) ? '' : numericValue,
+            }));
+        } else {
+            setFormData((prev) => ({
+                ...prev,
+                [name]: value,
+            }));
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -345,38 +336,34 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 response = await api.patch(`/book-catalogs/${editingBookCatalogId}`, dataToSend);
                 if (response.data.status === 'success') {
                     showFlashMessage('Book Catalog updated successfully!', 'success');
+                    fetchBookCatalogs(); // re-fetch after update
                 } else {
                     throw new Error(response.data.message || 'Failed to update book catalog.');
                 }
             } else {
-                // Create new book catalog
+                // ✅ Create case → add new entry at top & reset pagination
                 response = await api.post('/book-catalogs', dataToSend);
                 if (response.data.status === 'success') {
                     showFlashMessage('Book Catalog created successfully!', 'success');
+
+                    setBookCatalogs(prev => [response.data.data.bookCatalog, ...prev]); // add to top
+                    setCurrentPage(1); // reset to first page
                 } else {
                     throw new Error(response.data.message || 'Failed to create book catalog.');
                 }
             }
-            // Reset form and re-fetch book catalogs
+
+            // Reset form
             setFormData({
-                bookName: '', // Changed from 'name' to 'bookName'
-                publication: publications[0]?._id || '',
-                subtitle: '',
-                language: languages[0]?._id || '',
-                bookType: 'default',
-                commonPrice: 0,
-                pricesByClass: {},
-                commonIsbn: '',
-                isbnByClass: {},
-                // discountPercentage: 0, // REMOVED
-                // gstPercentage: 0, // REMOVED
-                status: 'active',
+                bookName: '', publication: publications[0]?._id || '', subtitle: '',
+                language: languages[0]?._id || '', bookType: 'default', commonPrice: 0,
+                pricesByClass: {}, commonIsbn: '', isbnByClass: {}, status: 'active'
             });
             setEditingBookCatalogId(null);
-            fetchBookCatalogs(true); // Re-fetch and indicate to scroll
+
         } catch (err) {
             console.error('Error saving book catalog:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to save book catalog. Please check your input and ensure book name is unique for the selected publication/subtitle/language combination.';
+            const errorMessage = err.response?.data?.message || 'Failed to save book catalog.';
             setLocalError(errorMessage);
             showFlashMessage(errorMessage, 'error');
         } finally {
@@ -476,21 +463,36 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     // Filtered and paginated data
     const filteredBookCatalogs = useMemo(() => {
         const lowerCaseSearchTerm = searchTerm.toLowerCase();
-        return bookCatalogs.filter(bookCatalogItem => {
-            // Defensive checks for undefined properties before calling toLowerCase()
+        return bookCatalogs.filter((bookCatalogItem) => {
+            // Defensive checks for undefined properties
             const bookName = bookCatalogItem.bookName || '';
             const publicationName = bookCatalogItem.publication?.name || '';
             const languageName = bookCatalogItem.language?.name || '';
             const subtitleName = bookCatalogItem.subtitle?.name || '';
 
-            return (
+            // Apply publication filter
+            const matchesPublication =
+                publicationFilter === 'all' || bookCatalogItem.publication?._id === publicationFilter;
+
+            // Apply subtitle filter
+            const matchesSubtitle =
+                subtitleFilter === 'all' || bookCatalogItem.subtitle?._id === subtitleFilter;
+
+            // Apply language filter
+            const matchesLanguage =
+                languageFilter === 'all' || bookCatalogItem.language?._id === languageFilter;
+
+            // Apply search term filter
+            const matchesSearch =
                 bookName.toLowerCase().includes(lowerCaseSearchTerm) ||
                 publicationName.toLowerCase().includes(lowerCaseSearchTerm) ||
                 languageName.toLowerCase().includes(lowerCaseSearchTerm) ||
-                subtitleName.toLowerCase().includes(lowerCaseSearchTerm)
-            );
+                subtitleName.toLowerCase().includes(lowerCaseSearchTerm);
+
+            // Return true only if all conditions are satisfied
+            return matchesPublication && matchesSubtitle && matchesLanguage && matchesSearch;
         });
-    }, [bookCatalogs, searchTerm]);
+    }, [bookCatalogs, searchTerm, publicationFilter, subtitleFilter, languageFilter]);
 
     const totalRecords = filteredBookCatalogs.length;
     const totalPages = Math.ceil(totalRecords / itemsPerPage);
@@ -520,41 +522,41 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
     // --- PDF Download Functionality ---
     // --- PDF Download Functionality ---
-const downloadPdf = () => {
-    if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF !== 'function') {
-        showFlashMessage('PDF generation failed: Core libraries are not loaded. Please check your script links.', 'error');
-        console.error("PDF generation failed: window.jspdf is not available. Ensure CDNs for jsPDF are correctly linked in your HTML file.");
-        return;
-    }
+    const downloadPdf = () => {
+        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF !== 'function') {
+            showFlashMessage('PDF generation failed: Core libraries are not loaded. Please check your script links.', 'error');
+            console.error("PDF generation failed: window.jspdf is not available. Ensure CDNs for jsPDF are correctly linked in your HTML file.");
+            return;
+        }
 
-    const doc = new window.jspdf.jsPDF('l', 'mm', 'a4');
+        const doc = new window.jspdf.jsPDF('l', 'mm', 'a4');
 
-    let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
-    startY = addReportTitle(doc, startY, "Book Catalog Report");
+        let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
+        startY = addReportTitle(doc, startY, "Book Catalog Report");
 
-    const tableColumn = ["S.No.", "Book Name", "Publication", "Subtitle", "Language", "ISBN No.", "Discount"];
-    const tableRows = filteredBookCatalogs.map((book, index) => [
-        index + 1,
-        book.bookName,
-        book.publication ? book.publication.name : 'N/A',
-        book.subtitle ? book.subtitle.name : 'N/A',
-        book.language ? book.language.name : 'N/A',
-        // Corrected line: Join ISBNs from pricesByClass, or use commonIsbn
-        book.bookType === 'common_price'
-            ? book.commonIsbn || 'N/A'
-            : Object.entries(book.isbnByClass)
-                  .filter(([classId, isbn]) => isbn)
-                  .map(([classId, isbn]) => `${getClassName(classId)}/${isbn}`)
-                  .join(', '),
-        // Corrected line: Format discount percentage
-        `${book.discountPercentage?.toFixed(2) || '0.00'}%`
-    ]);
+        const tableColumn = ["S.No.", "Book Name", "Publication", "Subtitle", "Language", "ISBN No.", "Discount"];
+        const tableRows = filteredBookCatalogs.map((book, index) => [
+            index + 1,
+            book.bookName,
+            book.publication ? book.publication.name : 'N/A',
+            book.subtitle ? book.subtitle.name : 'N/A',
+            book.language ? book.language.name : 'N/A',
+            // Corrected line: Join ISBNs from pricesByClass, or use commonIsbn
+            book.bookType === 'common_price'
+                ? book.commonIsbn || 'N/A'
+                : Object.entries(book.isbnByClass)
+                    .filter(([classId, isbn]) => isbn)
+                    .map(([classId, isbn]) => `${getClassName(classId)}/${isbn}`)
+                    .join(', '),
+            // Corrected line: Format discount percentage
+            `${book.discountPercentage}%`
+        ]);
 
-    addTableToDoc(doc, tableColumn, tableRows, startY);
+        addTableToDoc(doc, tableColumn, tableRows, startY);
 
-    doc.save(`Book_Catalog_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
-    showFlashMessage('Book catalog list downloaded as PDF!', 'success');
-};
+        doc.save(`Book_Catalog_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
+        showFlashMessage('Book catalog list downloaded as PDF!', 'success');
+    };
     // --- UI Rendering ---
     return (
         <div className="book-catalog-management-container">
@@ -734,99 +736,99 @@ const downloadPdf = () => {
                             </div>
                         )}
 
-            {/* 🔹 Prices & ISBNs (swipe navigation) */}
-{formData.bookType === 'default' && (
-  <div className="prices-by-class-section">
-    <h4 className="sub-section-title">Prices & ISBNs by Class:</h4>
+                        {/* 🔹 Prices & ISBNs (swipe navigation) */}
+                        {formData.bookType === 'default' && (
+                            <div className="prices-by-class-section">
+                                <h4 className="sub-section-title">Prices & ISBNs by Class:</h4>
 
-    {classes.length === 0 ? (
-      <p className="loading-state">Loading classes...</p>
-    ) : (
-      <div className="class-price-container">
-        {/* Left Button */}
-        <button
-          type="button"
-          className="nav-btn"
-          onClick={() =>
-            setCurrentClassIndex((prev) =>
-              prev > 0 ? prev - 1 : classes.length - 1
-            )
-          }
-        >
-          <FaChevronLeft />
-        </button>
+                                {classes.length === 0 ? (
+                                    <p className="loading-state">Loading classes...</p>
+                                ) : (
+                                    <div className="class-price-container">
+                                        {/* Left Button */}
+                                        <button
+                                            type="button"
+                                            className="nav-btn"
+                                            onClick={() =>
+                                                setCurrentClassIndex((prev) =>
+                                                    prev > 0 ? prev - 1 : classes.length - 1
+                                                )
+                                            }
+                                        >
+                                            <FaChevronLeft />
+                                        </button>
 
-        {/* Single Class Input */}
-        <div className="form-group class-card">
-          <h5>Class : {classes[currentClassIndex]?.name}</h5>
+                                        {/* Single Class Input */}
+                                        <div className="form-group class-card">
+                                            <h5>Class : {classes[currentClassIndex]?.name}</h5>
 
-          {/* Price input */}
-          <label htmlFor={`price_${classes[currentClassIndex]._id}`}>
-            Price:
-          </label>
-          <input
-            type="number"
-            id={`price_${classes[currentClassIndex]._id}`}
-            name={`price_${classes[currentClassIndex]._id}`}
-            value={
-              formData.pricesByClass[classes[currentClassIndex]._id] || ''
-            }
-            onChange={handleChange}
-            min="0"
-            step="0.01"
-            className="form-input"
-          />
+                                            {/* Price input */}
+                                            <label htmlFor={`price_${classes[currentClassIndex]._id}`}>
+                                                Price:
+                                            </label>
+                                            <input
+                                                type="number"
+                                                id={`price_${classes[currentClassIndex]._id}`}
+                                                name={`price_${classes[currentClassIndex]._id}`}
+                                                value={
+                                                    formData.pricesByClass[classes[currentClassIndex]._id] || ''
+                                                }
+                                                onChange={handleChange}
+                                                min="0"
+                                                // step="0.01"
+                                                className="form-input"
+                                            />
 
-          {/* Toggle Button for ISBN */}
-          <button
-            type="button"
-            className="toggle-isbn-btn"
-            onClick={() =>
-              setIsbnVisible((prev) => ({
-                ...prev,
-                [classes[currentClassIndex]._id]: !prev[classes[currentClassIndex]._id],
-              }))
-            }
-          >
-            {isbnVisible[classes[currentClassIndex]._id] ? '- Hide ISBN' : '+ Add ISBN'}
-          </button>
+                                            {/* Toggle Button for ISBN */}
+                                            <button
+                                                type="button"
+                                                className="toggle-isbn-btn"
+                                                onClick={() =>
+                                                    setIsbnVisible((prev) => ({
+                                                        ...prev,
+                                                        [classes[currentClassIndex]._id]: !prev[classes[currentClassIndex]._id],
+                                                    }))
+                                                }
+                                            >
+                                                {isbnVisible[classes[currentClassIndex]._id] ? '- Hide ISBN' : '+ Add ISBN'}
+                                            </button>
 
-          {/* ISBN input (only shown when toggled) */}
-          {isbnVisible[classes[currentClassIndex]._id] && (
-            <>
-              <label htmlFor={`isbn_${classes[currentClassIndex]._id}`}>
-                ISBN:
-              </label>
-              <input
-                type="text"
-                id={`isbn_${classes[currentClassIndex]._id}`}
-                name={`isbn_${classes[currentClassIndex]._id}`}
-                value={
-                  formData.isbnByClass[classes[currentClassIndex]._id] || ''
-                }
-                onChange={handleChange}
-                className="form-input"
-              />
-            </>
-          )}
-        </div>
+                                            {/* ISBN input (only shown when toggled) */}
+                                            {isbnVisible[classes[currentClassIndex]._id] && (
+                                                <>
+                                                    <label htmlFor={`isbn_${classes[currentClassIndex]._id}`}>
+                                                        ISBN:
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        id={`isbn_${classes[currentClassIndex]._id}`}
+                                                        name={`isbn_${classes[currentClassIndex]._id}`}
+                                                        value={
+                                                            formData.isbnByClass[classes[currentClassIndex]._id] || ''
+                                                        }
+                                                        onChange={handleChange}
+                                                        className="form-input"
+                                                    />
+                                                </>
+                                            )}
+                                        </div>
 
-        {/* Right Button */}
-        <button
-          type="button"
-          className="nav-btn"
-          onClick={() =>
-            setCurrentClassIndex((prev) =>
-              prev < classes.length - 1 ? prev + 1 : 0
-            )
-          }
-        >
-          <FaChevronRight />
-        </button>
-      </div>
-    )}
-  </div>
-)}
+                                        {/* Right Button */}
+                                        <button
+                                            type="button"
+                                            className="nav-btn"
+                                            onClick={() =>
+                                                setCurrentClassIndex((prev) =>
+                                                    prev < classes.length - 1 ? prev + 1 : 0
+                                                )
+                                            }
+                                        >
+                                            <FaChevronRight />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
 
                         {/* REMOVED: Discount and GST fields */}
@@ -912,25 +914,105 @@ const downloadPdf = () => {
                         <p className="no-data-message text-center">No book catalogs found matching your criteria. Start by adding one!</p>
                     ) : (
                         <div className="table-container"> {/* This div is for table overflow, not layout */}
-                                            <div className="table-controls">
-                        <div className="search-input-group">
-                            <input
-                                type="text"
-                                placeholder="Search books..."
-                                value={searchTerm}
-                                onChange={(e) => {
-                                    setSearchTerm(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="search-input"
-                                disabled={loading}
-                            />
-                            <FaSearch className="search-icon" />
-                        </div>
-                        <button onClick={downloadPdf} className="btn btn-info download-pdf-btn" disabled={loading || filteredBookCatalogs.length === 0}>
-                            <FaFilePdf className="btn-icon-mr" /> Download PDF
-                        </button>
-                    </div>
+                            <div className="table-controls">
+                                <div className="search-input-group">
+                                    <input
+                                        type="text"
+                                        placeholder="Search books..."
+                                        value={searchTerm}
+                                        onChange={(e) => {
+                                            setSearchTerm(e.target.value);
+                                            setCurrentPage(1);
+                                        }}
+                                        className="search-input"
+                                        disabled={loading}
+                                    />
+                                    <FaSearch className="search-icon" />
+                                </div>
+                                <div className="filter-group">
+                                    <label htmlFor="publicationFilter" className="mr-2"></label>
+                                    <select
+                                        id="publicationFilter"
+                                        value={publicationFilter}
+                                        onChange={(e) => {
+                                            setPublicationFilter(e.target.value);
+                                            setSubtitleFilter('all'); // Reset subtitle filter when publication changes
+                                            fetchSubtitles(e.target.value); // Fetch subtitles for the selected publication
+                                            setCurrentPage(1);
+                                        }}
+                                        className="form-select"
+                                        disabled={loading}
+                                    >
+                                        <option value="all">All Publications</option>
+                                        {publications.map((pub) => (
+                                            <option key={pub._id} value={pub._id}>
+                                                {pub.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="filter-group">
+                                    <label htmlFor="subtitleFilter" className="mr-2"></label>
+                                    <select
+                                        id="subtitleFilter"
+                                        value={subtitleFilter}
+                                        onChange={(e) => {
+                                            setSubtitleFilter(e.target.value);
+                                            setCurrentPage(1);
+                                        }}
+                                        className="form-select"
+                                        disabled={loading || subtitles.length === 0}
+                                    >
+                                        <option value="all">All Subtitles</option>
+                                        {subtitles.map((sub) => (
+                                            <option key={sub._id} value={sub._id}>
+                                                {sub.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="filter-group">
+                                    <label htmlFor="languageFilter" className="mr-2"></label>
+                                    <select
+                                        id="languageFilter"
+                                        value={languageFilter}
+                                        onChange={(e) => {
+                                            setLanguageFilter(e.target.value);
+                                            setCurrentPage(1);
+                                        }}
+                                        className="form-select"
+                                        disabled={loading}
+                                    >
+                                        <option value="all">All Languages</option>
+                                        {languages.map((lang) => (
+                                            <option key={lang._id} value={lang._id}>
+                                                {lang.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {/* <button
+                                    onClick={() => {
+                                        setSearchTerm('');
+                                        setPublicationFilter('all');
+                                        setSubtitleFilter('all');
+                                        setLanguageFilter('all');
+                                        setSubtitles([]); // Clear subtitles
+                                        setCurrentPage(1);
+                                    }}
+                                    className="btn btn-secondary"
+                                    disabled={loading}
+                                >
+                                    Reset Filters
+                                </button> */}
+                                <button
+                                    onClick={downloadPdf}
+                                    className="btn btn-info download-pdf-btn"
+                                    disabled={loading || filteredBookCatalogs.length === 0}
+                                >
+                                    <FaFilePdf className="btn-icon-mr" /> Download PDF
+                                </button>
+                            </div>
                             <table className="app-table">
                                 <thead>
                                     <tr>
@@ -958,10 +1040,10 @@ const downloadPdf = () => {
                                             <td>{book.bookName}</td>
                                             <td>
                                                 {book.bookType === 'common_price'
-                                                    ? `Rs${book.commonPrice?.toFixed(2) || '0.00'}`
+                                                    ? `Rs${book.commonPrice ? parseFloat(book.commonPrice) : '0'}`
                                                     : Object.entries(book.pricesByClass)
                                                         .filter(([classId, price]) => price)
-                                                        .map(([classId, price]) => `${getClassName(classId)}/${price?.toFixed(2)}`)
+                                                        .map(([classId, price]) => `${getClassName(classId)}/${price}`)
                                                         .join(', ')
                                                 }
                                             </td>
