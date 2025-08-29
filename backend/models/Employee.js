@@ -21,10 +21,10 @@ const employeeSchema = new mongoose.Schema({
         ref: 'Branch',
         required: [true, 'Please provide the branch ID']
     },
-    cityId: {
-        type: mongoose.Schema.ObjectId,
-        ref: 'City',
-        required: [true, 'Please provide the city ID'],
+    city: { // Changed from cityId to city and type to String
+        type: String,
+        required: [true, 'Please provide the city name'], // Updated validation message
+        trim: true,
     },
     status: {
         type: String,
@@ -126,10 +126,7 @@ employeeSchema.pre(/^find/, function(next) {
         path: 'postId',
         select: 'name'
     })
-    .populate({
-        path: 'cityId',
-        select: 'name'
-    })
+    // Removed cityId population as it's now a direct string field 'city'
     .populate({
         path: 'branchId',
         select: 'name location'

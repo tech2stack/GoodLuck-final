@@ -20,16 +20,6 @@ exports.createBookCatalog = catchAsync(async (req, res, next) => {
     if (commonPrice === undefined || commonPrice < 0) {
       return next(new AppError('Common Price must be a non-negative number.', 400));
     }
-    if (!commonIsbn || !commonIsbn.trim()) {
-      return next(new AppError('Common ISBN is required.', 400));
-    }
-  } else {
-    if (!pricesByClass || Object.keys(pricesByClass).length === 0) {
-      return next(new AppError('At least one class price is required.', 400));
-    }
-    if (!isbnByClass || Object.keys(isbnByClass).length === 0) {
-      return next(new AppError('At least one class ISBN is required.', 400));
-    }
   }
 
   // Check duplicate bookName+publication+subtitle
@@ -159,22 +149,11 @@ exports.updateBookCatalog = catchAsync(async (req, res, next) => {
     updateFields.commonIsbn = commonIsbn;
     updateFields.pricesByClass = undefined;
     updateFields.isbnByClass = undefined;
-
-    if (!commonIsbn || !commonIsbn.trim()) {
-      return next(new AppError('Common ISBN is required.', 400));
-    }
   } else {
     updateFields.pricesByClass = pricesByClass;
     updateFields.isbnByClass = isbnByClass;
     updateFields.commonPrice = undefined;
     updateFields.commonIsbn = undefined;
-
-    if (!pricesByClass || Object.keys(pricesByClass).length === 0) {
-      return next(new AppError('At least one price is required.', 400));
-    }
-    if (!isbnByClass || Object.keys(isbnByClass).length === 0) {
-      return next(new AppError('At least one ISBN is required.', 400));
-    }
   }
 
   const updatedBookCatalog = await BookCatalog.findByIdAndUpdate(id, updateFields, {

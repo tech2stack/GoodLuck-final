@@ -2,8 +2,8 @@
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const Employee = require('../models/Employee');
-const Branch = require('../models/Branch');
-const City = require('../models/City');
+const Branch = require('../models/Branch'); // Keep if Branch is still used elsewhere
+// const City = require('../models/City'); // City model is no longer directly referenced for employee
 const Post = require('../models/Post');
 const multer = require('multer');
 const path = require('path');
@@ -35,14 +35,14 @@ const initializeDefaultPosts = async () => {
 };
 
 exports.createEmployee = catchAsync(async (req, res, next) => {
-    const { passportPhoto, documentPDF } = req.files;
+    const { passportPhoto, documentPDF } = req.files || {}; // Use || {} for safety
     const {
-        name, mobileNumber, address, branchId, cityId, postId, adharNo, panCardNo,
+        name, mobileNumber, address, branchId, city, postId, adharNo, panCardNo, // Changed cityId to city
         employeeCode, salary, bankName, accountNo, ifscCode
     } = req.body;
 
     const newEmployeeData = {
-        name, mobileNumber, address, branchId, cityId, postId, adharNo, panCardNo,
+        name, mobileNumber, address, branchId, city, postId, adharNo, panCardNo, // Changed cityId to city
         employeeCode, salary, bankName, accountNo, ifscCode,
         passportPhoto: passportPhoto ? passportPhoto[0].path : undefined,
         documentPDF: documentPDF ? documentPDF[0].path : undefined,
@@ -69,7 +69,7 @@ exports.getEmployee = catchAsync(async (req, res, next) => {
 
 exports.updateEmployee = catchAsync(async (req, res, next) => {
     const { passportPhoto, documentPDF } = req.files || {};
-    const { ...restOfBody } = req.body;
+    const { ...restOfBody } = req.body; // city will be included in restOfBody directly as a string
 
     if (passportPhoto) {
         restOfBody.passportPhoto = passportPhoto[0].path;
@@ -96,11 +96,11 @@ exports.getEmployeesByRole = catchAsync(async (req, res, next) => {
         return next(new AppError('The "Store Manager" post does not exist.', 404));
     }
     const employees = await Employee.find({ postId: post._id }).select('name mobileNumber');
-    
+
     if (!employees || employees.length === 0) {
         return next(new AppError('No employees found for the role: Store Manager', 404));
     }
-    
+
     res.status(200).json({
         status: 'success',
         results: employees.length,
@@ -116,11 +116,11 @@ exports.getSalesRepresentatives = catchAsync(async (req, res, next) => {
         return next(new AppError('The "Sales Representative" post does not exist.', 404));
     }
     const employees = await Employee.find({ postId: post._id }).select('name mobileNumber');
-    
+
     if (!employees || employees.length === 0) {
         return next(new AppError('No employees found for the role: Sales Representative', 404));
     }
-    
+
     res.status(200).json({
         status: 'success',
         results: employees.length,

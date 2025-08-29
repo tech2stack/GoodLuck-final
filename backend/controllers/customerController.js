@@ -16,10 +16,7 @@ const populateCustomerQuery = (query) => {
             path: 'branch',
             select: 'name'
         })
-        .populate({
-            path: 'city',
-            select: 'name'
-        })
+        // Removed city population as it's now a direct string field
         .populate({
             path: 'salesBy',
             select: 'name'
@@ -70,7 +67,7 @@ exports.createCustomer = catchAsync(async (req, res, next) => {
         customerName: customerName || null,
         schoolCode: schoolCode || null,
         branch: branch || null,
-        city: city || null,
+        city: city || null, // city is now a string
         contactPerson: contactPerson || null,
         mobileNumber: mobileNumber || null,
         email: email || null,
@@ -213,7 +210,7 @@ exports.updateCustomer = catchAsync(async (req, res, next) => {
         customerName: customerName || null,
         schoolCode: schoolCode || null,
         branch: branch || null,
-        city: city || null,
+        city: city || null, // city is now a string
         contactPerson: contactPerson || null,
         mobileNumber: mobileNumber || null,
         email: email || null,

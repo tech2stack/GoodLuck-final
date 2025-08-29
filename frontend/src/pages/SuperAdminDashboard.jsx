@@ -1110,7 +1110,7 @@ const SuperAdminDashboard = () => {
                                             <td className="table-td">{employee.ifscCode || 'N/A'}</td>
                                             <td className="table-td">{employee.accountNo || 'N/A'}</td>
                                             <td className="table-td">{employee.postId?.name || 'N/A'}</td>
-                                            <td className="table-td">{employee.cityId?.name || 'N/A'}</td>
+                                            <td className="table-td">{employee.city || 'N/A'}</td>
                                             <td className="table-td">
                                                 {employee.branchId ? employee.branchId.name || 'N/A' : 'N/A'}
                                             </td>

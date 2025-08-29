@@ -117,41 +117,41 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     }, [showFlashMessage]);
 
     // --- Fetch Subtitles based on selected Publication (UPDATED LOGIC) ---
-    const fetchSubtitles = useCallback(
-        (publicationId, initialSubtitleId = null) => {
-            console.log('Fetching subtitles for publicationId:', publicationId, 'Initial Subtitle ID:', initialSubtitleId);
-            const selectedPub = publications.find((pub) => pub._id === publicationId);
+const fetchSubtitles = useCallback(
+    (publicationId, initialSubtitleId = null) => {
+        console.log('Fetching subtitles for publicationId:', publicationId, 'Initial Subtitle ID:', initialSubtitleId);
+        const selectedPub = publications.find((pub) => pub._id === publicationId);
 
-            if (!selectedPub) {
-                setSubtitles([]);
-                setFormData((prev) => ({ ...prev, subtitle: '' }));
-                if (publicationFilter === 'all') {
-                    setSubtitleFilter('all'); // Reset subtitle filter when no publication is selected
-                }
-                console.log('Subtitle cleared because no publicationId or publication not found.');
-                return;
+        if (!selectedPub) {
+            setSubtitles([]);
+            setFormData((prev) => ({ ...prev, subtitle: '' }));
+            if (publicationFilter === 'all') {
+                setSubtitleFilter('all'); // Reset subtitle filter when no publication is selected
             }
+            console.log('Subtitle cleared because no publicationId or publication not found.');
+            return;
+        }
 
-            const fetchedSubtitles = selectedPub.subtitles || [];
-            setSubtitles(fetchedSubtitles);
-            console.log('Fetched subtitles from state:', fetchedSubtitles);
+        const fetchedSubtitles = selectedPub.subtitles || [];
+        setSubtitles(fetchedSubtitles);
+        console.log('Fetched subtitles from state:', fetchedSubtitles);
 
-            if (initialSubtitleId) {
-                const subtitleExistsInFetched = fetchedSubtitles.some((sub) => sub._id === initialSubtitleId);
-                if (subtitleExistsInFetched) {
-                    setFormData((prev) => ({ ...prev, subtitle: initialSubtitleId }));
-                    console.log('Subtitle set to initialSubtitleId:', initialSubtitleId);
-                } else {
-                    setFormData((prev) => ({ ...prev, subtitle: '' }));
-                    console.log('Initial subtitle ID not found in fetched subtitles for this publication. Clearing subtitle.');
-                }
+        if (initialSubtitleId) {
+            const subtitleExistsInFetched = fetchedSubtitles.some((sub) => sub._id === initialSubtitleId);
+            if (subtitleExistsInFetched) {
+                setFormData((prev) => ({ ...prev, subtitle: initialSubtitleId }));
+                console.log('Subtitle set to initialSubtitleId:', initialSubtitleId);
             } else {
                 setFormData((prev) => ({ ...prev, subtitle: '' })); // Set to empty string instead of first available
                 console.log('Subtitle set to first available or cleared (no initialSubtitleId).');
             }
-        },
-        [publications, publicationFilter]
-    );
+        } else {
+            setFormData((prev) => ({ ...prev, subtitle: fetchedSubtitles[0]?._id || '' }));
+            console.log('Subtitle set to first available or cleared (no initialSubtitleId).');
+        }
+    },
+    [publications, publicationFilter]
+);
     // --- Fetch Book Catalogs ---
     // --- Fetch Book Catalogs ---
     const fetchBookCatalogs = useCallback(async () => {
@@ -269,12 +269,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         }
 
         if (formData.bookType === 'default') {
-            if (Object.keys(formData.pricesByClass).length === 0) {
-                setLocalError('At least one price for a class is required for "Default" book type.');
-                showFlashMessage('At least one class price is required.', 'error');
-                setLoading(false);
-                return;
-            }
             // Further validation for pricesByClass values
             for (const classId in formData.pricesByClass) {
                 const price = formData.pricesByClass[classId];
@@ -348,12 +342,24 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             }
 
             // Reset form
+            // Retain publication, subtitle, and language; reset other fields
             setFormData({
-                bookName: '', publication: '', subtitle: '',
-                language: '', bookType: 'default', commonPrice: 0,
-                pricesByClass: {}, commonIsbn: '', isbnByClass: {}, status: 'active'
+                bookName: '',
+                publication: formData.publication, // Retain previous value
+                subtitle: formData.subtitle, // Retain previous value
+                language: formData.language, // Retain previous value
+                bookType: 'default',
+                commonPrice: 0,
+                pricesByClass: {},
+                commonIsbn: '',
+                isbnByClass: {},
+                status: 'active'
             });
             setEditingBookCatalogId(null);
+
+
+            // Ensure subtitles are fetched for the retained publication
+            fetchSubtitles(formData.publication, formData.subtitle);
 
         } catch (err) {
             console.error('Error saving book catalog:', err);
@@ -364,6 +370,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             setLoading(false);
         }
     };
+
 
     // --- Edit and Delete Operations ---
     const handleEdit = (bookCatalogItem) => {
@@ -455,39 +462,32 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     };
 
     // Filtered and paginated data
-    const filteredBookCatalogs = useMemo(() => {
-        const lowerCaseSearchTerm = searchTerm.toLowerCase();
-        return bookCatalogs.filter((bookCatalogItem) => {
-            // Defensive checks for undefined properties
-            const bookName = bookCatalogItem.bookName || '';
-            const publicationName = bookCatalogItem.publication?.name || '';
-            const languageName = bookCatalogItem.language?.name || '';
-            const subtitleName = bookCatalogItem.subtitle?.name || '';
+const filteredBookCatalogs = useMemo(() => {
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    return bookCatalogs.filter((bookCatalogItem) => {
+        const bookName = bookCatalogItem.bookName || '';
+        const publicationName = bookCatalogItem.publication?.name || '';
+        const languageName = bookCatalogItem.language?.name || '';
+        const subtitleName = bookCatalogItem.subtitle?.name || '';
 
-            // Apply publication filter
-            const matchesPublication =
-                publicationFilter === 'all' || bookCatalogItem.publication?._id === publicationFilter;
+        const matchesPublication =
+            publicationFilter === 'all' || bookCatalogItem.publication?._id === publicationFilter;
 
-            // Apply subtitle filter
-            const matchesSubtitle =
-                subtitleFilter === 'all' || bookCatalogItem.subtitle?._id === subtitleFilter;
+        const matchesSubtitle =
+            subtitleFilter === 'all' || bookCatalogItem.subtitle?._id === subtitleFilter;
 
-            // Apply language filter
-            const matchesLanguage =
-                languageFilter === 'all' || bookCatalogItem.language?._id === languageFilter;
+        const matchesLanguage =
+            languageFilter === 'all' || bookCatalogItem.language?._id === languageFilter;
 
-            // Apply search term filter
-            const matchesSearch =
-                bookName.toLowerCase().includes(lowerCaseSearchTerm) ||
-                publicationName.toLowerCase().includes(lowerCaseSearchTerm) ||
-                languageName.toLowerCase().includes(lowerCaseSearchTerm) ||
-                subtitleName.toLowerCase().includes(lowerCaseSearchTerm);
+        const matchesSearch =
+            bookName.toLowerCase().includes(lowerCaseSearchTerm) ||
+            publicationName.toLowerCase().includes(lowerCaseSearchTerm) ||
+            languageName.toLowerCase().includes(lowerCaseSearchTerm) ||
+            subtitleName.toLowerCase().includes(lowerCaseSearchTerm);
 
-            // Return true only if all conditions are satisfied
-            return matchesPublication && matchesSubtitle && matchesLanguage && matchesSearch;
-        });
-    }, [bookCatalogs, searchTerm, publicationFilter, subtitleFilter, languageFilter]);
-
+        return matchesPublication && matchesSubtitle && matchesLanguage && matchesSearch;
+    });
+}, [bookCatalogs, searchTerm, publicationFilter, subtitleFilter, languageFilter]);
     const totalRecords = filteredBookCatalogs.length;
     const totalPages = Math.ceil(totalRecords / itemsPerPage);
 
@@ -922,6 +922,31 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                     />
                                     <FaSearch className="search-icon" />
                                 </div>
+
+                                {/* Add Publication Filter */}
+    <div className="filter-group">
+        <label htmlFor="publicationFilter" className="mr-2"></label>
+        <select
+            id="publicationFilter"
+            value={publicationFilter}
+            onChange={(e) => {
+                const selectedPublicationId = e.target.value;
+                setPublicationFilter(selectedPublicationId);
+                setCurrentPage(1);
+                // Fetch subtitles for the selected publication
+                fetchSubtitles(selectedPublicationId);
+            }}
+            className="form-select"
+            disabled={loading || publications.length === 0}
+        >
+            <option value="all">All Publications</option>
+            {publications.map((pub) => (
+                <option key={pub._id} value={pub._id}>
+                    {pub.name}
+                </option>
+            ))}
+        </select>
+    </div>
 
                                 <div className="filter-group">
                                     <label htmlFor="subtitleFilter" className="mr-2"></label>

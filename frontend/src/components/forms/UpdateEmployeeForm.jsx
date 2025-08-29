@@ -10,7 +10,7 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
         address: '',
         branchId: '',
         postId: '',
-        cityId: '',
+        city: '', // Changed from cityId to city
         adharNo: '',
         panCardNo: '',
         employeeCode: '',
@@ -25,23 +25,20 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
 
     const [loading, setLoading] = useState(false);
     const [posts, setPosts] = useState([]);
-    const [cities, setCities] = useState([]);
+    // Removed cities state as it's no longer fetched as a dropdown
+    // const [cities, setCities] = useState([]);
     const [isDataReady, setIsDataReady] = useState(false);
 
     useEffect(() => {
-        // Function to fetch posts and cities
-        const fetchPostsAndCities = async () => {
+        // Function to fetch posts
+        const fetchPosts = async () => { // Renamed from fetchPostsAndCities
             try {
-                const [postsResponse, citiesResponse] = await Promise.all([
-                    api.get('/posts'),
-                    api.get('/cities')
-                ]);
+                const postsResponse = await api.get('/posts'); // Removed api.get('/cities')
                 setPosts(postsResponse.data.data.posts);
-                setCities(citiesResponse.data.data.cities || []);
                 setIsDataReady(true);
             } catch (err) {
-                console.error('Error fetching posts and cities:', err);
-                showFlashMessage('Could not load Post and City information.', 'error');
+                console.error('Error fetching posts:', err); // Updated error message
+                showFlashMessage('Could not load Post information.', 'error'); // Updated flash message
                 setIsDataReady(false); // Set to false on error to prevent form display
             }
         };
@@ -54,7 +51,7 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                 address: employeeData.address || '',
                 branchId: employeeData.branchId?._id || employeeData.branchId || '',
                 postId: employeeData.postId?._id || employeeData.postId || '',
-                cityId: employeeData.cityId?._id || employeeData.cityId || '',
+                city: employeeData.city || '', // Changed from cityId to city
                 adharNo: employeeData.adharNo || '',
                 panCardNo: employeeData.panCardNo || '',
                 employeeCode: employeeData.employeeCode || '',
@@ -66,7 +63,7 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                 passportPhoto: null, // Reset file input
                 documentPDF: null,   // Reset file input
             });
-            fetchPostsAndCities();
+            fetchPosts(); // Call fetchPosts
         }
     }, [employeeData, showFlashMessage]);
 
@@ -85,14 +82,14 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
         setLoading(true);
 
         // Manual validation for required fields
-        if (!formData.name || !formData.branchId || !formData.cityId || !formData.postId) {
+        if (!formData.name || !formData.branchId || !formData.city || !formData.postId) {
             showFlashMessage('Please fill in all required fields (Name, Branch, City, and Post).', 'error');
             setLoading(false);
             return;
         }
 
         const data = new FormData();
-        
+
         for (const key in formData) {
             const newValue = formData[key];
             const oldValue = employeeData[key];
@@ -106,13 +103,14 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                 if (newValue) {
                     data.append(key, newValue);
                 }
-            } 
-            // Only append a field if its value has changed
-            else if (normalizedNewValue !== normalizedOldValue) {
+            }
+            // Only append a field if its value has changed (and it's not a file input)
+            // For 'city', directly append the new value as it's a string input now
+            else if (key === 'city' || normalizedNewValue !== normalizedOldValue) {
                 data.append(key, newValue || '');
             }
         }
-        
+
         try {
             const response = await api.patch(`/employees/${employeeData._id}`, data, {
                 headers: {
@@ -151,6 +149,8 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                 }
             } else if (rawMessage.includes('Please provide the branch ID')) {
                 userMessage = 'Selecting a branch is mandatory. Please choose a branch.';
+            } else if (rawMessage.includes('Please provide the city name')) { // New validation message
+                userMessage = 'Entering a city name is mandatory. Please enter a city.';
             }
 
             showFlashMessage(userMessage, 'error');
@@ -189,13 +189,8 @@ const UpdateEmployeeForm = ({ employeeData, onEmployeeUpdated, onCancel, branche
                     </select>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="cityId" className="form-label">City:<span className="text-red-500">*</span></label>
-                    <select id="cityId" name="cityId" className="form-select" value={formData.cityId} onChange={handleChange}>
-                        <option value="">Select City</option>
-                        {cities.map(city => (
-                            <option key={city._id} value={city._id}>{city.name}</option>
-                        ))}
-                    </select>
+                    <label htmlFor="city" className="form-label">City:<span className="text-red-500">*</span></label>
+                    <input type="text" id="city" name="city" className="form-input" value={formData.city} onChange={handleChange} required />
                 </div>
                 <div className="form-group">
                     <label htmlFor="postId" className="form-label">Post:<span className="text-red-500">*</span></label>

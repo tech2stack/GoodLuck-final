@@ -118,11 +118,11 @@ const Header = () => {
                 </button>
                 {isProfileDropdownOpen && (
                   <div className="profile-dropdown">
-                    <span className="dropdown-item welcome-message">
+                    {/* <span className="dropdown-item welcome-message">
                       <b>{getUserDisplayName()}</b>
-                    </span>
+                    </span> */}
                     <button onClick={handleDashboard} className="dropdown-item">
-                      <FaTachometerAlt /> Dashboard
+                      <FaTachometerAlt /> <b>{getUserDisplayName()}</b>
                     </button>
                     <button onClick={handleLogout} className="dropdown-item">
                       <FaSignOutAlt /> Logout
