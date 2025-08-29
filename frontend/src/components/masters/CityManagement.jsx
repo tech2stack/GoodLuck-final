@@ -81,15 +81,13 @@ const CityManagement = ({ showFlashMessage }) => {
             if (response.data.status === 'success') {
                 const activeZones = response.data.data.zones.filter(zone => zone.status === 'active');
                 setZones(activeZones);
-                if (!editingCityId && activeZones.length > 0) {
-                    setFormData(prev => ({ ...prev, zone: activeZones[0]._id }));
-                }
+                // Removed the line that sets the default zone, allowing the placeholder to be shown
             }
         } catch (err) {
             console.error('Error fetching zones for dropdown:', err);
             setLocalError('Failed to load zones for dropdown.');
         }
-    }, [editingCityId]);
+    }, []);
 
     const fetchSalesRepresentatives = useCallback(async () => {
         try {
@@ -155,7 +153,7 @@ const CityManagement = ({ showFlashMessage }) => {
             }
             setFormData({
                 name: '',
-                zone: zones[0]?._id || '',
+                zone: '',
                 status: 'active',
                 assignedSalesRepresentative: '',
             });
@@ -217,7 +215,7 @@ const CityManagement = ({ showFlashMessage }) => {
     };
 
     const handleCancelEdit = () => {
-        setFormData({ name: '', zone: zones[0]?._id || '', status: 'active', assignedSalesRepresentative: '' });
+        setFormData({ name: '', zone: '', status: 'active', assignedSalesRepresentative: '' });
         setEditingCityId(null);
         setLocalError(null);
     };
@@ -289,7 +287,7 @@ const CityManagement = ({ showFlashMessage }) => {
                                     disabled={loading || salesRepresentatives.length === 0}
                                     className="form-select"
                                 >
-                                    <option value="">-- Select Sales Rep --</option>
+                                    <option value="">Select</option>
                                     {salesRepresentatives.length > 0 ? (
                                         salesRepresentatives.map(rep => (
                                             <option key={rep._id} value={rep._id}>{rep.name}</option>
@@ -310,6 +308,7 @@ const CityManagement = ({ showFlashMessage }) => {
                                     disabled={loading || zones.length === 0}
                                     className="form-select"
                                 >
+                                    <option value=""> Select</option>
                                     {zones.length > 0 ? (
                                         zones.map(zone => (
                                             <option key={zone._id} value={zone._id}>{zone.name}</option>

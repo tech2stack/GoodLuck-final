@@ -371,11 +371,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
             // Set initial dropdown values if not in edit mode and data is available
             if (!editingCustomerId) {
-                setFormData(prev => ({
-                    ...prev,
-                    city: fetchedCities.length > 0 ? fetchedCities[0]._id : '',
-                    salesBy: fetchedSalesReps.length > 0 ? fetchedSalesReps[0]._id : ''
-                }));
+                /* removed auto-select city on load */
             }
 
         } catch (err) {
@@ -873,34 +869,28 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             <div className="form-group">
                                 <label htmlFor="city">City:</label>
                                 <select
-                                    id="city"
-                                    name="city"
-                                    value={formData.city}
-                                    onChange={handleChange}
-                                    required
-                                    disabled={loading || cities.length === 0}
-                                    className="form-select"
-                                >
-                                    {cities.length === 0 ? (
-                                        <option value="">Loading Cities...</option>
-                                    ) : (
-                                        <>
-                                            <option value="">-- SELECT CITY --</option>
-                                            {cities.map(city => (
-                                                <option key={city._id} value={city._id}>
-                                                    {city.name}
-                                                </option>
-                                            ))}
-                                        </>
-                                    )}
-                                </select>
+  id="city"
+  name="city"
+  value={formData.city || ''}
+  onChange={handleChange}
+  required
+  className="form-select"
+>
+  <option value="">-- SELECT CITY --</option>
+  {cities.map(city => (
+    <option key={city._id} value={city._id}>
+      {city.name}
+    </option>
+  ))}
+</select>
+
                             </div>
                             <div className="form-group">
                                 <label htmlFor="salesBy">Sales Representative:</label>
                                 <select
                                     id="salesBy"
                                     name="salesBy"
-                                    value={formData.salesBy}
+                                    value={formData.salesBy || ''}
                                     onChange={handleChange}
                                     disabled={loading || salesRepresentatives.length === 0}
                                     className="form-select"
