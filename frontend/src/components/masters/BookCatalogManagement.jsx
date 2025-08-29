@@ -275,12 +275,6 @@ const fetchSubtitles = useCallback(
         }
 
         if (formData.bookType === 'default') {
-            if (Object.keys(formData.pricesByClass).length === 0) {
-                setLocalError('At least one price for a class is required for "Default" book type.');
-                showFlashMessage('At least one class price is required.', 'error');
-                setLoading(false);
-                return;
-            }
             // Further validation for pricesByClass values
             for (const classId in formData.pricesByClass) {
                 const price = formData.pricesByClass[classId];
@@ -354,24 +348,24 @@ const fetchSubtitles = useCallback(
             }
 
             // Reset form
-// Retain publication, subtitle, and language; reset other fields
-setFormData({
-    bookName: '',
-    publication: formData.publication, // Retain previous value
-    subtitle: formData.subtitle, // Retain previous value
-    language: formData.language, // Retain previous value
-    bookType: 'default',
-    commonPrice: 0,
-    pricesByClass: {},
-    commonIsbn: '',
-    isbnByClass: {},
-    status: 'active'
-});
-setEditingBookCatalogId(null);
+            // Retain publication, subtitle, and language; reset other fields
+            setFormData({
+                bookName: '',
+                publication: formData.publication, // Retain previous value
+                subtitle: formData.subtitle, // Retain previous value
+                language: formData.language, // Retain previous value
+                bookType: 'default',
+                commonPrice: 0,
+                pricesByClass: {},
+                commonIsbn: '',
+                isbnByClass: {},
+                status: 'active'
+            });
+            setEditingBookCatalogId(null);
 
 
-// Ensure subtitles are fetched for the retained publication
-fetchSubtitles(formData.publication, formData.subtitle);
+            // Ensure subtitles are fetched for the retained publication
+            fetchSubtitles(formData.publication, formData.subtitle);
 
         } catch (err) {
             console.error('Error saving book catalog:', err);
@@ -382,6 +376,7 @@ fetchSubtitles(formData.publication, formData.subtitle);
             setLoading(false);
         }
     };
+
 
     // --- Edit and Delete Operations ---
     const handleEdit = (bookCatalogItem) => {
