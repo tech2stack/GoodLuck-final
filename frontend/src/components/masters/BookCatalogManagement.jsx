@@ -914,6 +914,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                         <p className="no-data-message text-center">No book catalogs found matching your criteria. Start by adding one!</p>
                     ) : (
                         <div className="table-container"> {/* This div is for table overflow, not layout */}
+                        
                             <div className="table-controls">
                                 <div className="search-input-group">
                                     <input
@@ -929,28 +930,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                     />
                                     <FaSearch className="search-icon" />
                                 </div>
-                                <div className="filter-group">
-                                    <label htmlFor="publicationFilter" className="mr-2"></label>
-                                    <select
-                                        id="publicationFilter"
-                                        value={publicationFilter}
-                                        onChange={(e) => {
-                                            setPublicationFilter(e.target.value);
-                                            setSubtitleFilter('all'); // Reset subtitle filter when publication changes
-                                            fetchSubtitles(e.target.value); // Fetch subtitles for the selected publication
-                                            setCurrentPage(1);
-                                        }}
-                                        className="form-select"
-                                        disabled={loading}
-                                    >
-                                        <option value="all">All Publications</option>
-                                        {publications.map((pub) => (
-                                            <option key={pub._id} value={pub._id}>
-                                                {pub.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+
                                 <div className="filter-group">
                                     <label htmlFor="subtitleFilter" className="mr-2"></label>
                                     <select

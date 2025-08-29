@@ -655,7 +655,7 @@ exports.getAllClassesForDropdown = catchAsync(async (req, res, next) => {
     });
 });
 
-// Get all book catalogs for dropdown, optionally filtered by subtitle
+
 // Get all book catalogs for dropdown, optionally filtered by subtitle and class
 exports.getAllBookCatalogsForDropdown = catchAsync(async (req, res, next) => {
     const { subtitleId, classId } = req.query;
@@ -665,27 +665,46 @@ exports.getAllBookCatalogsForDropdown = catchAsync(async (req, res, next) => {
         filter.subtitle = subtitleId;
     }
 
+    // Fetch book catalogs, including language field and populate language name
     const bookCatalogs = await BookCatalog.find(filter)
-        .select('bookName subtitle commonPrice pricesByClass bookType')
+        .select('bookName subtitle commonPrice pricesByClass bookType language')
         .populate('subtitle', 'name')
-        .sort('bookName');
+        .populate('language', 'name')
+        .sort('bookName'); // Sort all books by bookName initially
 
-    // Map book catalogs to include class-specific price if classId is provided
-    const formattedBookCatalogs = bookCatalogs.map(catalog => {
+    // Group books into required (language: "N/A") and optional (others)
+    const requiredBooks = [];
+    const optionalBooks = [];
+
+    bookCatalogs.forEach(catalog => {
         const catalogObj = catalog.toObject();
+        
+        // Handle class-specific pricing if classId is provided
         if (catalog.bookType === 'default' && classId) {
             const pricesByClass = Object.fromEntries(catalog.pricesByClass || new Map());
             catalogObj.classPrice = pricesByClass[classId] || 0;
         } else {
             catalogObj.classPrice = catalog.commonPrice || 0;
         }
-        return catalogObj;
+
+        // Group based on language name
+        const languageName = catalog.language ? catalog.language.name : null;
+        if (languageName === 'N/A') {
+            requiredBooks.push(catalogObj);
+        } else {
+            optionalBooks.push(catalogObj);
+        }
     });
+
+    // Sort both arrays by bookName for consistency
+    requiredBooks.sort((a, b) => a.bookName.localeCompare(b.bookName));
+    optionalBooks.sort((a, b) => a.bookName.localeCompare(b.bookName));
 
     res.status(200).json({
         status: 'success',
         data: {
-            bookCatalogs: formattedBookCatalogs
+            requiredBooks,
+            optionalBooks
         }
     });
 });
