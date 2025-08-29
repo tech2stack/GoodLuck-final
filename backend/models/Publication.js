@@ -22,6 +22,7 @@ const publicationSchema = new mongoose.Schema({
         trim: true,
         validate: {
             validator: function(v) {
+                // The validator function now allows the field to be empty or null
                 return !v || /^\d{10,15}$/.test(v);
             },
             message: props => `${props.value} is not a valid mobile number! (10-15 digits)`
@@ -50,6 +51,7 @@ const publicationSchema = new mongoose.Schema({
         trim: true,
         validate: {
             validator: function(v) {
+                // The validator function now allows the field to be empty or null
                 return !v || /^\d{2}[A-Z]{5}\d{4}[A-Z]{1}\d[Z]{1}[A-Z\d]{1}$/.test(v);
             },
             message: props => `${props.value} is not a valid GSTIN format!`

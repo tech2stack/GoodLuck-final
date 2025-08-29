@@ -14,7 +14,7 @@ const BookCatalogSchema = new mongoose.Schema({
     required: [true, 'Publication is required'],
   },
   subtitle: {
-    type: mongoose.Schema.ObjectId, // ref हटा दिया गया है
+    type: mongoose.Schema.ObjectId,
     default: null,
   },
   language: {
@@ -39,43 +39,19 @@ const BookCatalogSchema = new mongoose.Schema({
   commonIsbn: {
     type: String,
     trim: true,
-    required: function() {
-      return this.bookType === 'common_price';
-    }
+    required: false
   },
   pricesByClass: {
     type: Map,
     of: Number,
     default: {},
-    required: function() {
-      return this.bookType === 'default';
-    },
-    validate: {
-      validator: function(v) {
-        if (this.bookType === 'default') {
-          return (v instanceof Map ? v.size > 0 : Object.keys(v || {}).length > 0);
-        }
-        return true;
-      },
-      message: 'At least one price is required for default book type.',
-    }
+    required: false,
   },
   isbnByClass: {
     type: Map,
     of: String,
     default: {},
-    required: function() {
-      return this.bookType === 'default';
-    },
-    validate: {
-      validator: function(v) {
-        if (this.bookType === 'default') {
-          return (v instanceof Map ? v.size > 0 : Object.keys(v || {}).length > 0);
-        }
-        return true;
-      },
-      message: 'At least one ISBN is required for default book type.',
-    }
+    required: false,
   },
   gstPercentage: {
     type: Number,

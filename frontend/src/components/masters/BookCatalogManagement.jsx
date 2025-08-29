@@ -251,106 +251,94 @@ const fetchSubtitles = useCallback(
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setLocalError(null);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setLocalError(null);
 
-        // Basic validation
-        // Changed formData.name to formData.bookName
-        if (!formData.bookName || !formData.publication || !formData.bookType) {
-            setLocalError('Please fill in all required fields (Book Name, Publication, Book Type).');
-            showFlashMessage('Please fill in all required fields.', 'error');
+    // Basic validation
+    if (!formData.bookName || !formData.publication || !formData.bookType) {
+        setLocalError('Please fill in all required fields (Book Name, Publication, Book Type).');
+        showFlashMessage('Please fill in all required fields.', 'error');
+        setLoading(false);
+        return;
+    }
+
+    if (formData.bookType === 'common_price') {
+        if (formData.commonPrice === undefined || formData.commonPrice === null || formData.commonPrice === '' || formData.commonPrice < 0) {
+            setLocalError('Common Price is required and must be a non-negative number for "Common Price" type.');
+            showFlashMessage('Common Price is invalid.', 'error');
             setLoading(false);
             return;
         }
+    }
 
-        if (formData.bookType === 'common_price') {
-            if (formData.commonPrice === undefined || formData.commonPrice === null || formData.commonPrice === '' || formData.commonPrice < 0) {
-                setLocalError('Common Price is required and must be a non-negative number for "Common Price" type.');
-                showFlashMessage('Common Price is invalid.', 'error');
+    if (formData.bookType === 'default') {
+        // Validation for pricesByClass values
+        for (const classId in formData.pricesByClass) {
+            const price = formData.pricesByClass[classId];
+            if (price === undefined || price === null || isNaN(price) || price === '' || price < 0) {
+                setLocalError(`Price for class ${classes.find(c => c._id === classId)?.name || classId} is invalid. Must be a non-negative number.`);
+                showFlashMessage('Invalid class price detected.', 'error');
                 setLoading(false);
                 return;
             }
         }
+    }
 
-        if (formData.bookType === 'default') {
-            if (Object.keys(formData.pricesByClass).length === 0) {
-                setLocalError('At least one price for a class is required for "Default" book type.');
-                showFlashMessage('At least one class price is required.', 'error');
-                setLoading(false);
-                return;
-            }
-            // Further validation for pricesByClass values
-            for (const classId in formData.pricesByClass) {
-                const price = formData.pricesByClass[classId];
-                if (price === undefined || price === null || isNaN(price) || price === '' || price < 0) { // Added '' check
-                    setLocalError(`Price for class ${classes.find(c => c._id === classId)?.name || classId} is invalid. Must be a non-negative number.`);
-                    showFlashMessage('Invalid class price detected.', 'error');
-                    setLoading(false);
-                    return;
-                }
+    // Prepare data for API call
+    const dataToSend = { ...formData };
+    // Ensure subtitle and language are null if empty strings
+    if (dataToSend.subtitle === '') dataToSend.subtitle = null;
+    if (dataToSend.language === '') dataToSend.language = null;
+
+    // Clean up unnecessary fields based on bookType
+    if (dataToSend.bookType === 'default') {
+        delete dataToSend.commonPrice;
+        delete dataToSend.commonIsbn;
+        // Convert pricesByClass values to numbers before sending
+        const numericPricesByClass = {};
+        const nonEmptyIsbnByClass = {};
+        for (const key in dataToSend.pricesByClass) {
+            if (dataToSend.pricesByClass[key] !== '') {
+                numericPricesByClass[key] = parseFloat(dataToSend.pricesByClass[key]);
             }
         }
-
-
-        // Prepare data for API call
-        const dataToSend = { ...formData };
-        // Ensure subtitle and language are null if empty strings
-        if (dataToSend.subtitle === '') dataToSend.subtitle = null;
-        if (dataToSend.language === '') dataToSend.language = null;
-
-        // Clean up unnecessary fields based on bookType
-        if (dataToSend.bookType === 'default') {
-            delete dataToSend.commonPrice;
-            delete dataToSend.commonIsbn;
-            // Convert pricesByClass values to numbers before sending
-            const numericPricesByClass = {};
-            const nonEmptyIsbnByClass = {};
-            for (const key in dataToSend.pricesByClass) {
-                if (dataToSend.pricesByClass[key] !== '') { // Only include if not empty string
-                    numericPricesByClass[key] = parseFloat(dataToSend.pricesByClass[key]);
-                }
+        for (const key in dataToSend.isbnByClass) {
+            if (dataToSend.isbnByClass[key] !== '') {
+                nonEmptyIsbnByClass[key] = dataToSend.isbnByClass[key];
             }
-            for (const key in dataToSend.isbnByClass) {
-                if (dataToSend.isbnByClass[key] !== '') {
-                    nonEmptyIsbnByClass[key] = dataToSend.isbnByClass[key];
-                }
-            }
-            dataToSend.pricesByClass = numericPricesByClass;
-            dataToSend.isbnByClass = nonEmptyIsbnByClass;
-        } else { // common_price
-            delete dataToSend.pricesByClass;
-            delete dataToSend.isbnByClass;
-            // Convert commonPrice to number before sending
-            dataToSend.commonPrice = parseFloat(dataToSend.commonPrice);
         }
+        dataToSend.pricesByClass = numericPricesByClass;
+        dataToSend.isbnByClass = nonEmptyIsbnByClass;
+    } else { // common_price
+        delete dataToSend.pricesByClass;
+        delete dataToSend.isbnByClass;
+        // Convert commonPrice to number before sending
+        dataToSend.commonPrice = parseFloat(dataToSend.commonPrice);
+    }
 
-        console.log('Submitting formData:', formData); // DEBUG LOG
-        console.log('Data to send:', dataToSend); // DEBUG LOG
+    console.log('Submitting formData:', formData);
+    console.log('Data to send:', dataToSend);
 
-        try {
-            let response;
-            if (editingBookCatalogId) {
-                // Update existing book catalog
-                response = await api.patch(`/book-catalogs/${editingBookCatalogId}`, dataToSend);
-                if (response.data.status === 'success') {
-                    showFlashMessage('Book Catalog updated successfully!', 'success');
-                    fetchBookCatalogs(); // re-fetch after update
-                } else {
-                    throw new Error(response.data.message || 'Failed to update book catalog.');
-                }
+    try {
+        let response;
+        if (editingBookCatalogId) {
+            response = await api.patch(`/book-catalogs/${editingBookCatalogId}`, dataToSend);
+            if (response.data.status === 'success') {
+                showFlashMessage('Book Catalog updated successfully!', 'success');
+                fetchBookCatalogs();
             } else {
-                // ✅ Create case → add new entry at top & reset pagination
-                response = await api.post('/book-catalogs', dataToSend);
-                if (response.data.status === 'success') {
-                    showFlashMessage('Book Catalog created successfully!', 'success');
-
-                    setBookCatalogs(prev => [response.data.data.bookCatalog, ...prev]); // add to top
-                    setCurrentPage(1); // reset to first page
-                } else {
-                    throw new Error(response.data.message || 'Failed to create book catalog.');
-                }
+                throw new Error(response.data.message || 'Failed to update book catalog.');
+            }
+        } else {
+            response = await api.post('/book-catalogs', dataToSend);
+            if (response.data.status === 'success') {
+                showFlashMessage('Book Catalog created successfully!', 'success');
+                setBookCatalogs(prev => [response.data.data.bookCatalog, ...prev]);
+                setCurrentPage(1);
+            } else {
+                throw new Error(response.data.message || 'Failed to create book catalog.');
             }
 
             // Reset form
@@ -380,8 +368,24 @@ fetchSubtitles(formData.publication, formData.subtitle);
         } finally {
             setLoading(false);
         }
-    };
 
+        // Reset form
+        setFormData({
+            bookName: '', publication: publications[0]?._id || '', subtitle: '',
+            language: languages[0]?._id || '', bookType: 'default', commonPrice: 0,
+            pricesByClass: {}, commonIsbn: '', isbnByClass: {}, status: 'active'
+        });
+        setEditingBookCatalogId(null);
+
+    } catch (err) {
+        console.error('Error saving book catalog:', err);
+        const errorMessage = err.response?.data?.message || 'Failed to save book catalog.';
+        setLocalError(errorMessage);
+        showFlashMessage(errorMessage, 'error');
+    } finally {
+        setLoading(false);
+    }
+};
     // --- Edit and Delete Operations ---
     const handleEdit = (bookCatalogItem) => {
         console.log('Editing book catalog item:', bookCatalogItem); // DEBUG LOG

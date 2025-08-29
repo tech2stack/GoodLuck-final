@@ -181,21 +181,24 @@ const PublicationManagement = ({ showFlashMessage }) => {
 
     // --- Submit Form ---
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setLocalError(null);
+    e.preventDefault();
+    setLoading(true);
+    setLocalError(null);
 
-        if (!formData.name || !formData.personName || !formData.mobileNumber || !formData.address || !formData.city.trim()) {
-            setLocalError('Please fill all required fields.');
-            showFlashMessage('Please fill all required fields.', 'error');
-            setLoading(false);
-            return;
-        }
+    
+    if (!formData.name.trim()) {
+        setLocalError('Publication Name is required.');
+        showFlashMessage('Publication Name is required.', 'error');
+        setLoading(false);
+        return;
+    }
 
-        let cityIdToUse = '';
-        const enteredCityName = formData.city.trim();
+    let cityIdToUse = '';
+    const enteredCityName = formData.city.trim();
 
-        try {
+    try {
+     
+        if (enteredCityName) {
             let existingCity = cities.find(c => c && c.name && c.name.toLowerCase() === enteredCityName.toLowerCase());
             if (existingCity) {
                 cityIdToUse = existingCity._id;
@@ -209,54 +212,55 @@ const PublicationManagement = ({ showFlashMessage }) => {
                     throw new Error(newCityResponse.data.message || 'Failed to create new city.');
                 }
             }
-
-            const publicationData = { ...formData, city: cityIdToUse };
-
-            let response;
-            if (editingPublicationId) {
-                // Update case
-                response = await api.patch(`/publications/${editingPublicationId}`, publicationData);
-                if (response.data.status === 'success') {
-                    showFlashMessage('Publication updated successfully!', 'success');
-                    fetchPublications();
-                    setFormData(initialFormData);
-                    setEditingPublicationId(null);
-                    setSelectedPublicationForSubtitle(null);
-                    setNewPublicationSubtitles([]);
-                } else {
-                    throw new Error(response.data.message || 'Failed to update publication.');
-                }
-            } else {
-                // ✅ Create case → Insert at top + reset to page 1
-                const newPublicationData = {
-                    ...publicationData,
-                    subtitles: newPublicationSubtitles.map(s => ({ name: s.name, discount: s.discount }))
-                };
-                response = await api.post('/publications', newPublicationData);
-                if (response.data.status === 'success') {
-                    showFlashMessage('Publication created successfully!', 'success');
-                    setPublications(prev => [response.data.data.publication, ...prev]); // insert at top
-                    setCurrentPage(1); // reset to first page
-                    setNewPublicationSubtitles([]);
-                    setEditingPublicationId(response.data.data.publication._id);
-                    setSelectedPublicationForSubtitle(response.data.data.publication);
-                    setFormData({
-                        ...response.data.data.publication,
-                        city: response.data.data.publication.city ? response.data.data.publication.city.name : ''
-                    });
-                } else {
-                    throw new Error(response.data.message || 'Failed to create publication.');
-                }
-            }
-        } catch (err) {
-            console.error('Error saving publication:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to save publication. Please check your input.';
-            setLocalError(errorMessage);
-            showFlashMessage(errorMessage, 'error');
-        } finally {
-            setLoading(false);
         }
-    };
+
+        const publicationData = { ...formData, city: cityIdToUse || undefined }; 
+
+        let response;
+        if (editingPublicationId) {
+            // Update case
+            response = await api.patch(`/publications/${editingPublicationId}`, publicationData);
+            if (response.data.status === 'success') {
+                showFlashMessage('Publication updated successfully!', 'success');
+                fetchPublications();
+                setFormData(initialFormData);
+                setEditingPublicationId(null);
+                setSelectedPublicationForSubtitle(null);
+                setNewPublicationSubtitles([]);
+            } else {
+                throw new Error(response.data.message || 'Failed to update publication.');
+            }
+        } else {
+            // Create case
+            const newPublicationData = {
+                ...publicationData,
+                subtitles: newPublicationSubtitles.map(s => ({ name: s.name, discount: s.discount }))
+            };
+            response = await api.post('/publications', newPublicationData);
+            if (response.data.status === 'success') {
+                showFlashMessage('Publication created successfully!', 'success');
+                setPublications(prev => [response.data.data.publication, ...prev]);
+                setCurrentPage(1);
+                setNewPublicationSubtitles([]);
+                setEditingPublicationId(response.data.data.publication._id);
+                setSelectedPublicationForSubtitle(response.data.data.publication);
+                setFormData({
+                    ...response.data.data.publication,
+                    city: response.data.data.publication.city ? response.data.data.publication.city.name : ''
+                });
+            } else {
+                throw new Error(response.data.message || 'Failed to create publication.');
+            }
+        }
+    } catch (err) {
+        console.error('Error saving publication:', err);
+        const errorMessage = err.response?.data?.message || 'Failed to save publication. Please check your input.';
+        setLocalError(errorMessage);
+        showFlashMessage(errorMessage, 'error');
+    } finally {
+        setLoading(false);
+    }
+};
 
     // --- Edit and Delete Operations ---
     const handleEdit = (publicationItem) => {
