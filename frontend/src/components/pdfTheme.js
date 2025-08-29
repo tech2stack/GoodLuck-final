@@ -63,7 +63,7 @@ export const addTableToDoc = (doc, columns, rows, startY) => {
       cellPadding: 3,
       textColor: standardColors.black,
       valign: 'middle',
-      halign: 'left'
+      halign: 'center',
     },
     headStyles: {
       fillColor: standardColors.tableBlue,
