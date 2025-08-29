@@ -136,7 +136,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
             const allSubtitles = allPublications.flatMap((pub) =>
                 (pub.subtitles || []).map((sub) => ({
                     _id: sub._id,
-                    name: `${pub.name} - ${sub.name}`,
+                    name: `${sub.name}`,
                 }))
             );
             setSubtitles(allSubtitles);
@@ -1425,10 +1425,10 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 {selectedItemType === 'books' ? (
                                     <>
                                         {bookCatalogs.requiredBooks.length > 0 && (
-                                            <optgroup label="Required Books">
+                                            <optgroup label="Normal Books">
                                                 {bookCatalogs.requiredBooks.map((book) => (
                                                     <option key={book._id} value={book._id}>
-                                                        {book.bookName} ({book.language?.name || 'N/A'})
+                                                        {book.bookName}
                                                     </option>
                                                 ))}
                                             </optgroup>
@@ -1437,7 +1437,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                             <optgroup label="Optional Books">
                                                 {bookCatalogs.optionalBooks.map((book) => (
                                                     <option key={book._id} value={book._id}>
-                                                        {book.bookName} ({book.language?.name || 'N/A'})
+                                                        {book.bookName} 
                                                     </option>
                                                 ))}
                                             </optgroup>
