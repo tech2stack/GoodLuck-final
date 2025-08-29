@@ -408,7 +408,13 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     newState.secondaryCustomerType = 'Both';
                     // Set default branch and school code if available
                     newState.branch = branches.length > 0 ? branches[0]._id : '';
-                    newState.schoolCode = ''; // Default to empty
+                    newState.schoolCode = '';
+                    // Clear fields not relevant for 'School'
+                    newState.gstNumber = '';
+                    newState.panNumber = '';
+                    newState.bankName = '';
+                    newState.accountNumber = '';
+                    newState.ifscCode = '';
                 } else if (value === 'Dealer') {
                     // Set default secondary type for 'Dealer' to 'Retail'
                     newState.secondaryCustomerType = 'Retail';
@@ -868,20 +874,20 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             <div className="form-group">
                                 <label htmlFor="city">City:</label>
                                 <select
-  id="city"
-  name="city"
-  value={formData.city || ''}
-  onChange={handleChange}
-  required
-  className="form-select"
->
-  <option value="">-- SELECT CITY --</option>
-  {cities.map(city => (
-    <option key={city._id} value={city._id}>
-      {city.name}
-    </option>
-  ))}
-</select>
+                                    id="city"
+                                    name="city"
+                                    value={formData.city || ''}
+                                    onChange={handleChange}
+                                    required
+                                    className="form-select"
+                                >
+                                    <option value="">-- SELECT CITY --</option>
+                                    {cities.map(city => (
+                                        <option key={city._id} value={city._id}>
+                                            {city.name}
+                                        </option>
+                                    ))}
+                                </select>
 
                             </div>
                             <div className="form-group">
@@ -1063,24 +1069,25 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     value={formData.email}
                                     onChange={handleChange}
                                     placeholder="e.g., info@example.com"
-                                    // Removed 'required' from here
                                     disabled={loading}
                                     className="form-input"
                                 />
                             </div>
-                            <div className="form-group">
-                                <label htmlFor="gstNumber">GST Number:</label>
-                                <input
-                                    type="text"
-                                    id="gstNumber"
-                                    name="gstNumber"
-                                    value={formData.gstNumber}
-                                    onChange={handleChange}
-                                    placeholder="e.g., 22AAAAA0000A1Z5"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
+                            {formData.primaryCustomerType !== 'School' && (
+                                <div className="form-group">
+                                    <label htmlFor="gstNumber">GST Number:</label>
+                                    <input
+                                        type="text"
+                                        id="gstNumber"
+                                        name="gstNumber"
+                                        value={formData.gstNumber}
+                                        onChange={handleChange}
+                                        placeholder="e.g., 22AAAAA0000A1Z5"
+                                        disabled={loading}
+                                        className="form-input"
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         <div className="form-row">
@@ -1097,19 +1104,21 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-                            <div className="form-group">
-                                <label htmlFor="panNumber">PAN Number:</label>
-                                <input
-                                    type="text"
-                                    id="panNumber"
-                                    name="panNumber"
-                                    value={formData.panNumber}
-                                    onChange={handleChange}
-                                    placeholder="e.g., ABCDE1234F"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
+                            {formData.primaryCustomerType !== 'School' && (
+                                <div className="form-group">
+                                    <label htmlFor="panNumber">PAN Number:</label>
+                                    <input
+                                        type="text"
+                                        id="panNumber"
+                                        name="panNumber"
+                                        value={formData.panNumber}
+                                        onChange={handleChange}
+                                        placeholder="e.g., ABCDE1234F"
+                                        disabled={loading}
+                                        className="form-input"
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         <div className="form-row">
@@ -1184,78 +1193,95 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 />
                             </div>
                             <div className="form-group">
-                                            <label htmlFor="advancePayment">Advance Payment:</label>
-                                            <input
-                                                type="number"
-                                                id="advancePayment"
-                                                name="advancePayment"
-                                                value={formData.advancePayment}
-                                                onChange={handleChange}
-                                                placeholder="Enter advance payment"
+                                <label htmlFor="advancePayment">Advance Payment:</label>
+                                <input
+                                    type="number"
+                                    id="advancePayment"
+                                    name="advancePayment"
+                                    value={formData.advancePayment}
+                                    onChange={handleChange}
+                                    placeholder="Enter advance payment"
 
-                                                disabled={loading}
-                                                className="form-input"
-                                            />
-                                        </div>
-                        </div>
-                        <h3 className="form-title">Add Bank Details</h3>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="bankName">Bank Name:</label>
-                                <input
-                                    type="text"
-                                    id="bankName"
-                                    name="bankName"
-                                    value={formData.bankName}
-                                    onChange={handleChange}
-                                    placeholder="e.g., HDFC Bank"
                                     disabled={loading}
                                     className="form-input"
                                 />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="accountNumber">Account Number:</label>
-                                <input
-                                    type="text"
-                                    id="accountNumber"
-                                    name="accountNumber"
-                                    value={formData.accountNumber}
-                                    onChange={handleChange}
-                                    placeholder="e.g., 1234567890"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="ifscCode">IFSC Code:</label>
-                                <input
-                                    type="text"
-                                    id="ifscCode"
-                                    name="ifscCode"
-                                    value={formData.ifscCode}
-                                    onChange={handleChange}
-                                    placeholder="e.g., HDFC0001234"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                            <div className="form-actions">
-                                <button
-                                    type="button"
-                                    className={`btn-toggle ${showOtherDetails ? 'active' : ''}`}
-                                    onClick={() => setShowOtherDetails(!showOtherDetails)}
-                                >
-                                    <FaInfoCircle /> {showOtherDetails ? 'Hide Other Details' : 'Add Other Details'}
-                                </button>
                             </div>
                         </div>
+                        {formData.primaryCustomerType !== 'School' && (
+                            <>
+                                <h3 className="form-title">Add Bank Details</h3>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label htmlFor="bankName">Bank Name:</label>
+                                        <input
+                                            type="text"
+                                            id="bankName"
+                                            name="bankName"
+                                            value={formData.bankName}
+                                            onChange={handleChange}
+                                            placeholder="e.g., HDFC Bank"
+                                            disabled={loading}
+                                            className="form-input"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label htmlFor="accountNumber">Account Number:</label>
+                                        <input
+                                            type="text"
+                                            id="accountNumber"
+                                            name="accountNumber"
+                                            value={formData.accountNumber}
+                                            onChange={handleChange}
+                                            placeholder="e.g., 1234567890"
+                                            disabled={loading}
+                                            className="form-input"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label htmlFor="ifscCode">IFSC Code:</label>
+                                        <input
+                                            type="text"
+                                            id="ifscCode"
+                                            name="ifscCode"
+                                            value={formData.ifscCode}
+                                            onChange={handleChange}
+                                            placeholder="e.g., HDFC0001234"
+                                            disabled={loading}
+                                            className="form-input"
+                                        />
+                                    </div>
+                                    <div className="form-actions">
+                                        <button
+                                            type="button"
+                                            className={`btn-toggle ${showOtherDetails ? 'active' : ''}`}
+                                            onClick={() => setShowOtherDetails(!showOtherDetails)}
+                                        >
+                                            <FaInfoCircle /> {showOtherDetails ? 'Hide Other Details' : 'Add Other Details'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                        {formData.primaryCustomerType === 'School' && (
+                            <div className="form-row">
+                                <div className="form-actions">
+                                    <button
+                                        type="button"
+                                        className={`btn-toggle ${showOtherDetails ? 'active' : ''}`}
+                                        onClick={() => setShowOtherDetails(!showOtherDetails)}
+                                    >
+                                        <FaInfoCircle /> {showOtherDetails ? 'Hide Other Details' : 'Add Other Details'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {showOtherDetails && (
                             <>
                                 <header className="section-title"><h3>Other Details</h3></header>
                                 <div className="form-section">
                                     <div className="form-grid">
-                                        <div className="form-group">
+                                        {/* <div className="form-group">
                                             <label htmlFor="customerShopName">Customer Shop Name</label>
                                             <input type="text" id="customerShopName" name="customerShopName" value={formData.customerShopName} onChange={handleChange} />
                                         </div>
@@ -1282,7 +1308,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                         <div className="form-group">
                                             <label htmlFor="pinCode">Pincode</label>
                                             <input type="text" id="pinCode" name="pinCode" value={formData.pinCode} onChange={handleChange} />
-                                        </div>
+                                        </div> */}
                                         <div className="form-group">
                                             <label htmlFor="shopRegNo">Shop Reg No</label>
                                             <input type="text" id="shopRegNo" name="shopRegNo" value={formData.shopRegNo} onChange={handleChange} />
@@ -1311,7 +1337,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                             <label htmlFor="paymentConcernPersonName">Payment Concern Person</label>
                                             <input type="text" id="paymentConcernPersonName" name="paymentConcernPersonName" value={formData.paymentConcernPersonName} onChange={handleChange} />
                                         </div>
-                                        
+
                                         <div className="form-group">
                                             <label htmlFor="closedDate">Closed Date</label>
                                             <input type="date" id="closedDate" name="closedDate" value={formData.closedDate} onChange={handleChange} />
@@ -1547,13 +1573,13 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                         <th>Sales Rep</th>
                                         <th>Discount</th>
                                         <th>Status</th>
-                                        <th>Customer Shop Name</th>
+                                        {/* <th>Customer Shop Name</th>
                                         <th>Age</th>
                                         <th>S/O</th>
                                         <th>Customer City</th>
                                         <th>District</th>
                                         <th>State</th>
-                                        <th>Pincode</th>
+                                        <th>Pincode</th> */}
                                         <th>Shop Reg No</th>
                                         <th>Fixed Trade Discount</th>
                                         <th>Remark</th>
@@ -1562,7 +1588,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                         <th>Final Sales Return Month</th>
                                         <th>Final Payment Month</th>
                                         <th>Payment Concern Person</th>
-                                         <th>Advance Payment</th> {/*advance  payment*/}
+                                        <th>Advance Payment</th> {/*advance  payment*/}
                                         <th>Closed Date</th>
                                         <th>Cheque No.</th>
                                         <th>Cheque Bank Name</th>
@@ -1585,13 +1611,13 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                             <td>{customer.salesBy ? customer.salesBy.name : 'N/A'}</td>
                                             <td>{customer.discount || 0}%</td>
                                             <td>{customer.status}</td>
-                                            <td>{customer.customerShopName || 'N/A'}</td>
+                                            {/* <td>{customer.customerShopName || 'N/A'}</td>
                                             <td>{customer.age || 'N/A'}</td>
                                             <td>{customer.so || 'N/A'}</td>
                                             <td>{customer.customerCity || 'N/A'}</td>
                                             <td>{customer.distt || 'N/A'}</td>
                                             <td>{customer.state || 'N/A'}</td>
-                                            <td>{customer.pinCode || 'N/A'}</td>
+                                            <td>{customer.pinCode || 'N/A'}</td> */}
                                             <td>{customer.shopRegNo || 'N/A'}</td>
                                             <td>{customer.fixedTradeDiscount || 'N/A'}</td>
                                             <td>{customer.remark || 'N/A'}</td>

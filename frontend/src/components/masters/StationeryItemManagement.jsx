@@ -450,7 +450,7 @@ const filteredItems = useMemo(() => {
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="price">Price (Rs):</label>
+                            <label htmlFor="price">MRP Price:</label>
                             <input
                                 type="number"
                                 id="price"
@@ -609,7 +609,7 @@ const filteredItems = useMemo(() => {
                                         <th>S.No.</th>
                                         <th>Item Name</th>
                                         <th>Category</th>
-                                        <th>Price</th>
+                                        <th>MRP Price</th>
                                         <th>Customer Discount (%)</th>
                                         <th>Company Discount (%)</th>
                                         <th>Margin (%)</th>

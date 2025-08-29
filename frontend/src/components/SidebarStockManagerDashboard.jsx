@@ -124,19 +124,30 @@ const SidebarStockManagerDashboard = ({
       toggle: toggleMasterDropdown,
       show: showMasterDropdown,
       items: [
-        { key: 'class', icon: FaGraduationCap, label: 'Class' },
         // { key: 'zone', icon: FaGlobeAsia, label: 'Zone' },
-        { key: 'city', icon: FaCity, label: 'Zone Management' },
-        { key: 'publication', icon: FaBook, label: 'Publication' },
+        { key: 'city', icon: FaCity, label: 'Add Zone ' },
+        { key: 'class', icon: FaGraduationCap, label: 'Class' },
         { key: 'language', icon: FaLanguage, label: 'Language' },
+        { key: 'publication', icon: FaBook, label: 'Publication' },
         { key: 'book-catalog', icon: FaBookOpen, label: 'Book Catalog' },
         { key: 'stationery-item', icon: FaPencilRuler, label: 'Stationery Item' },
         { key: 'customers', icon: FaUserFriends, label: 'Customers' },
-        { key: 'transports', icon: FaTruck, label: 'Transports' },
         // { key: 'set-quantity', icon: FaLayerGroup, label: 'Set Quantity' }, // NEW: Added Set Quantity
-        { key: 'create-sets', icon: FaLayerGroup, label: 'Create Sets' },
-        
+        { key: 'create-sets', icon: FaLayerGroup, label: 'Create Set' },
         { key: 'pending-book', icon: FaHourglassHalf, label: 'Pending Book' },
+        { key: 'transports', icon: FaTruck, label: 'Transport' },
+        
+        //CREATE ITEMS SERIES SET
+        // 1. ADD ZONE
+        // 2. CLASS
+        // 3. LANGUAGE 
+        // 4. PUBLICATION 
+        // 5. BOOK CATALOGUE 
+        // 6. STATIONARY ITEM 
+        // 7. COUSTMER 
+        // 8. CREATE SET 
+        // 9. PENDING BOOKS
+        // 10. TRANSPORT
       ]
     },
     {
@@ -195,62 +206,62 @@ const SidebarStockManagerDashboard = ({
 
       {/* Sidebar */}
       <aside
-  ref={sidebarRef}
-  style={{
-    position: 'fixed',
-    bottom: 0,
-    left: 0,
-    zIndex: 10,
-    top: '85px',
-    '@media(maxWidth: 420px)': {
-      top: '68px',
-    },
-  }}
-  className={`bg-[#2c3e50] text-gray-200 transition-transform duration-300 ease-in-out
+        ref={sidebarRef}
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          zIndex: 10,
+          top: '85px',
+          '@media(maxWidth: 420px)': {
+            top: '68px',
+          },
+        }}
+        className={`bg-[#2c3e50] text-gray-200 transition-transform duration-300 ease-in-out
     ${isSidebarCollapsed ? '-translate-x-full' : 'translate-x-0 w-72'}
     overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-transparent`}
->
-  <div className="flex items-center justify-between p-4 border-b border-gray-600">
-    <div className="flex flex-col overflow-hidden whitespace-nowrap">
-      <h3 className="text-xl font-semibold text-white">Stock Manager</h3>
-      <p className="text-sm text-gray-400">Welcome, {userData.name || userData.email}!</p>
-    </div>
-  </div>
+      >
+        <div className="flex items-center justify-between p-4 border-b border-gray-600">
+          <div className="flex flex-col overflow-hidden whitespace-nowrap">
+            <h3 className="text-xl font-semibold text-white">Stock Manager</h3>
+            <p className="text-sm text-gray-400">Welcome, {userData.name || userData.email}!</p>
+          </div>
+        </div>
 
-  <nav className="flex-grow p-4">
-    <ul className="space-y-1">
-      <li>
-        <button
-          className={`flex items-left w-full px-4 py-3 text-sm rounded-lg transition-colors duration-200
+        <nav className="flex-grow p-4">
+          <ul className="space-y-1">
+            <li>
+              <button
+                className={`flex items-left w-full px-4 py-3 text-sm rounded-lg transition-colors duration-200
             ${activeView === 'dashboard' ? 'bg-[#34495e] text-white' : 'hover:bg-gray-700'}`}
-          onClick={() => handleNavigationClick('dashboard')}
-        >
-          <FaChartBar className="text-lg min-w-[1.5rem] mr-3" />
-          <span className="truncate">Home </span>
-        </button>
-      </li>
+                onClick={() => handleNavigationClick('dashboard')}
+              >
+                <FaChartBar className="text-lg min-w-[1.5rem] mr-3" />
+                <span className="truncate">Home </span>
+              </button>
+            </li>
 
-      {sections.map(({ title, icon: Icon, ref, toggle, show, items }) => (
-        <li key={title} className="relative" ref={ref}>
-          <button
-            className={`flex items-flex-start justify-between w-full px-4 py-3 text-sm rounded-lg transition-colors duration-200
+            {sections.map(({ title, icon: Icon, ref, toggle, show, items }) => (
+              <li key={title} className="relative" ref={ref}>
+                <button
+                  className={`flex items-flex-start justify-between w-full px-4 py-3 text-sm rounded-lg transition-colors duration-200
               ${show ? 'bg-[#34495e] text-white' : 'hover:bg-gray-700'}`}
-            onClick={toggle}
-          >
-            <div className="flex items-center">
-              <Icon className="text-lg min-w-[1.5rem] mr-3" />
-              <span className="truncate">{title}</span>
-            </div>
-            <FaChevronDown
-              className={`transform transition-transform duration-200 ${show ? 'rotate-180' : ''}`}
-            />
-          </button>
-          {show && renderDropdown(items)}
-        </li>
-      ))}
-    </ul>
-  </nav>
-</aside>
+                  onClick={toggle}
+                >
+                  <div className="flex items-center">
+                    <Icon className="text-lg min-w-[1.5rem] mr-3" />
+                    <span className="truncate">{title}</span>
+                  </div>
+                  <FaChevronDown
+                    className={`transform transition-transform duration-200 ${show ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {show && renderDropdown(items)}
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </aside>
     </>
   );
 };

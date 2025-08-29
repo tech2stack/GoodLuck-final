@@ -1190,9 +1190,9 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 <div className="left-panel">
                     <section className="section-container">
                         <h2 className="section-header1">Create Set</h2>
-                        <div className="form-grid-2x2">
-                            <div className="form-group">
-                                <label htmlFor="customer-select" className="form-label">School Name:</label>
+                        <div className="form-group school-quantity-row">
+                            <label htmlFor="customer-select" className="form-label">School Name:</label>
+                            <div className="school-quantity-flex">
                                 <select
                                     id="customer-select"
                                     value={selectedCustomer}
@@ -1224,19 +1224,20 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         </option>
                                     ))}
                                 </select>
-                            </div>
 
-                            <div className="form-group">
-                                <label className="form-label">Add Quantities in Class:</label>
                                 <button
                                     onClick={() => setShowQuantityModal(true)}
-                                    className="btn-primary"
+                                    className="btn-primary quantity-btn"
                                     disabled={loading || !selectedCustomer}
                                     aria-label="Manage Set Quantities"
                                 >
-                                    <FaEdit className="btn-icon-mr" /> Set Quantity
+                                    <FaEdit className="btn-icon-mr" /> Qty
                                 </button>
                             </div>
+                        </div>
+
+                        <div className="form-grid-2x2">
+
 
                             <div className="form-group">
                                 <label htmlFor="class-select" className="form-label">Class:</label>
@@ -1283,79 +1284,76 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         </div>
                     </section>
 
-                    <section className="section-container">
-                        <h2 className="section-header1">Add Items to Set & Stationery</h2>
-<div className="form-group">
-  <label className="form-label mb-2 block text-gray-700 font-medium">Item Type:</label>
-  <div className="flex gap-6 items-center">
-    {/* Books Option */}
-    <label
-      htmlFor="item-type-books"
-      className={`flex items-center cursor-pointer px-3 py-1 rounded-lg border transition 
-        ${selectedItemType === 'books' ? 'bg-blue-100 border-blue-400' : 'border-gray-300 hover:border-gray-400'}`}
-    >
-      <input
-        type="radio"
-        id="item-type-books"
-        name="item-type"
-        value="books"
-        checked={selectedItemType === 'books'}
-        onChange={(e) => {
-          setSelectedItemType(e.target.value);
-          setSelectedSubtitle('');
-          setSelectedItemToAdd('');
-          setItemQuantity('');
-          setItemPrice('');
-          setEditingItemType(null);
-          setEditingItemId(null);
-          setShowAllBooksForSubtitle(false);
-          setShowAllStationery(false);
-          setSelectedStationeryCategories(new Set());
-        }}
-        disabled={isAddItemFormDisabled}
-        className="hidden"
-      />
-      <span className="ml-2 text-gray-800 font-medium">Books</span>
-    </label>
+                    <section className="p-4 bg-white rounded-lg shadow-md space-y-4">
+                        <h2 className="section-header1">
+                            Add Items to Set & Stationery
+                        </h2>
 
-    {/* Stationery Option */}
-    <label
-      htmlFor="item-type-stationery"
-      className={`flex items-center cursor-pointer px-3 py-1 rounded-lg border transition 
-        ${selectedItemType === 'stationery' ? 'bg-green-100 border-green-400' : 'border-gray-300 hover:border-gray-400'}`}
-    >
-      <input
-        type="radio"
-        id="item-type-stationery"
-        name="item-type"
-        value="stationery"
-        checked={selectedItemType === 'stationery'}
-        onChange={(e) => {
-          setSelectedItemType(e.target.value);
-          setSelectedSubtitle('');
-          setSelectedItemToAdd('');
-          setItemQuantity('');
-          setItemPrice('');
-          setEditingItemType(null);
-          setEditingItemId(null);
-          setShowAllBooksForSubtitle(false);
-          setShowAllStationery(true);
-          setSelectedStationeryCategories(new Set(stationeryCategories));
-        }}
-        disabled={isAddItemFormDisabled}
-        className="hidden"
-      />
-      <span className="ml-2 text-gray-800 font-medium">Stationery</span>
-    </label>
-  </div>
-</div>
+                        {/* Item Type */}
+                        <div className="flex gap-4">
+                            <label
+                                htmlFor="item-type-books"
+                                className={`flex-1 flex items-center justify-center cursor-pointer py-2 rounded-lg border text-sm font-medium transition 
+        ${selectedItemType === 'books' ? 'bg-blue-100 border-blue-400 text-blue-700' : 'border-gray-300 hover:border-gray-400'}`}
+                            >
+                                <input
+                                    type="radio"
+                                    id="item-type-books"
+                                    name="item-type"
+                                    value="books"
+                                    checked={selectedItemType === 'books'}
+                                    onChange={(e) => {
+                                        setSelectedItemType(e.target.value);
+                                        setSelectedSubtitle('');
+                                        setSelectedItemToAdd('');
+                                        setItemQuantity('');
+                                        setItemPrice('');
+                                        setEditingItemType(null);
+                                        setEditingItemId(null);
+                                        setShowAllBooksForSubtitle(false);
+                                        setShowAllStationery(false);
+                                        setSelectedStationeryCategories(new Set());
+                                    }}
+                                    disabled={isAddItemFormDisabled}
+                                    className="hidden"
+                                />
+                                Books
+                            </label>
 
+                            <label
+                                htmlFor="item-type-stationery"
+                                className={`flex-1 flex items-center justify-center cursor-pointer py-2 rounded-lg border text-sm font-medium transition 
+        ${selectedItemType === 'stationery' ? 'bg-green-100 border-green-400 text-green-700' : 'border-gray-300 hover:border-gray-400'}`}
+                            >
+                                <input
+                                    type="radio"
+                                    id="item-type-stationery"
+                                    name="item-type"
+                                    value="stationery"
+                                    checked={selectedItemType === 'stationery'}
+                                    onChange={(e) => {
+                                        setSelectedItemType(e.target.value);
+                                        setSelectedSubtitle('');
+                                        setSelectedItemToAdd('');
+                                        setItemQuantity('');
+                                        setItemPrice('');
+                                        setEditingItemType(null);
+                                        setEditingItemId(null);
+                                        setShowAllBooksForSubtitle(false);
+                                        setShowAllStationery(true);
+                                        setSelectedStationeryCategories(new Set(stationeryCategories));
+                                    }}
+                                    disabled={isAddItemFormDisabled}
+                                    className="hidden"
+                                />
+                                Stationery
+                            </label>
+                        </div>
 
+                        {/* Sub Title for Books */}
                         {selectedItemType === 'books' && (
-                            <div className="form-group">
-                                <label htmlFor="subtitle-select" className="form-label">Sub Title:</label>
+                            <div>
                                 <select
-                                    id="subtitle-select"
                                     value={selectedSubtitle}
                                     onChange={(e) => {
                                         setSelectedSubtitle(e.target.value);
@@ -1367,10 +1365,9 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         setShowAllBooksForSubtitle(false);
                                     }}
                                     disabled={isAddItemFormDisabled || subtitles.length === 0}
-                                    className="form-select"
-                                    aria-label="Select Subtitle"
+                                    className="w-full border rounded-md px-2 py-1 text-sm"
                                 >
-                                    <option value="">-- Select --</option>
+                                    <option value="">-- Select Subtitle --</option>
                                     {subtitles.map((subtitle) => (
                                         <option key={subtitle._id} value={subtitle._id}>
                                             {subtitle.name}
@@ -1380,48 +1377,47 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             </div>
                         )}
 
-{selectedItemType === 'stationery' && (
-  <div className="mt-3">
-    <label className="form-label mb-2 block text-gray-700 font-medium">Select Stationery Categories:</label>
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-      {stationeryCategories.map((category) => (
-        <label
-          key={category}
-          className="flex items-center cursor-pointer px-2 py-1 border rounded-lg hover:border-gray-400 transition"
-        >
-          <input
-            type="checkbox"
-            value={category}
-            checked={selectedStationeryCategories.has(category)}
-            onChange={(e) => {
-              const newSet = new Set(selectedStationeryCategories);
-              if (e.target.checked) newSet.add(category);
-              else newSet.delete(category);
-              setSelectedStationeryCategories(newSet);
-            }}
-            className="mr-2"
-          />
-          <span className="text-gray-800">{category}</span>
-        </label>
-      ))}
-    </div>
-  </div>
-)}
+                        {/* Stationery Categories */}
+                        {selectedItemType === 'stationery' && (
+                            <div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {stationeryCategories.map((category) => (
+                                        <label
+                                            key={category}
+                                            className="flex items-center border rounded-md px-2 py-1 text-sm cursor-pointer hover:border-gray-400"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                value={category}
+                                                checked={selectedStationeryCategories.has(category)}
+                                                onChange={(e) => {
+                                                    const newSet = new Set(selectedStationeryCategories);
+                                                    if (e.target.checked) newSet.add(category);
+                                                    else newSet.delete(category);
+                                                    setSelectedStationeryCategories(newSet);
+                                                }}
+                                                className="mr-2"
+                                            />
+                                            {category}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
-
-                        <div className="form-group">
-                            <label htmlFor="item-select" className="form-label">
-                                {selectedItemType === 'stationery' ? 'Stationery Item:' : 'Book:'}
-                            </label>
+                        {/* Item Select */}
+                        <div>
                             <select
-                                id="item-select"
                                 value={selectedItemToAdd}
                                 onChange={(e) => handleBookSelection(e.target.value)}
-                                disabled={isAddItemFormDisabled || (selectedItemType === 'books' && !selectedSubtitle) || itemDropdownOptions.length === 0}
-                                className="form-select"
-                                aria-label={`Select ${selectedItemType === 'stationery' ? 'Stationery Item' : 'Book'}`}
+                                disabled={
+                                    isAddItemFormDisabled ||
+                                    (selectedItemType === 'books' && !selectedSubtitle) ||
+                                    itemDropdownOptions.length === 0
+                                }
+                                className="w-full border rounded-md px-2 py-1 text-sm"
                             >
-                                <option value="">-- Select --</option>
+                                <option value="">-- Select {selectedItemType === 'stationery' ? 'Stationery Item' : 'Book'} --</option>
                                 {selectedItemType === 'books' ? (
                                     <>
                                         {bookCatalogs.requiredBooks.length > 0 && (
@@ -1437,7 +1433,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                             <optgroup label="Optional Books">
                                                 {bookCatalogs.optionalBooks.map((book) => (
                                                     <option key={book._id} value={book._id}>
-                                                        {book.bookName} 
+                                                        {book.bookName}
                                                     </option>
                                                 ))}
                                             </optgroup>
@@ -1453,65 +1449,63 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             </select>
                         </div>
 
+                        {/* Show all books toggle */}
                         {selectedItemType === 'books' && isEditMode && (
-                            <div className="checkbox-group mb-4">
+                            <label className="flex items-center gap-2 text-sm">
                                 <input
                                     type="checkbox"
-                                    id="show-all-books-checkbox"
                                     checked={showAllBooksForSubtitle}
                                     onChange={(e) => setShowAllBooksForSubtitle(e.target.checked)}
                                     disabled={isAddItemFormDisabled || loading}
-                                    className="checkbox-input"
-                                    aria-label="Show all books for subtitle"
                                 />
-                                <label htmlFor="show-all-books-checkbox" className="checkbox-label">Show all books for this subtitle</label>
-                            </div>
+                                Show all books for this subtitle
+                            </label>
                         )}
 
-                        <div className="form-grid-2-cols">
-                            <div className="form-group">
-                                <label htmlFor="item-quantity" className="form-label">Order Quantity:</label>
-                                <input
-                                    type="number"
-                                    id="item-quantity"
-                                    value={itemQuantity}
-                                    onChange={(e) => setItemQuantity(e.target.value)}
-                                    onBlur={() => {
-                                        if (!itemQuantity || Number(itemQuantity) < 1) setItemQuantity('1');
-                                    }}
-                                    min="1"
-                                    disabled={isAddItemFormDisabled || !selectedItemToAdd || loading}
-                                    className="form-input"
-                                    aria-label="Order Quantity"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="item-price" className="form-label">Price:</label>
-                                <input
-                                    type="number"
-                                    id="item-price"
-                                    value={itemPrice}
-                                    onChange={(e) => setItemPrice(String(Math.max(0, Number(e.target.value) || 0)))}
-                                    min="0"
-                                    disabled={isAddItemFormDisabled || !selectedItemToAdd || loading}
-                                    className="form-input"
-                                    aria-label="Item Price"
-                                />
-                            </div>
+                        {/* Quantity + Price in one row */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <input
+                                type="number"
+                                placeholder="Quantity"
+                                value={itemQuantity}
+                                onChange={(e) => setItemQuantity(e.target.value)}
+                                onBlur={() => {
+                                    if (!itemQuantity || Number(itemQuantity) < 1) setItemQuantity('1');
+                                }}
+                                min="1"
+                                disabled={isAddItemFormDisabled || !selectedItemToAdd || loading}
+                                className="border rounded-md px-2 py-1 text-sm w-full"
+                            />
+                            <input
+                                type="number"
+                                placeholder="Price"
+                                value={itemPrice}
+                                onChange={(e) =>
+                                    setItemPrice(String(Math.max(0, Number(e.target.value) || 0)))
+                                }
+                                min="0"
+                                disabled={isAddItemFormDisabled || !selectedItemToAdd || loading}
+                                className="border rounded-md px-2 py-1 text-sm w-full"
+                            />
                         </div>
 
+                        {/* Submit Button */}
                         <div className="text-center">
                             <button
                                 onClick={handleAddOrUpdateItem}
                                 disabled={isAddItemButtonDisabled || itemLoading}
-                                className="btn-success"
-                                aria-label={editingItemId ? 'Update Item' : 'Add Item'}
+                                className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition inline-flex items-center"
                             >
-                                {itemLoading ? <FaSpinner className="btn-icon-mr animate-spin" /> : <FaPlusCircle className="btn-icon-mr" />}
+                                {itemLoading ? (
+                                    <FaSpinner className="mr-2 animate-spin" />
+                                ) : (
+                                    <FaPlusCircle className="mr-2" />
+                                )}
                                 {editingItemId ? 'Update Item' : 'Add Item'}
                             </button>
                         </div>
                     </section>
+
 
                     <section className="section-container">
                         <h2 className="section-header1">Copy Set</h2>
@@ -1848,20 +1842,20 @@ export default function CreateSetManagement({ showFlashMessage }) {
             )}
 
 
-{showQuantityModal && (
-  <div
-    className="modal-overlay"
-    onClick={() => {
-      setShowQuantityModal(false);
-      setEditedQuantities({});
-      setSetQuantities([]);
-    }}
-  >
-    <div
-      className="modal-content modal-content-wide"
-      onClick={(e) => e.stopPropagation()} // prevent inside clicks from closing
-    >
-                        <h2 className="modal-title">Manage Set Quantities</h2>
+            {showQuantityModal && (
+                <div
+                    className="modal-overlay"
+                    onClick={() => {
+                        setShowQuantityModal(false);
+                        setEditedQuantities({});
+                        setSetQuantities([]);
+                    }}
+                >
+                    <div
+                        className="modal-content modal-content-wide"
+                        onClick={(e) => e.stopPropagation()} // prevent inside clicks from closing
+                    >
+                        <strong><h2 className="modal-title">Manage Set Quantities</h2></strong>
                         <p className="modal-message">Update the number of sets for each class for {customers.find(c => c._id === selectedCustomer)?.customerName || 'the selected school'}.</p>
                         <div className="table-container">
                             <table className="app-table">
@@ -1944,44 +1938,44 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 </div>
             )}
 
-{showDeleteQuantityModal && (
-  <div
-    className="modal-overlay"
-    onClick={() => {
-      setShowDeleteQuantityModal(false);
-      setQuantityToDelete(null);
-    }}
-  >
-    <div
-      className="modal-content"
-      onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
-    >
-      <h2 className="modal-title">Confirm Quantity Deletion</h2>
-      <p className="modal-message">
-        Are you sure you want to delete the quantity for {quantityToDelete?.className || 'this class'}?
-      </p>
-      <div className="modal-buttons">
-        <button
-          onClick={confirmDeleteQuantity}
-          disabled={loading}
-          className="btn-danger"
-        >
-          {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Confirm'}
-        </button>
-        <button
-          onClick={() => {
-            setShowDeleteQuantityModal(false);
-            setQuantityToDelete(null);
-          }}
-          disabled={loading}
-          className="btn-secondary"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            {showDeleteQuantityModal && (
+                <div
+                    className="modal-overlay"
+                    onClick={() => {
+                        setShowDeleteQuantityModal(false);
+                        setQuantityToDelete(null);
+                    }}
+                >
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+                    >
+                        <h2 className="modal-title">Confirm Quantity Deletion</h2>
+                        <p className="modal-message">
+                            Are you sure you want to delete the quantity for {quantityToDelete?.className || 'this class'}?
+                        </p>
+                        <div className="modal-buttons">
+                            <button
+                                onClick={confirmDeleteQuantity}
+                                disabled={loading}
+                                className="btn-danger"
+                            >
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Confirm'}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowDeleteQuantityModal(false);
+                                    setQuantityToDelete(null);
+                                }}
+                                disabled={loading}
+                                className="btn-secondary"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

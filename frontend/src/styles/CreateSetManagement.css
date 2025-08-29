@@ -566,3 +566,20 @@
   justify-content: flex-end; /* button sticks to right */
   align-items: flex-start;
 }
+
+.school-quantity-flex {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.school-quantity-flex .form-select {
+  flex: 1; /* dropdown max width le */
+}
+
+.school-quantity-flex .quantity-btn {
+  flex: 0 0 auto;   /* button jitna chhota hai utna hi space le */
+  padding: 6px 12px;
+  font-size: 13px;
+  white-space: nowrap; /* text wrap na ho */
+}

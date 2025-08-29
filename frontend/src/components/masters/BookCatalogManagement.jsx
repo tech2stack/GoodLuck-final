@@ -28,6 +28,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     const [languages, setLanguages] = useState([]);
     const [classes, setClasses] = useState([]);
     const [isbnVisible, setIsbnVisible] = useState({});
+    const [showLanguageField, setShowLanguageField] = useState(false);
 
 
     const [formData, setFormData] = useState({
@@ -55,8 +56,8 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     const [bookToDelete, setBookToDelete] = useState(null);
 
     // New state to manage the expanded row for details
-    const [expandedRowId, setExpandedRowId] = useState(null);
-
+    const [priceDropdownId, setPriceDropdownId] = useState(null);
+    const dropdownRef = useRef(null);
     // Ref for scrolling to the new item in the table (if needed)
     const tableBodyRef = useRef(null);
 
@@ -117,6 +118,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     }, [showFlashMessage]);
 
     // --- Fetch Subtitles based on selected Publication (UPDATED LOGIC) ---
+// --- Fetch Subtitles based on selected Publication (UPDATED LOGIC) ---
 const fetchSubtitles = useCallback(
     (publicationId, initialSubtitleId = null) => {
         console.log('Fetching subtitles for publicationId:', publicationId, 'Initial Subtitle ID:', initialSubtitleId);
@@ -125,14 +127,13 @@ const fetchSubtitles = useCallback(
         if (!selectedPub) {
             setSubtitles([]);
             setFormData((prev) => ({ ...prev, subtitle: '' }));
-            if (publicationFilter === 'all') {
-                setSubtitleFilter('all'); // Reset subtitle filter when no publication is selected
-            }
+            setSubtitleFilter('all'); // ✅ Reset subtitle filter when no publication is selected
             console.log('Subtitle cleared because no publicationId or publication not found.');
             return;
         }
 
         const fetchedSubtitles = selectedPub.subtitles || [];
+        // ✅ This is the key change: set the state for the filter dropdown
         setSubtitles(fetchedSubtitles);
         console.log('Fetched subtitles from state:', fetchedSubtitles);
 
@@ -142,15 +143,15 @@ const fetchSubtitles = useCallback(
                 setFormData((prev) => ({ ...prev, subtitle: initialSubtitleId }));
                 console.log('Subtitle set to initialSubtitleId:', initialSubtitleId);
             } else {
-                setFormData((prev) => ({ ...prev, subtitle: '' })); // Set to empty string instead of first available
-                console.log('Subtitle set to first available or cleared (no initialSubtitleId).');
+                setFormData((prev) => ({ ...prev, subtitle: '' }));
+                console.log('Subtitle set to empty string as initial ID not found.');
             }
         } else {
             setFormData((prev) => ({ ...prev, subtitle: fetchedSubtitles[0]?._id || '' }));
             console.log('Subtitle set to first available or cleared (no initialSubtitleId).');
         }
     },
-    [publications, publicationFilter]
+    [publications]
 );
     // --- Fetch Book Catalogs ---
     // --- Fetch Book Catalogs ---
@@ -190,7 +191,27 @@ const fetchSubtitles = useCallback(
         fetchDropdownData();
         fetchBookCatalogs();
     }, [fetchDropdownData, fetchBookCatalogs]);
-
+// ✅ New useEffect to handle subtitle filter updates based on publication filter.
+    useEffect(() => {
+        // This effect will be triggered whenever publicationFilter changes.
+        // If a publication is selected, fetch the corresponding subtitles for the filter dropdown.
+        if (publicationFilter !== 'all') {
+            const selectedPub = publications.find((pub) => pub._id === publicationFilter);
+            if (selectedPub) {
+                setSubtitles(selectedPub.subtitles || []);
+            } else {
+                setSubtitles([]);
+            }
+        } else {
+            // If 'All Publications' is selected, reset subtitles
+            setSubtitles([]);
+            // Also reset the subtitle filter to 'all'
+            setSubtitleFilter('all');
+        }
+        // Always reset subtitle filter to 'all' when publication filter changes.
+        // This prevents showing an old subtitle selection that's not valid for the new publication.
+        setSubtitleFilter('all');
+    }, [publicationFilter, publications]);
     // Effect to fetch subtitles when publication changes (for new entry or manual change)
     useEffect(() => {
         // Only auto-fetch subtitles if not in edit mode (handleEdit calls it explicitly)
@@ -205,6 +226,19 @@ const fetchSubtitles = useCallback(
         console.log("PDF Libraries Check (BookCatalogManagement):");
         console.log("window.jspdf (global object):", typeof window.jspdf);
         console.log("window.jspdf.jsPDF (constructor):", typeof window.jspdf?.jsPDF);
+    }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setPriceDropdownId(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
     }, []);
 
 
@@ -473,6 +507,7 @@ const filteredBookCatalogs = useMemo(() => {
         const matchesPublication =
             publicationFilter === 'all' || bookCatalogItem.publication?._id === publicationFilter;
 
+        // ✅ Corrected logic: Use `subtitleFilter` to match the book's subtitle ID.
         const matchesSubtitle =
             subtitleFilter === 'all' || bookCatalogItem.subtitle?._id === subtitleFilter;
 
@@ -513,6 +548,11 @@ const filteredBookCatalogs = useMemo(() => {
         return classes.find(c => c._id === classId)?.name || 'Unknown';
     };
 
+
+    const togglePriceDropdown = (bookId, e) => {
+        e.stopPropagation();
+        setPriceDropdownId(priceDropdownId === bookId ? null : bookId);
+    };
 
     // --- PDF Download Functionality ---
     // --- PDF Download Functionality ---
@@ -654,29 +694,45 @@ const filteredBookCatalogs = useMemo(() => {
                         <div className="form-row">
 
                             <div className="form-group">
-                                <label htmlFor="language">Elective Language:</label>
-                                <select
-                                    id="language"
-                                    name="language"
-                                    value={formData.language}
-                                    onChange={handleChange}
-                                    disabled={loading || languages.length === 0}
-                                    className="form-select"
-                                >
-                                    <option value="">Select </option>
-                                    {languages.length === 0 ? (
-                                        <option value="" disabled>Loading Languages...</option>
-                                    ) : (
-                                        <>
-                                            {languages.map(lang => (
-                                                <option key={lang._id} value={lang._id}>
-                                                    {lang.name}
-                                                </option>
-                                            ))}
-                                        </>
-                                    )}
-                                </select>
+                                <div className="form-group elective-language-toggle">
+                                    <button
+                                        type="button"
+                                        className={`toggle-btn ${showLanguageField ? "active" : ""}`}
+                                        onClick={() => {
+                                            setShowLanguageField(prev => !prev);
+                                            if (showLanguageField) {
+                                                // uncheck hone par reset
+                                                setFormData(prev => ({ ...prev, language: '' }));
+                                            }
+                                        }}
+                                    >
+                                        {showLanguageField ? " -Hide Language" : "+Add Language"}
+                                    </button>
+
+                                    {/* Niche language field tabhi show hoga jab button active h */}
+
+                                </div>
+
+
+                                {showLanguageField && (
+                                    <select
+                                        id="language"
+                                        name="language"
+                                        value={formData.language}
+                                        onChange={handleChange}
+                                        disabled={loading || languages.length === 0}
+                                        className="form-select mt-2"
+                                    >
+                                        <option value="">Select</option>
+                                        {languages.map(lang => (
+                                            <option key={lang._id} value={lang._id}>
+                                                {lang.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
                             </div>
+
                             <div className="form-group">
                                 <label htmlFor="bookName">Book Name:</label>
                                 <input
@@ -924,29 +980,29 @@ const filteredBookCatalogs = useMemo(() => {
                                 </div>
 
                                 {/* Add Publication Filter */}
-    <div className="filter-group">
-        <label htmlFor="publicationFilter" className="mr-2"></label>
-        <select
-            id="publicationFilter"
-            value={publicationFilter}
-            onChange={(e) => {
-                const selectedPublicationId = e.target.value;
-                setPublicationFilter(selectedPublicationId);
-                setCurrentPage(1);
-                // Fetch subtitles for the selected publication
-                fetchSubtitles(selectedPublicationId);
-            }}
-            className="form-select"
-            disabled={loading || publications.length === 0}
-        >
-            <option value="all">All Publications</option>
-            {publications.map((pub) => (
-                <option key={pub._id} value={pub._id}>
-                    {pub.name}
-                </option>
-            ))}
-        </select>
-    </div>
+                                <div className="filter-group">
+                                    <label htmlFor="publicationFilter" className="mr-2"></label>
+                                    <select
+                                        id="publicationFilter"
+                                        value={publicationFilter}
+                                        onChange={(e) => {
+                                            const selectedPublicationId = e.target.value;
+                                            setPublicationFilter(selectedPublicationId);
+                                            setCurrentPage(1);
+                                            // Fetch subtitles for the selected publication
+                                            fetchSubtitles(selectedPublicationId);
+                                        }}
+                                        className="form-select"
+                                        disabled={loading || publications.length === 0}
+                                    >
+                                        <option value="all">All Publications</option>
+                                        {publications.map((pub) => (
+                                            <option key={pub._id} value={pub._id}>
+                                                {pub.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
                                 <div className="filter-group">
                                     <label htmlFor="subtitleFilter" className="mr-2"></label>
@@ -966,7 +1022,7 @@ const filteredBookCatalogs = useMemo(() => {
                                         ))}
                                     </select>
 
-                                    <label htmlFor="publicationFilter" className="mr-2"> </label>
+                                    {/* <label htmlFor="publicationFilter" className="mr-2"> </label>
                                     <select
                                         id="publicationFilter"
                                         value={publicationFilter}
@@ -982,7 +1038,7 @@ const filteredBookCatalogs = useMemo(() => {
                                         {publications.map((pub) => (
                                             <option key={pub._id} value={pub._id}>{pub.name}</option>
                                         ))}
-                                    </select>
+                                    </select> */}
 
                                     <label htmlFor="languageFilter" className="mr-2"> </label>
                                     <select
@@ -1011,74 +1067,76 @@ const filteredBookCatalogs = useMemo(() => {
                                 <thead>
                                     <tr>
                                         <th>S.No.</th>
-                                        <th>Book Name</th>
                                         <th>Publication</th>
                                         <th>Subtitle</th>
+                                        <th>Book Name</th>
+                                        <th>Price</th>
                                         <th>Language</th>
                                         <th>Book Type</th>
-                                        <th>Price</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody ref={tableBodyRef}>
                                     {paginatedItems.map((book, index) => (
-                                        <React.Fragment key={book._id}>
-                                            <tr onClick={() => setExpandedRowId(expandedRowId === book._id ? null : book._id)}>
-                                                <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                                <td>{book.bookName}</td>
-                                                <td>{book.publication?.name || 'N/A'}</td>
-                                                <td>{book.subtitle?.name || 'N/A'}</td>
-                                                <td>{book.language?.name || 'N/A'}</td>
-                                                <td>{book.bookType === 'common_price' ? 'Common Price' : 'By Class'}</td>
-                                                <td>
-                                                    {book.bookType === 'common_price'
-                                                        ? `₹${book.commonPrice}`
-                                                        : 'View Prices'}
-                                                </td>
-                                                <td>
-                                                    <span className={`status-badge ${book.status}`}>{book.status}</span>
-                                                </td>
-                                                <td className="actions-column">
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleEdit(book); }}
-                                                        className="action-icon-button edit-button"
-                                                        title="Edit"
-                                                        disabled={loading}
-                                                    >
-                                                        <FaEdit className="icon" />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleDeleteClick(book); }}
-                                                        className="action-icon-button delete-button"
-                                                        title="Delete"
-                                                        disabled={loading}
-                                                    >
-                                                        <FaTrashAlt className="icon" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            {expandedRowId === book._id && book.bookType === 'default' && (
-                                                <tr className="details-row">
-                                                    <td colSpan="9">
-                                                        <div className="details-container">
-                                                            <h5>Class-wise Details:</h5>
-                                                            <div className="class-details-grid">
-                                                                {classes.map(cls => (
-                                                                    <div key={cls._id} className="class-detail-item">
-                                                                        <strong>{cls.name}:</strong>
-                                                                        <div className="details-prices">
-                                                                            <p>Price: ₹{book.pricesByClass[cls._id] || 'N/A'}</p>
-                                                                            <p>ISBN: {book.isbnByClass[cls._id] || 'N/A'}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
+                                        <tr key={book._id}>
+                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td>{book.publication?.name || 'N/A'}</td>
+                                            <td>{book.subtitle?.name || 'N/A'}</td>
+                                            <td>{book.bookName}</td>
+                                            <td className="price-cell">
+                                                {book.bookType === 'common_price' ? (
+                                                    `${book.commonPrice}`
+                                                ) : (
+                                                    <div className="price-dropdown-container" ref={dropdownRef}>
+                                                        <span
+                                                            className="view-prices"
+                                                            onClick={(e) => togglePriceDropdown(book._id, e)}
+                                                        >
+                                                            View Prices
+                                                        </span>
+                                                        {priceDropdownId === book._id && (
+                                                            <div className="price-dropdown">
+                                                                <strong><h5>Class-wise Prices:</h5></strong>
+                                                                <ul>
+                                                                    {classes.map(cls => (
+                                                                        <li key={cls._id}>
+                                                                            <strong>{cls.name}:</strong> {book.pricesByClass[cls._id] || 'N/A'}
+                                                                            {book.isbnByClass[cls._id] && (
+                                                                                <span> / ISBN: {book.isbnByClass[cls._id]}</span>
+                                                                            )}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
                                                             </div>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </React.Fragment>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td>{book.language?.name || 'N/A'}</td>
+                                            <td>{book.bookType === 'common_price' ? 'Common Price' : 'By Class'}</td>
+                                            <td>
+                                                <span className={`status-badge ${book.status}`}>{book.status}</span>
+                                            </td>
+                                            <td className="actions-column">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleEdit(book); }}
+                                                    className="action-icon-button edit-button"
+                                                    title="Edit"
+                                                    disabled={loading}
+                                                >
+                                                    <FaEdit className="icon" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(book); }}
+                                                    className="action-icon-button delete-button"
+                                                    title="Delete"
+                                                    disabled={loading}
+                                                >
+                                                    <FaTrashAlt className="icon" />
+                                                </button>
+                                            </td>
+                                        </tr>
                                     ))}
                                 </tbody>
                             </table>

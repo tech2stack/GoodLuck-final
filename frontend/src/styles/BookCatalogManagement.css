@@ -756,3 +756,91 @@
   gap: 1rem;
   margin-bottom: 1rem;
 }
+.price-cell {
+    position: relative;
+}
+
+.price-dropdown-container {
+    display: inline-block;
+}
+
+.view-prices {
+    cursor: pointer;
+    color: #007bff;
+    text-decoration: underline;
+}
+
+.view-prices:hover {
+    color: #0056b3;
+}
+
+.price-dropdown {
+    position: absolute;
+    /* bottom: 100%; Position above the cell */
+    left: 0;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+    padding: 10px;
+    z-index: 1000;
+    min-width: 200px;
+    max-width: 300px; /* Constrain width to prevent overflow */
+    max-height: 300px; /* Increased height for longer list */
+    overflow-y: auto; /* Enable vertical scrolling */
+    box-sizing: border-box; /* Ensure padding is included in dimensions */
+}
+
+.price-dropdown h5 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: #333;
+}
+
+.price-dropdown ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.price-dropdown li {
+    margin-bottom: 5px;
+    font-size: 12px;
+    color: #555;
+    white-space: nowrap; /* Prevent text wrapping to keep each item on one line */
+}
+
+.price-dropdown li strong {
+    margin-right: 5px;
+}
+
+.elective-language-toggle {
+  margin-bottom: 1rem;
+}
+
+.toggle-btn {
+  background-color: #a9d5f9;
+  border: 1px solid #aaa;
+  padding: 0px 48px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  margin-top: 40px;
+}
+
+.toggle-btn.active {
+  background-color: #409cff;
+  color: white;
+  border-color: #0056b3;
+}
+
+.language-select-box {
+  margin-top: 10px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}

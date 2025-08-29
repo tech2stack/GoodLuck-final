@@ -77,6 +77,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
     // States for Search
     const [searchTerm, setSearchTerm] = useState('');
     const [publicationTypeFilter, setPublicationTypeFilter] = useState('all'); // Default to 'all' for no filter
+    const [publicationNameFilter, setPublicationNameFilter] = useState('all');
 
     // States for Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -181,86 +182,86 @@ const PublicationManagement = ({ showFlashMessage }) => {
 
     // --- Submit Form ---
     const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setLocalError(null);
+        e.preventDefault();
+        setLoading(true);
+        setLocalError(null);
 
-    
-    if (!formData.name.trim()) {
-        setLocalError('Publication Name is required.');
-        showFlashMessage('Publication Name is required.', 'error');
-        setLoading(false);
-        return;
-    }
 
-    let cityIdToUse = '';
-    const enteredCityName = formData.city.trim();
+        if (!formData.name.trim()) {
+            setLocalError('Publication Name is required.');
+            showFlashMessage('Publication Name is required.', 'error');
+            setLoading(false);
+            return;
+        }
 
-    try {
-     
-        if (enteredCityName) {
-            let existingCity = cities.find(c => c && c.name && c.name.toLowerCase() === enteredCityName.toLowerCase());
-            if (existingCity) {
-                cityIdToUse = existingCity._id;
-            } else {
-                const newCityResponse = await api.post('/cities', { name: enteredCityName, status: 'active' });
-                if (newCityResponse.data.status === 'success') {
-                    cityIdToUse = newCityResponse.data.data.city._id;
-                    showFlashMessage(`New city "${enteredCityName}" created successfully!`, 'success');
-                    await fetchCitiesForLookup();
+        let cityIdToUse = '';
+        const enteredCityName = formData.city.trim();
+
+        try {
+
+            if (enteredCityName) {
+                let existingCity = cities.find(c => c && c.name && c.name.toLowerCase() === enteredCityName.toLowerCase());
+                if (existingCity) {
+                    cityIdToUse = existingCity._id;
                 } else {
-                    throw new Error(newCityResponse.data.message || 'Failed to create new city.');
+                    const newCityResponse = await api.post('/cities', { name: enteredCityName, status: 'active' });
+                    if (newCityResponse.data.status === 'success') {
+                        cityIdToUse = newCityResponse.data.data.city._id;
+                        showFlashMessage(`New city "${enteredCityName}" created successfully!`, 'success');
+                        await fetchCitiesForLookup();
+                    } else {
+                        throw new Error(newCityResponse.data.message || 'Failed to create new city.');
+                    }
                 }
             }
-        }
 
-        const publicationData = { ...formData, city: cityIdToUse || undefined }; 
+            const publicationData = { ...formData, city: cityIdToUse || undefined };
 
-        let response;
-        if (editingPublicationId) {
-            // Update case
-            response = await api.patch(`/publications/${editingPublicationId}`, publicationData);
-            if (response.data.status === 'success') {
-                showFlashMessage('Publication updated successfully!', 'success');
-                fetchPublications();
-                setFormData(initialFormData);
-                setEditingPublicationId(null);
-                setSelectedPublicationForSubtitle(null);
-                setNewPublicationSubtitles([]);
+            let response;
+            if (editingPublicationId) {
+                // Update case
+                response = await api.patch(`/publications/${editingPublicationId}`, publicationData);
+                if (response.data.status === 'success') {
+                    showFlashMessage('Publication updated successfully!', 'success');
+                    fetchPublications();
+                    setFormData(initialFormData);
+                    setEditingPublicationId(null);
+                    setSelectedPublicationForSubtitle(null);
+                    setNewPublicationSubtitles([]);
+                } else {
+                    throw new Error(response.data.message || 'Failed to update publication.');
+                }
             } else {
-                throw new Error(response.data.message || 'Failed to update publication.');
+                // Create case
+                const newPublicationData = {
+                    ...publicationData,
+                    subtitles: newPublicationSubtitles.map(s => ({ name: s.name, discount: s.discount }))
+                };
+                response = await api.post('/publications', newPublicationData);
+                if (response.data.status === 'success') {
+                    showFlashMessage('Publication created successfully!', 'success');
+                    setPublications(prev => [response.data.data.publication, ...prev]);
+                    setCurrentPage(1);
+                    setNewPublicationSubtitles([]);
+                    setEditingPublicationId(response.data.data.publication._id);
+                    setSelectedPublicationForSubtitle(response.data.data.publication);
+                    setFormData({
+                        ...response.data.data.publication,
+                        city: response.data.data.publication.city ? response.data.data.publication.city.name : ''
+                    });
+                } else {
+                    throw new Error(response.data.message || 'Failed to create publication.');
+                }
             }
-        } else {
-            // Create case
-            const newPublicationData = {
-                ...publicationData,
-                subtitles: newPublicationSubtitles.map(s => ({ name: s.name, discount: s.discount }))
-            };
-            response = await api.post('/publications', newPublicationData);
-            if (response.data.status === 'success') {
-                showFlashMessage('Publication created successfully!', 'success');
-                setPublications(prev => [response.data.data.publication, ...prev]);
-                setCurrentPage(1);
-                setNewPublicationSubtitles([]);
-                setEditingPublicationId(response.data.data.publication._id);
-                setSelectedPublicationForSubtitle(response.data.data.publication);
-                setFormData({
-                    ...response.data.data.publication,
-                    city: response.data.data.publication.city ? response.data.data.publication.city.name : ''
-                });
-            } else {
-                throw new Error(response.data.message || 'Failed to create publication.');
-            }
+        } catch (err) {
+            console.error('Error saving publication:', err);
+            const errorMessage = err.response?.data?.message || 'Failed to save publication. Please check your input.';
+            setLocalError(errorMessage);
+            showFlashMessage(errorMessage, 'error');
+        } finally {
+            setLoading(false);
         }
-    } catch (err) {
-        console.error('Error saving publication:', err);
-        const errorMessage = err.response?.data?.message || 'Failed to save publication. Please check your input.';
-        setLocalError(errorMessage);
-        showFlashMessage(errorMessage, 'error');
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
     // --- Edit and Delete Operations ---
     const handleEdit = (publicationItem) => {
@@ -468,7 +469,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
 
     // --- Search Filtering ---
     const filteredPublications = publications.filter((publicationItem) => {
-        // Ensure publicationItem exists and has required fields
         if (!publicationItem) return false;
 
         // Apply publicationType filter
@@ -476,7 +476,12 @@ const PublicationManagement = ({ showFlashMessage }) => {
             publicationTypeFilter === 'all' ||
             publicationItem.publicationType === publicationTypeFilter;
 
-        // Apply search term filter
+        // NEW: Apply publicationName filter
+        const matchesName =
+            publicationNameFilter === 'all' ||
+            publicationItem.name === publicationNameFilter;
+
+        // Apply existing search term filter
         const matchesSearch =
             publicationItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             publicationItem.personName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -493,8 +498,8 @@ const PublicationManagement = ({ showFlashMessage }) => {
                         sub && sub.name && sub.name.toLowerCase().includes(searchTerm.toLowerCase())
                 ));
 
-        // Return true only if both conditions are satisfied
-        return matchesType && matchesSearch;
+        // Combine all filter conditions
+        return matchesType && matchesName && matchesSearch;
     });
 
     // --- Pagination Logic ---
@@ -844,6 +849,26 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                         className="search-input"
                                     />
                                     <FaSearch className="search-icon" />
+                                </div>
+                                <div className="publication-type-filter">
+                                    <label htmlFor="publicationNameFilter" className="mr-2"></label>
+                                    <select
+                                        id="publicationNameFilter"
+                                        value={publicationNameFilter}
+                                        onChange={(e) => {
+                                            setPublicationNameFilter(e.target.value);
+                                            setCurrentPage(1); // Reset to first page when filter changes
+                                        }}
+                                        className="form-select"
+                                    >
+                                        <option value="all">All Publications</option>
+                                        {/* Map over a unique list of publication names here */}
+                                        {publications.map(pub => (
+                                            <option key={pub._id} value={pub.name}>
+                                                {pub.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                                 {/* NEW: Publication Type Filter Dropdown */}
                                 <div className="publication-type-filter">

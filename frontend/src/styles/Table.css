@@ -14,7 +14,7 @@
 .app-table th,
 .app-table td {
     padding: 6px 10px;
-    text-align: left;
+    text-align: center;
     border: 1px solid black;
     vertical-align: middle;
     white-space: nowrap;
