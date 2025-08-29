@@ -1285,61 +1285,71 @@ export default function CreateSetManagement({ showFlashMessage }) {
 
                     <section className="section-container">
                         <h2 className="section-header1">Add Items to Set & Stationery</h2>
-                        <div className="form-group">
-                            <label className="form-label">Item Type:</label>
-                            <div className="flex gap-4 items-center">
-                                <div className="flex items-center">
-                                    <input
-                                        type="radio"
-                                        id="item-type-books"
-                                        name="item-type"
-                                        value="books"
-                                        checked={selectedItemType === 'books'}
-                                        onChange={(e) => {
-                                            setSelectedItemType(e.target.value);
-                                            setSelectedSubtitle('');
-                                            setSelectedItemToAdd('');
-                                            setItemQuantity('');
-                                            setItemPrice('');
-                                            setEditingItemType(null);
-                                            setEditingItemId(null);
-                                            setShowAllBooksForSubtitle(false);
-                                            setShowAllStationery(false);
-                                            setSelectedStationeryCategories(new Set());
-                                        }}
-                                        disabled={isAddItemFormDisabled}
-                                        className="radio-input"
-                                        aria-label="Select Books"
-                                    />
-                                    <label htmlFor="item-type-books" className="ml-2 form-label">Books</label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input
-                                        type="radio"
-                                        id="item-type-stationery"
-                                        name="item-type"
-                                        value="stationery"
-                                        checked={selectedItemType === 'stationery'}
-                                        onChange={(e) => {
-                                            setSelectedItemType(e.target.value);
-                                            setSelectedSubtitle('');
-                                            setSelectedItemToAdd('');
-                                            setItemQuantity('');
-                                            setItemPrice('');
-                                            setEditingItemType(null);
-                                            setEditingItemId(null);
-                                            setShowAllBooksForSubtitle(false);
-                                            setShowAllStationery(true);
-                                            setSelectedStationeryCategories(new Set(stationeryCategories));
-                                        }}
-                                        disabled={isAddItemFormDisabled}
-                                        className="radio-input"
-                                        aria-label="Select Stationery"
-                                    />
-                                    <label htmlFor="item-type-stationery" className="ml-2 form-label">Stationery Items</label>
-                                </div>
-                            </div>
-                        </div>
+<div className="form-group">
+  <label className="form-label mb-2 block text-gray-700 font-medium">Item Type:</label>
+  <div className="flex gap-6 items-center">
+    {/* Books Option */}
+    <label
+      htmlFor="item-type-books"
+      className={`flex items-center cursor-pointer px-3 py-1 rounded-lg border transition 
+        ${selectedItemType === 'books' ? 'bg-blue-100 border-blue-400' : 'border-gray-300 hover:border-gray-400'}`}
+    >
+      <input
+        type="radio"
+        id="item-type-books"
+        name="item-type"
+        value="books"
+        checked={selectedItemType === 'books'}
+        onChange={(e) => {
+          setSelectedItemType(e.target.value);
+          setSelectedSubtitle('');
+          setSelectedItemToAdd('');
+          setItemQuantity('');
+          setItemPrice('');
+          setEditingItemType(null);
+          setEditingItemId(null);
+          setShowAllBooksForSubtitle(false);
+          setShowAllStationery(false);
+          setSelectedStationeryCategories(new Set());
+        }}
+        disabled={isAddItemFormDisabled}
+        className="hidden"
+      />
+      <span className="ml-2 text-gray-800 font-medium">Books</span>
+    </label>
+
+    {/* Stationery Option */}
+    <label
+      htmlFor="item-type-stationery"
+      className={`flex items-center cursor-pointer px-3 py-1 rounded-lg border transition 
+        ${selectedItemType === 'stationery' ? 'bg-green-100 border-green-400' : 'border-gray-300 hover:border-gray-400'}`}
+    >
+      <input
+        type="radio"
+        id="item-type-stationery"
+        name="item-type"
+        value="stationery"
+        checked={selectedItemType === 'stationery'}
+        onChange={(e) => {
+          setSelectedItemType(e.target.value);
+          setSelectedSubtitle('');
+          setSelectedItemToAdd('');
+          setItemQuantity('');
+          setItemPrice('');
+          setEditingItemType(null);
+          setEditingItemId(null);
+          setShowAllBooksForSubtitle(false);
+          setShowAllStationery(true);
+          setSelectedStationeryCategories(new Set(stationeryCategories));
+        }}
+        disabled={isAddItemFormDisabled}
+        className="hidden"
+      />
+      <span className="ml-2 text-gray-800 font-medium">Stationery</span>
+    </label>
+  </div>
+</div>
+
 
                         {selectedItemType === 'books' && (
                             <div className="form-group">
@@ -1370,44 +1380,34 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             </div>
                         )}
 
-                        {selectedItemType === 'stationery' && (
-                            <div className="form-group">
-                                <label className="form-label">Filter by Category:</label>
-                                <div className="flex flex-wrap gap-x-4 gap-y-2">
-                                    {stationeryCategories.length > 0 ? (
-                                        stationeryCategories.map((category) => (
-                                            <div key={category} className="flex items-center">
-                                                <input
-                                                    type="checkbox"
-                                                    id={`category-checkbox-${category}`}
-                                                    value={category}
-                                                    checked={selectedStationeryCategories.has(category)}
-                                                    onChange={() => handleCategoryChange(category)}
-                                                    disabled={isAddItemFormDisabled || loading}
-                                                    className="checkbox-input"
-                                                    aria-label={`Filter by ${category}`}
-                                                />
-                                                <label htmlFor={`category-checkbox-${category}`} className="ml-2 form-label">{category}</label>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p className="text-sm text-gray-500">No categories found.</p>
-                                    )}
-                                </div>
-                                <div className="checkbox-group mt-2">
-                                    <input
-                                        type="checkbox"
-                                        id="show-all-stationery-checkbox"
-                                        checked={showAllStationery}
-                                        onChange={handleShowAllStationeryChange}
-                                        disabled={isAddItemFormDisabled || loading}
-                                        className="checkbox-input"
-                                        aria-label="Show all stationery items"
-                                    />
-                                    <label htmlFor="show-all-stationery-checkbox" className="checkbox-label">Show all stationery items</label>
-                                </div>
-                            </div>
-                        )}
+{selectedItemType === 'stationery' && (
+  <div className="mt-3">
+    <label className="form-label mb-2 block text-gray-700 font-medium">Select Stationery Categories:</label>
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+      {stationeryCategories.map((category) => (
+        <label
+          key={category}
+          className="flex items-center cursor-pointer px-2 py-1 border rounded-lg hover:border-gray-400 transition"
+        >
+          <input
+            type="checkbox"
+            value={category}
+            checked={selectedStationeryCategories.has(category)}
+            onChange={(e) => {
+              const newSet = new Set(selectedStationeryCategories);
+              if (e.target.checked) newSet.add(category);
+              else newSet.delete(category);
+              setSelectedStationeryCategories(newSet);
+            }}
+            className="mr-2"
+          />
+          <span className="text-gray-800">{category}</span>
+        </label>
+      ))}
+    </div>
+  </div>
+)}
+
 
                         <div className="form-group">
                             <label htmlFor="item-select" className="form-label">
