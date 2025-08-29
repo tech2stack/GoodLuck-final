@@ -1,7 +1,7 @@
 // src/components/forms/CreateEmployeeForm.jsx
 import React, { useState, useEffect } from 'react';
-import api from '../../utils/api';
-import { FaPlus, FaTimes, FaSpinner } from 'react-icons/fa';
+import api from '../../utils/api'; // Assuming this path is correct in your project setup
+import { FaPlus, FaTimes, FaSpinner } from 'react-icons/fa'; // Assuming react-icons/fa is installed or handled as external
 
 const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMessage }) => {
     const [formData, setFormData] = useState({
@@ -10,7 +10,7 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
         address: '',
         branchId: '',
         postId: '',
-        cityId: '',
+        city: '', // Changed from cityId to city
         adharNo: '',
         panCardNo: '',
         employeeCode: '',
@@ -24,24 +24,21 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
 
     const [loading, setLoading] = useState(false);
     const [posts, setPosts] = useState([]);
-    const [cities, setCities] = useState([]);
+    // Removed cities state as it's no longer fetched as a dropdown
+    // const [cities, setCities] = useState([]);
 
-    const fetchPostsAndCities = async () => {
+    const fetchPosts = async () => { // Renamed from fetchPostsAndCities
         try {
-            const [postsResponse, citiesResponse] = await Promise.all([
-                api.get('/posts'),
-                api.get('/cities')
-            ]);
+            const postsResponse = await api.get('/posts'); // Removed api.get('/cities')
             setPosts(postsResponse.data.data.posts);
-            setCities(citiesResponse.data.data.cities || []);
         } catch (err) {
-            console.error('Error fetching posts and cities:', err);
-            showFlashMessage('Failed to load post and city information.', 'error');
+            console.error('Error fetching posts:', err); // Updated error message
+            showFlashMessage('Failed to load post information.', 'error'); // Updated flash message
         }
     };
 
     useEffect(() => {
-        fetchPostsAndCities();
+        fetchPosts(); // Call fetchPosts
     }, []);
 
     const handleChange = (e) => {
@@ -58,9 +55,17 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
         e.preventDefault();
         setLoading(true);
 
+        // Manual validation for required fields
+        if (!formData.name || !formData.branchId || !formData.city || !formData.postId) {
+            showFlashMessage('Please fill in all required fields (Name, Branch, City, and Post).', 'error');
+            setLoading(false);
+            return;
+        }
+
         const data = new FormData();
         for (const key in formData) {
-            if (formData[key]) {
+            // Append all non-null/non-empty values to FormData, including the 'city' string
+            if (formData[key] !== null && formData[key] !== undefined && formData[key] !== '') {
                 data.append(key, formData[key]);
             }
         }
@@ -74,6 +79,12 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
 
             onEmployeeCreated(response.data.data.employee);
             showFlashMessage('Employee added successfully!', 'success');
+            // Optionally clear form after successful submission
+            setFormData({
+                name: '', mobileNumber: '', address: '', branchId: '', postId: '', city: '',
+                adharNo: '', panCardNo: '', employeeCode: '', salary: '', bankName: '',
+                accountNo: '', ifscCode: '', passportPhoto: null, documentPDF: null,
+            });
         } catch (err) {
             console.error('Error creating employee:', err.response || err);
             const rawMessage = err.response?.data?.message || 'Failed to create employee.';
@@ -104,7 +115,10 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
                 }
             } else if (rawMessage.includes('Please provide the branch ID')) {
                 userMessage = 'Selecting a branch is mandatory. Please select one.';
+            } else if (rawMessage.includes('Please provide the city name')) { // New validation message
+                userMessage = 'Entering a city name is mandatory. Please enter a city.';
             }
+
 
             showFlashMessage(userMessage, 'error');
         } finally {
@@ -138,13 +152,8 @@ const CreateEmployeeForm = ({ onEmployeeCreated, onCancel, branches, showFlashMe
                     </select>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="cityId" className="form-label">City:<span className="text-red-500">*</span></label>
-                    <select id="cityId" name="cityId" className="form-select" value={formData.cityId} onChange={handleChange} required>
-                        <option value="">Select City</option>
-                        {cities.map(city => (
-                            <option key={city._id} value={city._id}>{city.name}</option>
-                        ))}
-                    </select>
+                    <label htmlFor="city" className="form-label">City:<span className="text-red-500">*</span></label>
+                    <input type="text" id="city" name="city" className="form-input" value={formData.city} onChange={handleChange} required />
                 </div>
                 <div className="form-group">
                     <label htmlFor="postId" className="form-label">Post:<span className="text-red-500">*</span></label>

@@ -43,7 +43,6 @@ const CustomerManagement = ({ showFlashMessage }) => {
     const [showFirmModal, setShowFirmModal] = useState(false);
     const [editingFirmId, setEditingFirmId] = useState(null);
     const [firmName, setFirmName] = useState('');
-
     const [firmAddress, setFirmAddress] = useState('');
     const [firmRemark, setFirmRemark] = useState('');
     const [firmGstin, setFirmGstin] = useState('');
@@ -1028,6 +1027,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                         type="text"
                                         id="schoolCode"
                                         name="schoolCode"
+                                        required
                                         value={formData.schoolCode}
                                         onChange={handleChange}
                                         placeholder="e.g., GSS001"
@@ -1193,6 +1193,20 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
+                            <div className="form-group">
+                                            <label htmlFor="advancePayment">Advance Payment:</label>
+                                            <input
+                                                type="number"
+                                                id="advancePayment"
+                                                name="advancePayment"
+                                                value={formData.advancePayment}
+                                                onChange={handleChange}
+                                                placeholder="Enter advance payment"
+
+                                                disabled={loading}
+                                                className="form-input"
+                                            />
+                                        </div>
                         </div>
                         <h3 className="form-title">Add Bank Details</h3>
                         <div className="form-row">
@@ -1307,20 +1321,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                             <label htmlFor="paymentConcernPersonName">Payment Concern Person</label>
                                             <input type="text" id="paymentConcernPersonName" name="paymentConcernPersonName" value={formData.paymentConcernPersonName} onChange={handleChange} />
                                         </div>
-                                        <div className="form-group">
-                                            <label htmlFor="advancePayment">Advance Payment:</label>
-                                            <input
-                                                type="number"
-                                                id="advancePayment"
-                                                name="advancePayment"
-                                                value={formData.advancePayment}
-                                                onChange={handleChange}
-                                                placeholder="Enter advance payment"
-
-                                                disabled={loading}
-                                                className="form-input"
-                                            />
-                                        </div>
+                                        
                                         <div className="form-group">
                                             <label htmlFor="closedDate">Closed Date</label>
                                             <input type="date" id="closedDate" name="closedDate" value={formData.closedDate} onChange={handleChange} />
@@ -1571,6 +1572,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                         <th>Final Sales Return Month</th>
                                         <th>Final Payment Month</th>
                                         <th>Payment Concern Person</th>
+                                         <th>Advance Payment</th> {/*advance  payment*/}
                                         <th>Closed Date</th>
                                         <th>Cheque No.</th>
                                         <th>Cheque Bank Name</th>
@@ -1608,6 +1610,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                             <td>{customer.finalSalesReturnMonth || 'N/A'}</td>
                                             <td>{customer.finalPaymentInAccountMonth || 'N/A'}</td>
                                             <td>{customer.paymentConcernPersonName || 'N/A'}</td>
+                                            <td>{customer.advancePayment || 0}</td> {/* NEW VALUE */}
                                             <td>{customer.closedDate ? formatDateWithTime(customer.closedDate) : 'N/A'}</td>
                                             <td>{customer.chequeNo || 'N/A'}</td>
                                             <td>{customer.chequeOfBankName || 'N/A'}</td>
