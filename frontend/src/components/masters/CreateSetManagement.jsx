@@ -88,7 +88,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
         [booksDetail, stationeryDetail]
     );
 
-    
+
 
     // Helper Functions
     const getStringValue = (field) => String(field ?? 'N/A').trim() || 'N/A';
@@ -336,7 +336,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 setStationeryDetail(fetchedToLocalFormat(fetchedSet.stationeryItems, 'item'));
                 setIsEditMode(true);
                 showFlashMessage('Existing set loaded successfully!', 'success');
-            } else {
+            }
+            else {
                 setCurrentSetId(null);
                 setBooksDetail([]);
                 setStationeryDetail([]);
@@ -1151,6 +1152,31 @@ export default function CreateSetManagement({ showFlashMessage }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // --- Split books into required and optional before rendering ---
+    const optionalBooksDetail = booksDetail.filter(
+        (item) => bookCatalogs.optionalBooks.some((ob) => ob._id === item.book._id)
+    );
+    const requiredBooksDetail = booksDetail.filter(
+        (item) => bookCatalogs.requiredBooks.some((rb) => rb._id === item.book._id)
+    );
+
+    // Grand totals based on the 3 tables
+    const grandTotalItems =
+        requiredBooksDetail.length +
+        optionalBooksDetail.length +
+        stationeryDetail.length;
+
+    const grandTotalQty =
+        requiredBooksDetail.reduce((sum, item) => sum + item.quantity, 0) +
+        optionalBooksDetail.reduce((sum, item) => sum + item.quantity, 0) +
+        stationeryDetail.reduce((sum, item) => sum + item.quantity, 0);
+
+    const grandTotalPrice =
+        requiredBooksDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0) +
+        optionalBooksDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0) +
+        stationeryDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0);
+
+
     return (
         <div className="create-set-management-container">
             <h2 className="main-section-title">Create Set Management</h2>
@@ -1591,12 +1617,14 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         <header className="moved-header-container">
                             <h1 className="moved-header-title"></h1>
                             <div className="moved-header-totals">
-                                <div className="total-item">Items: {totalItems}</div>
-                                <div className="total-item1">Total Set Value: Rs.{totalAmount.toFixed(2)}</div>
-                                <div className="total-item">Qty: {(totalQuantity * noOfSets).toFixed(0)}</div>
+                                <div className="total-item">Items: {grandTotalItems}</div>
+                                <div className="total-item1">Total Price: Rs.{grandTotalPrice.toFixed(2)}</div>
+                                <div className="total-item">Qty: {grandTotalQty}</div>
                             </div>
                         </header>
                     </section>
+
+
 
                     {(booksDetail.length > 0 || stationeryDetail.length > 0) && (
                         <section className="section-container">
@@ -1615,12 +1643,12 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         </tr>
                                     </thead>
                                     <tbody className="table-body">
-                                        {(booksDetail || []).length === 0 ? (
+                                        {(requiredBooksDetail || []).length === 0 ? (
                                             <tr>
-                                                <td colSpan="7" className="text-center">No books added yet.</td>
+                                                <td colSpan="7" className="text-center">No required books added yet.</td>
                                             </tr>
                                         ) : (
-                                            booksDetail.map((item, index) => (
+                                            requiredBooksDetail.map((item, index) => (
                                                 <tr key={item.book._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
                                                     <td className="table-cell whitespace-nowrap font-medium">{index + 1}</td>
                                                     <td className="table-cell whitespace-nowrap">{getStringValue(item.book.subtitle)}</td>
@@ -1657,13 +1685,67 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                     <tfoot>
                                         <tr className="table-footer-row">
                                             <td colSpan="3" className="table-footer-cell text-right">Total QTY/Amount</td>
-                                            <td className="table-footer-cell text-left">{booksDetail.reduce((sum, item) => sum + item.quantity, 0)}</td>
+                                            <td className="table-footer-cell text-left">
+                                                {requiredBooksDetail.reduce((sum, item) => sum + item.quantity, 0)}
+                                            </td>
                                             <td colSpan="2" className="table-footer-cell text-left">
-                                                Rs.{booksDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0).toFixed(2)}
+                                                Rs.{requiredBooksDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0).toFixed(2)}
                                             </td>
                                             <td className="table-footer-cell"></td>
                                         </tr>
                                     </tfoot>
+
+                                </table>
+                            </div>
+                            <div className="table-container mt-6">
+                                <h2 className="section-header">Optional Books Details</h2>
+                                <table className="app-table">
+                                    <thead className="table-header-group">
+                                        <tr>
+                                            <th>No.</th>
+                                            <th>Subtitle</th>
+                                            <th>Book Name</th>
+                                            <th>QTY</th>
+                                            <th>Price</th>
+                                            <th>Total</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {optionalBooksDetail.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="7" className="text-center">No optional books added yet.</td>
+                                            </tr>
+                                        ) : (
+                                            optionalBooksDetail.map((item, index) => (
+                                                <tr key={item.book._id}>
+                                                    <td>{index + 1}</td>
+                                                    <td>{item.book.subtitle}</td>
+                                                    <td>{item.book.bookName}</td>
+                                                    <td>{item.quantity}</td>
+                                                    <td>Rs.{item.price}</td>
+                                                    <td>Rs.{item.quantity * item.price}</td>
+                                                    <td>
+                                                        <button onClick={() => handleEditBook(item)} className="table-action-btn edit-btn"><FaEdit /></button>
+                                                        <button onClick={() => handleDeleteBook(item.book._id, item.book.bookName)} className="table-action-btn delete-btn"><FaTrashAlt /></button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="table-footer-row">
+                                            <td colSpan="3" className="table-footer-cell text-right">Total QTY/Amount</td>
+                                            <td className="table-footer-cell text-left">
+                                                {optionalBooksDetail.reduce((sum, item) => sum + item.quantity, 0)}
+                                            </td>
+                                            <td colSpan="2" className="table-footer-cell text-left">
+                                                Rs.{optionalBooksDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0).toFixed(2)}
+                                            </td>
+                                            <td className="table-footer-cell"></td>
+                                        </tr>
+                                    </tfoot>
+
                                 </table>
                             </div>
 
@@ -1765,10 +1847,20 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 </div>
             )}
 
-          
-                       {showQuantityModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content modal-content-wide">
+
+{showQuantityModal && (
+  <div
+    className="modal-overlay"
+    onClick={() => {
+      setShowQuantityModal(false);
+      setEditedQuantities({});
+      setSetQuantities([]);
+    }}
+  >
+    <div
+      className="modal-content modal-content-wide"
+      onClick={(e) => e.stopPropagation()} // prevent inside clicks from closing
+    >
                         <h2 className="modal-title">Manage Set Quantities</h2>
                         <p className="modal-message">Update the number of sets for each class for {customers.find(c => c._id === selectedCustomer)?.customerName || 'the selected school'}.</p>
                         <div className="table-container">
@@ -1834,7 +1926,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 disabled={loading || Object.values(editedQuantities).every(q => !q || Number(q) <= 0)}
                                 className="btn-success"
                             >
-                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Save Quantities'}
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Save '}
                             </button>
                             <button
                                 onClick={() => {
@@ -1852,35 +1944,45 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 </div>
             )}
 
-            {showDeleteQuantityModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
-                        <h2 className="modal-title">Confirm Quantity Deletion</h2>
-                        <p className="modal-message">
-                            Are you sure you want to delete the quantity for {quantityToDelete?.className || 'this class'}?
-                        </p>
-                        <div className="modal-buttons">
-                            <button
-                                onClick={confirmDeleteQuantity}
-                                disabled={loading}
-                                className="btn-danger"
-                            >
-                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Confirm'}
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setShowDeleteQuantityModal(false);
-                                    setQuantityToDelete(null);
-                                }}
-                                disabled={loading}
-                                className="btn-secondary"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+{showDeleteQuantityModal && (
+  <div
+    className="modal-overlay"
+    onClick={() => {
+      setShowDeleteQuantityModal(false);
+      setQuantityToDelete(null);
+    }}
+  >
+    <div
+      className="modal-content"
+      onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+    >
+      <h2 className="modal-title">Confirm Quantity Deletion</h2>
+      <p className="modal-message">
+        Are you sure you want to delete the quantity for {quantityToDelete?.className || 'this class'}?
+      </p>
+      <div className="modal-buttons">
+        <button
+          onClick={confirmDeleteQuantity}
+          disabled={loading}
+          className="btn-danger"
+        >
+          {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Confirm'}
+        </button>
+        <button
+          onClick={() => {
+            setShowDeleteQuantityModal(false);
+            setQuantityToDelete(null);
+          }}
+          disabled={loading}
+          className="btn-secondary"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
         </div>
     );
 }
