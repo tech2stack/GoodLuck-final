@@ -39,11 +39,16 @@
 
 /* Styles for the subtitle tags within the table (already existing, just ensure they are fine) */
 .subtitle-list {
-    display: flex;
-    /* flex-wrap: wrap; */
-    gap: 5px; /* Spacing between tags */
-    align-items: center; /* Align items vertically */
+  display: flex;
+  flex-wrap: wrap;       /* ✅ allow wrapping to next line */
+  gap: 5px;              /* spacing between items */
+  align-items: center;   /* vertical alignment */
+  max-width: 100%;       /* never exceed form width */
+  box-sizing: border-box;
+  overflow-x: hidden;    /* prevent horizontal scroll */
+  word-break: break-word; /* handle long text inside tags */
 }
+
 
 .subtitle-tag {
     background-color: #e2e6ea;

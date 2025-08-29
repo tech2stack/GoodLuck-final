@@ -882,37 +882,42 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                             <td>{pubItem.name}</td>
                                             <td>{pubItem.personName}</td>
                                             <td>
-                                                {/* Display Subtitles */}
-                                                <div className="subtitle-list">
-                                                    {pubItem.subtitles && pubItem.subtitles.length > 0 ? (
-                                                        pubItem.subtitles.map(sub => (
-                                                            <div key={sub._id} className="subtitle-tag-container">
-                                                                <span className="subtitle-tag">
-                                                                    {sub.name} ({sub.discount}%)
-                                                                </span>
-                                                                <button
-                                                                    onClick={() => handleEditSubtitle(sub, pubItem)}
-                                                                    className="action-icon-button edit-button"
-                                                                    title="Edit Subtitle"
-                                                                    disabled={loading}
-                                                                >
-                                                                    <FaEdit />
-                                                                </button>
-                                                                <button
-                                                                    className="action-icon-button remove-subtitle-btn"
-                                                                    onClick={() => handleRemoveSubtitle(sub._id, pubItem._id, sub.name)}
-                                                                    title="Remove Subtitle"
-                                                                    disabled={loading}
-                                                                >
-                                                                    <FaTimes />
-                                                                </button>
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <span>No subtitles</span>
-                                                    )}
-                                                </div>
+                                                {pubItem.subtitles && pubItem.subtitles.length > 0 ? (
+                                                    <details>
+                                                        <summary style={{ cursor: "pointer", color: "#007bff" }}>
+                                                            View Subtitles ({pubItem.subtitles.length})
+                                                        </summary>
+                                                        <div className="subtitle-list">
+                                                            {pubItem.subtitles.map(sub => (
+                                                                <div key={sub._id} className="subtitle-tag-container">
+                                                                    <span className="subtitle-tag">
+                                                                        {sub.name} ({sub.discount}%)
+                                                                    </span>
+                                                                    <button
+                                                                        onClick={() => handleEditSubtitle(sub, pubItem)}
+                                                                        className="action-icon-button edit-button"
+                                                                        title="Edit Subtitle"
+                                                                        disabled={loading}
+                                                                    >
+                                                                        <FaEdit />
+                                                                    </button>
+                                                                    <button
+                                                                        className="action-icon-button remove-subtitle-btn"
+                                                                        onClick={() => handleRemoveSubtitle(sub._id, pubItem._id, sub.name)}
+                                                                        title="Remove Subtitle"
+                                                                        disabled={loading}
+                                                                    >
+                                                                        <FaTimes />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </details>
+                                                ) : (
+                                                    <span>No subtitles</span>
+                                                )}
                                             </td>
+
                                             <td>{pubItem.mobileNumber}</td>
                                             <td>{pubItem.address}</td>
                                             <td>{pubItem.city ? pubItem.city.name : 'N/A'}</td>

@@ -354,12 +354,23 @@ const fetchSubtitles = useCallback(
             }
 
             // Reset form
-            setFormData({
-                bookName: '', publication: publications[0]?._id || '', subtitle: '',
-                language: languages[0]?._id || '', bookType: 'default', commonPrice: 0,
-                pricesByClass: {}, commonIsbn: '', isbnByClass: {}, status: 'active'
-            });
-            setEditingBookCatalogId(null);
+// Retain publication, subtitle, and language; reset other fields
+setFormData({
+    bookName: '',
+    publication: formData.publication, // Retain previous value
+    subtitle: formData.subtitle, // Retain previous value
+    language: formData.language, // Retain previous value
+    bookType: 'default',
+    commonPrice: 0,
+    pricesByClass: {},
+    commonIsbn: '',
+    isbnByClass: {},
+    status: 'active'
+});
+setEditingBookCatalogId(null);
+
+// Ensure subtitles are fetched for the retained publication
+fetchSubtitles(formData.publication, formData.subtitle);
 
         } catch (err) {
             console.error('Error saving book catalog:', err);
