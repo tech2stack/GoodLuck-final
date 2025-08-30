@@ -1627,7 +1627,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                     <tbody className="table-body">
                                         {requiredBooksDetail.length === 0 ? (
                                             <tr>
-                                                <td colSpan="7" className="text-center">No required books added yet.</td>
+                                                <td colSpan="7" className="text-center">No required books added yet!</td>
                                             </tr>
                                         ) : (
                                             requiredBooksDetail.map((item, index) => (
@@ -1696,7 +1696,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                     <tbody>
                                         {optionalBooksDetail.length === 0 ? (
                                             <tr>
-                                                <td colSpan="7" className="text-center">No optional books added yet.</td>
+                                                <td colSpan="7" className="text-center">No optional books added yet!</td>
                                             </tr>
                                         ) : (
                                             optionalBooksDetail.map((item, index) => (
