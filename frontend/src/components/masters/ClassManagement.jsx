@@ -45,41 +45,37 @@ const ClassManagement = ({ showFlashMessage }) => {
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
 
-    const fetchClasses = useCallback(async (scrollToNew = false, resetToFirstPage = false) => {
-        setLoading(true);
-        setLocalError(null);
-        try {
-            const response = await api.get('/classes');
-            if (response.data.status === 'success') {
-                // ✅ Sort by createdAt (latest first)
-                const sortedClasses = response.data.data.classes.sort(
-                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-                );
-                setClasses(sortedClasses);
+const fetchClasses = useCallback(async (scrollToNew = false, resetToFirstPage = false) => {
+    setLoading(true);
+    setLocalError(null);
+    try {
+        const response = await api.get('/classes', { params: { _: Date.now() } });
+        if (response.data.status === 'success') {
+            const sortedClasses = response.data.data.classes.sort(
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            );
+            setClasses(sortedClasses);
 
-                const totalPagesCalculated = Math.ceil(sortedClasses.length / itemsPerPage);
-                if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
-                    setCurrentPage(totalPagesCalculated);
-                } else if (sortedClasses.length === 0) {
-                    setCurrentPage(1);
-                }
-
-                // ✅ Agar nayi class add ho rahi hai, to hamesha pehle page par hi set kare
-                if (resetToFirstPage) {
-                    setCurrentPage(1);
-                }
-
-                // purana scrollToNew logic ab use nahi karna (kyunki hamesha first page chahiye)
-            } else {
-                setLocalError(response.data.message || 'Failed to fetch classes.');
+            const totalPagesCalculated = Math.ceil(sortedClasses.length / itemsPerPage);
+            if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
+                setCurrentPage(totalPagesCalculated);
+            } else if (sortedClasses.length === 0) {
+                setCurrentPage(1);
             }
-        } catch (err) {
-            console.error('Error fetching classes:', err);
-            setLocalError(err.response?.data?.message || 'Failed to load classes due to network error.');
-        } finally {
-            setLoading(false);
+
+            if (resetToFirstPage) {
+                setCurrentPage(1);
+            }
+        } else {
+            setLocalError(response.data.message || 'Failed to fetch classes.');
         }
-    }, [currentPage, itemsPerPage]);
+    } catch (err) {
+        console.error('Error fetching classes:', err);
+        setLocalError(err.response?.data?.message || 'Failed to load classes due to network error.');
+    } finally {
+        setLoading(false);
+    }
+}, [currentPage, itemsPerPage]);
 
     useEffect(() => {
         fetchClasses();
@@ -93,52 +89,51 @@ const ClassManagement = ({ showFlashMessage }) => {
         }));
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setLocalError(null);
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setLocalError(null);
 
-        if (!formData.name.trim()) {
-            setLocalError('Class name cannot be empty.');
-            showFlashMessage('Class name cannot be empty.', 'error');
-            setLoading(false);
-            return;
-        }
+    if (!formData.name.trim()) {
+        setLocalError('Class name cannot be empty.');
+        showFlashMessage('Class name cannot be empty.', 'error');
+        setLoading(false);
+        return;
+    }
 
-        try {
-            let response;
-            if (editingClassId) {
-                response = await api.patch(`/classes/${editingClassId}`, formData);
-                if (response.data.status === 'success') {
-                    showFlashMessage('Class updated successfully!', 'success');
-                } else {
-                    throw new Error(response.data.message || 'Failed to update class.');
-                }
+    try {
+        let response;
+        if (editingClassId) {
+            response = await api.patch(`/classes/${editingClassId}`, formData);
+            if (response.data.status === 'success') {
+                showFlashMessage('Class updated successfully!', 'success');
             } else {
-                response = await api.post('/classes', formData);
-                if (response.data.status === 'success') {
-                    showFlashMessage('Class created successfully!', 'success');
-                } else {
-                    throw new Error(response.data.message || 'Failed to create class.');
-                }
+                throw new Error(response.data.message || 'Failed to update class.');
             }
-            setFormData({
-                name: '',
-                status: 'active',
-            });
-            setEditingClassId(null);
-            // ✅ Always reset to first page when adding new class
-            fetchClasses(false, true);
-        } catch (err) {
-            console.error('Error saving class:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to save class. Please check your input and ensure class name is unique.';
-            setLocalError(errorMessage);
-            showFlashMessage(errorMessage, 'error');
-        } finally {
-            setLoading(false);
+        } else {
+            response = await api.post('/classes', formData);
+            if (response.data.status === 'success') {
+                showFlashMessage('Class created successfully!', 'success');
+                setSearchTerm(''); // Clear search to show new item
+            } else {
+                throw new Error(response.data.message || 'Failed to create class.');
+            }
         }
-    };
-
+        setFormData({
+            name: '',
+            status: 'active',
+        });
+        setEditingClassId(null);
+        fetchClasses(false, true);
+    } catch (err) {
+        console.error('Error saving class:', err);
+        const errorMessage = err.response?.data?.message || 'Failed to save class. Please check your input and ensure class name is unique.';
+        setLocalError(errorMessage);
+        showFlashMessage(errorMessage, 'error');
+    } finally {
+        setLoading(false);
+    }
+};
     const handleEdit = (classItem) => {
         setFormData({
             name: classItem.name,

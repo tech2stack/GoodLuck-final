@@ -63,9 +63,8 @@ const fetchLanguages = useCallback(async () => {
     setLoading(true);
     setLocalError(null);
     try {
-        const response = await api.get(`/languages`);
+        const response = await api.get('/languages', { params: { _: Date.now() } });
         if (response.data.status === 'success') {
-            // ✅ Latest language sabse upar
             const sorted = response.data.data.languages.sort(
                 (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
             );
@@ -126,36 +125,30 @@ const handleSubmit = async (e) => {
     try {
         let response;
         if (editingLanguageId) {
-            // Update existing language
             response = await api.patch(`/languages/${editingLanguageId}`, formData);
             if (response.data.status === 'success') {
                 showFlashMessage('Language updated successfully!', 'success');
-                // Re-fetch after update
                 fetchLanguages();
             } else {
                 throw new Error(response.data.message || 'Failed to update language.');
             }
         } else {
-            // ✅ Create case → add new language at top & reset page
             response = await api.post('/languages', formData);
             if (response.data.status === 'success') {
                 showFlashMessage('Language created successfully!', 'success');
-
-                setLanguages(prev => [response.data.data.language, ...prev]); // insert at top
-                setCurrentPage(1); // reset pagination to first page
+                setSearchTerm(''); // Clear search
+                setCurrentPage(1); // Reset to page 1
+                fetchLanguages(); // Re-fetch
             } else {
                 throw new Error(response.data.message || 'Failed to create language.');
             }
         }
 
-        // Reset form
         setFormData({ name: '', status: 'active' });
         setEditingLanguageId(null);
-
     } catch (err) {
         console.error('Error saving language:', err);
-        const errorMessage = err.response?.data?.message ||
-            'Failed to save language. Please check your input and ensure language name is unique.';
+        const errorMessage = err.response?.data?.message || 'Failed to save language. Please check your input.';
         setLocalError(errorMessage);
         showFlashMessage(errorMessage, 'error');
     } finally {

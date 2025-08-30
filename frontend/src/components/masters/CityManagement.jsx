@@ -48,59 +48,58 @@ const CityManagement = ({ showFlashMessage }) => {
     };
 
     // ✅ Fetch Cities with latest-first order
-    const fetchCities = useCallback(async () => {
-        setLoading(true);
-        setLocalError(null);
-        try {
-            const response = await api.get('/cities');
-            if (response.data.status === 'success') {
-                const sorted = response.data.data.cities.sort(
-                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-                );
-                setCities(sorted);
-                const totalPages = Math.ceil(sorted.length / itemsPerPage);
-                if (currentPage > totalPages && totalPages > 0) {
-                    setCurrentPage(totalPages);
-                } else if (totalPages === 0) {
-                    setCurrentPage(1);
-                }
-            } else {
-                setLocalError(response.data.message || 'Failed to fetch cities.');
+  const fetchCities = useCallback(async () => {
+    setLoading(true);
+    setLocalError(null);
+    try {
+        const response = await api.get('/cities', { params: { _: Date.now() } });
+        if (response.data.status === 'success') {
+            const sorted = response.data.data.cities.sort(
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            );
+            setCities(sorted);
+            const totalPages = Math.ceil(sorted.length / itemsPerPage);
+            if (currentPage > totalPages && totalPages > 0) {
+                setCurrentPage(totalPages);
+            } else if (totalPages === 0) {
+                setCurrentPage(1);
             }
-        } catch (err) {
-            console.error('Error fetching cities:', err);
-            setLocalError(err.response?.data?.message || 'Failed to load cities due to network error.');
-        } finally {
-            setLoading(false);
+        } else {
+            setLocalError(response.data.message || 'Failed to fetch cities.');
         }
-    }, [currentPage, itemsPerPage]);
+    } catch (err) {
+        console.error('Error fetching cities:', err);
+        setLocalError(err.response?.data?.message || 'Failed to load cities due to network error.');
+    } finally {
+        setLoading(false);
+    }
+}, [currentPage, itemsPerPage]);
 
-    const fetchZonesForDropdown = useCallback(async () => {
-        try {
-            const response = await api.get('/zones');
-            if (response.data.status === 'success') {
-                const activeZones = response.data.data.zones.filter(zone => zone.status === 'active');
-                setZones(activeZones);
-                // Removed the line that sets the default zone, allowing the placeholder to be shown
-            }
-        } catch (err) {
-            console.error('Error fetching zones for dropdown:', err);
-            setLocalError('Failed to load zones for dropdown.');
+
+const fetchZonesForDropdown = useCallback(async () => {
+    try {
+        const response = await api.get('/zones', { params: { _: Date.now() } });
+        if (response.data.status === 'success') {
+            const activeZones = response.data.data.zones.filter(zone => zone.status === 'active');
+            setZones(activeZones);
         }
-    }, []);
+    } catch (err) {
+        console.error('Error fetching zones for dropdown:', err);
+        setLocalError('Failed to load zones for dropdown.');
+    }
+}, []);
 
-    const fetchSalesRepresentatives = useCallback(async () => {
-        try {
-            const response = await api.get('/employees/sales-representatives');
-            if (response.data.status === 'success') {
-                setSalesRepresentatives(response.data.data.employees);
-            }
-        } catch (err) {
-            console.error('Error fetching sales representatives:', err);
-            showFlashMessage('Failed to load sales representatives.', 'error');
+const fetchSalesRepresentatives = useCallback(async () => {
+    try {
+        const response = await api.get('/employees/sales-representatives', { params: { _: Date.now() } });
+        if (response.data.status === 'success') {
+            setSalesRepresentatives(response.data.data.employees);
         }
-    }, [showFlashMessage]);
-
+    } catch (err) {
+        console.error('Error fetching sales representatives:', err);
+        showFlashMessage('Failed to load sales representatives.', 'error');
+    }
+}, [showFlashMessage]);
     useEffect(() => {
         fetchCities();
     }, [fetchCities]);
@@ -118,55 +117,55 @@ const CityManagement = ({ showFlashMessage }) => {
         }));
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setLocalError(null);
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setLocalError(null);
 
-        if (!formData.name.trim() || !formData.zone) {
-            setLocalError('City name and zone are required.');
-            showFlashMessage('City name and zone are required.', 'error');
-            setLoading(false);
-            return;
-        }
+    if (!formData.name.trim() || !formData.zone) {
+        setLocalError('City name and zone are required.');
+        showFlashMessage('City name and zone are required.', 'error');
+        setLoading(false);
+        return;
+    }
 
-        try {
-            let response;
-            if (editingCityId) {
-                response = await api.patch(`/cities/${editingCityId}`, formData);
-                if (response.data.status === 'success') {
-                    showFlashMessage('Updated successfully!', 'success');
-                    fetchCities();
-                } else {
-                    throw new Error(response.data.message || 'Failed to update city.');
-                }
+    try {
+        let response;
+        if (editingCityId) {
+            response = await api.patch(`/cities/${editingCityId}`, formData);
+            if (response.data.status === 'success') {
+                showFlashMessage('Updated successfully!', 'success');
+                fetchCities();
             } else {
-                response = await api.post('/cities', formData);
-                if (response.data.status === 'success') {
-                    showFlashMessage('Created successfully!', 'success');
-                    // ✅ Insert new city at top & reset to page 1
-                    setCities(prev => [response.data.data.city, ...prev]);
-                    setCurrentPage(1);
-                } else {
-                    throw new Error(response.data.message || 'Failed to create city.');
-                }
+                throw new Error(response.data.message || 'Failed to update city.');
             }
-            setFormData({
-                name: '',
-                zone: '',
-                status: 'active',
-                assignedSalesRepresentative: '',
-            });
-            setEditingCityId(null);
-        } catch (err) {
-            console.error('Error saving city:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to save city. Please check your input.';
-            setLocalError(errorMessage);
-            showFlashMessage(errorMessage, 'error');
-        } finally {
-            setLoading(false);
+        } else {
+            response = await api.post('/cities', formData);
+            if (response.data.status === 'success') {
+                showFlashMessage('Created successfully!', 'success');
+                setSearchTerm(''); // Clear search to show new item
+                setCurrentPage(1); // Reset to page 1
+                fetchCities(); // Re-fetch to update table
+            } else {
+                throw new Error(response.data.message || 'Failed to create city.');
+            }
         }
-    };
+        setFormData({
+            name: '',
+            zone: '',
+            status: 'active',
+            assignedSalesRepresentative: '',
+        });
+        setEditingCityId(null);
+    } catch (err) {
+        console.error('Error saving city:', err);
+        const errorMessage = err.response?.data?.message || 'Failed to save city. Please check your input.';
+        setLocalError(errorMessage);
+        showFlashMessage(errorMessage, 'error');
+    } finally {
+        setLoading(false);
+    }
+};
 
     const handleEdit = (cityItem) => {
         setFormData({

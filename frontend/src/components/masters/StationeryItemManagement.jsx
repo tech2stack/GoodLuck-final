@@ -101,9 +101,8 @@ const fetchStationeryItems = useCallback(async () => {
     setLoading(true);
     setLocalError(null);
     try {
-        const response = await api.get('/stationery-items');
+        const response = await api.get('/stationery-items', { params: { _: Date.now() } });
         if (response.data.status === 'success') {
-            // ✅ Sort latest-first
             const sorted = response.data.data.stationeryItems.sort(
                 (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
             );
@@ -157,57 +156,54 @@ const fetchStationeryItems = useCallback(async () => {
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setLocalError(null);
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setLocalError(null);
 
-        // Basic validation
-        // NEW: Validate all fields
-        if (!formData.itemName.trim() || formData.price === '' || formData.price === null || isNaN(formData.price) || formData.marginPercentage === '' || formData.marginPercentage === null || isNaN(formData.marginPercentage) || formData.customerDiscountPercentage === '' || formData.customerDiscountPercentage === null || isNaN(formData.customerDiscountPercentage) || formData.companyDiscountPercentage === '' || formData.companyDiscountPercentage === null || isNaN(formData.companyDiscountPercentage)) {
-            setLocalError('Please fill in all required fields (Item Name, Price, Margin %, Customer Discount %, Company Discount %). Price, Margin, and Discounts must be valid numbers.');
-            showFlashMessage('Please fill in all required fields.', 'error');
-            setLoading(false);
-            return;
-        }
+    if (!formData.itemName.trim() || formData.price === '' || formData.price === null || isNaN(formData.price) || formData.marginPercentage === '' || formData.marginPercentage === null || isNaN(formData.marginPercentage) || formData.customerDiscountPercentage === '' || formData.customerDiscountPercentage === null || isNaN(formData.customerDiscountPercentage) || formData.companyDiscountPercentage === '' || formData.companyDiscountPercentage === null || isNaN(formData.companyDiscountPercentage)) {
+        setLocalError('Please fill in all required fields (Item Name, Price, Margin %, Customer Discount %, Company Discount %). Price, Margin, and Discounts must be valid numbers.');
+        showFlashMessage('Please fill in all required fields.', 'error');
+        setLoading(false);
+        return;
+    }
 
-        if (!selectedCategory) {
-            setLocalError('Please select a category from the dropdown above the table.');
-            showFlashMessage('Please select a category first.', 'error');
-            setLoading(false);
-            return;
-        }
+    if (!selectedCategory) {
+        setLocalError('Please select a category from the dropdown above the table.');
+        showFlashMessage('Please select a category first.', 'error');
+        setLoading(false);
+        return;
+    }
 
-        if (formData.price < 0) {
-            setLocalError('Price cannot be negative.');
-            showFlashMessage('Price cannot be negative.', 'error');
-            setLoading(false);
-            return;
-        }
+    if (formData.price < 0) {
+        setLocalError('Price cannot be negative.');
+        showFlashMessage('Price cannot be negative.', 'error');
+        setLoading(false);
+        return;
+    }
 
-        if (formData.marginPercentage < 0 || formData.marginPercentage > 100) {
-            setLocalError('Margin % must be between 0 and 100.');
-            showFlashMessage('Margin % must be between 0 and 100.', 'error');
-            setLoading(false);
-            return;
-        }
+    if (formData.marginPercentage < 0 || formData.marginPercentage > 100) {
+        setLocalError('Margin % must be between 0 and 100.');
+        showFlashMessage('Margin % must be between 0 and 100.', 'error');
+        setLoading(false);
+        return;
+    }
 
-        if (formData.customerDiscountPercentage < 0) {
-            setLocalError('Customer discount cannot be negative.');
-            showFlashMessage('Customer discount cannot be negative.', 'error');
-            setLoading(false);
-            return;
-        }
+    if (formData.customerDiscountPercentage < 0) {
+        setLocalError('Customer discount cannot be negative.');
+        showFlashMessage('Customer discount cannot be negative.', 'error');
+        setLoading(false);
+        return;
+    }
 
-        if (formData.companyDiscountPercentage < 0) {
-            setLocalError('Company discount cannot be negative.');
-            showFlashMessage('Company discount cannot be negative.', 'error');
-            setLoading(false);
-            return;
-        }
+    if (formData.companyDiscountPercentage < 0) {
+        setLocalError('Company discount cannot be negative.');
+        showFlashMessage('Company discount cannot be negative.', 'error');
+        setLoading(false);
+        return;
+    }
 
-
- try {
+    try {
         let response;
         const dataToSend = {
             itemName: formData.itemName,
@@ -220,35 +216,32 @@ const fetchStationeryItems = useCallback(async () => {
         };
 
         if (editingItemId) {
-            // Update existing
             response = await api.patch(`/stationery-items/${editingItemId}`, dataToSend);
             if (response.data.status === 'success') {
                 showFlashMessage('Stationery Item updated successfully!', 'success');
-                fetchStationeryItems(); // re-fetch
+                fetchStationeryItems();
             } else {
                 throw new Error(response.data.message || 'Failed to update stationery item.');
             }
         } else {
-            // ✅ Create case → add entry at top & reset to first page
             response = await api.post('/stationery-items', dataToSend);
             if (response.data.status === 'success') {
                 showFlashMessage('Stationery Item created successfully!', 'success');
-
-                setStationeryItems(prev => [response.data.data.stationeryItem, ...prev]); // add at top
-                setCurrentPage(1); // reset to page 1
+                setSearchTerm(''); // Clear search
+                setCategoryFilter(''); // Clear category filter
+                setCurrentPage(1); // Reset to page 1
+                fetchStationeryItems(); // Re-fetch
             } else {
                 throw new Error(response.data.message || 'Failed to create stationery item.');
             }
         }
 
-        // Reset form
         setFormData({
             itemName: '', price: '', marginPercentage: '',
             customerDiscountPercentage: '', companyDiscountPercentage: '', status: 'active'
         });
         setSelectedCategory('');
         setEditingItemId(null);
-
     } catch (err) {
         console.error('Error saving stationery item:', err);
         const errorMessage = err.response?.data?.message || 'Failed to save stationery item.';
