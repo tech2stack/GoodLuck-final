@@ -274,6 +274,50 @@ export default function CreateSetManagement({ showFlashMessage }) {
         [subtitles]
     );
 
+    const addBookTypes = useCallback(async (books) => {
+        const subtitleToBooks = {};
+        books.forEach((item) => {
+            const subName = item.book.subtitle;
+            const subId = subtitles.find((s) => s.name === subName)?._id;
+            if (subId) {
+                if (!subtitleToBooks[subId]) subtitleToBooks[subId] = [];
+                subtitleToBooks[subId].push(item.book._id);
+            }
+        });
+
+        const fetches = Object.keys(subtitleToBooks).map(async (subId) => {
+            try {
+                const res = await api.get(`/sets/dropdowns/book-catalogs?subtitleId=${subId}&classId=${selectedClass}`);
+                const data = res.data.data;
+                const requiredIds = new Set(data.requiredBooks.map((b) => b._id));
+                const optionalIds = new Set(data.optionalBooks.map((b) => b._id));
+                return { subId, requiredIds, optionalIds };
+            } catch (err) {
+                console.error(`Error fetching catalogs for subtitle ${subId}:`, err);
+                return { subId, requiredIds: new Set(), optionalIds: new Set() };
+            }
+        });
+
+        const results = await Promise.all(fetches);
+
+        return books.map((item) => {
+            const subName = item.book.subtitle;
+            const subId = subtitles.find((s) => s.name === subName)?._id;
+            if (subId) {
+                const match = results.find((r) => r.subId === subId);
+                if (match) {
+                    if (match.requiredIds.has(item.book._id)) {
+                        return { ...item, bookType: 'required' };
+                    }
+                    if (match.optionalIds.has(item.book._id)) {
+                        return { ...item, bookType: 'optional' };
+                    }
+                }
+            }
+            return { ...item, bookType: 'required' }; // Default to required if unknown
+        });
+    }, [subtitles, selectedClass]);
+
     const fetchSetQuantities = useCallback(async () => {
         if (!selectedCustomer) {
             setSetQuantities([]);
@@ -332,7 +376,9 @@ export default function CreateSetManagement({ showFlashMessage }) {
             if (response.data.status === 'success' && response.data.data.set) {
                 const fetchedSet = response.data.data.set;
                 setCurrentSetId(fetchedSet._id);
-                setBooksDetail(fetchedToLocalFormat(fetchedSet.books, 'book'));
+                let formattedBooks = fetchedToLocalFormat(fetchedSet.books, 'book');
+                formattedBooks = await addBookTypes(formattedBooks);
+                setBooksDetail(formattedBooks);
                 setStationeryDetail(fetchedToLocalFormat(fetchedSet.stationeryItems, 'item'));
                 setIsEditMode(true);
                 showFlashMessage('Existing set loaded successfully!', 'success');
@@ -359,7 +405,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
         } finally {
             setLoading(false);
         }
-    }, [selectedCustomer, selectedClass, showFlashMessage, resetForm, fetchedToLocalFormat, fetchSetQuantities]);
+    }, [selectedCustomer, selectedClass, showFlashMessage, resetForm, fetchedToLocalFormat, fetchSetQuantities, addBookTypes]);
 
     const handleQuantityChange = useCallback((classId, value) => {
         const quantity = value === '' ? '' : Math.max(0, parseInt(value) || 0);
@@ -573,21 +619,21 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setItemLoading(true);
 
         try {
-            if (editingItemId) {
-                if (selectedItemType === 'books') {
-                    setBooksDetail((prev) =>
-                        prev.map((item) => (item.book._id === editingItemId ? { ...item, quantity, price } : item))
-                    );
-                } else {
-                    setStationeryDetail((prev) =>
-                        prev.map((item) => (item.item._id === editingItemId ? { ...item, quantity, price } : item))
-                    );
-                }
-                showFlashMessage('Item updated successfully.', 'success');
-            } else {
-                if (selectedItemType === 'books') {
-                    const book = [...bookCatalogs.requiredBooks, ...bookCatalogs.optionalBooks].find((b) => b._id === selectedItemToAdd);
-                    if (book) {
+            if (selectedItemType === 'books') {
+                const allBooks = [...bookCatalogs.requiredBooks, ...bookCatalogs.optionalBooks];
+                const book = allBooks.find((b) => b._id === selectedItemToAdd);
+                const bookType = bookCatalogs.requiredBooks.some((b) => b._id === selectedItemToAdd) ? 'required' : 'optional';
+                if (book) {
+                    if (editingItemId) {
+                        setBooksDetail((prev) =>
+                            prev.map((item) =>
+                                item.book._id === editingItemId
+                                    ? { ...item, quantity, price, bookType }
+                                    : item
+                            )
+                        );
+                        showFlashMessage('Book updated successfully.', 'success');
+                    } else {
                         setBooksDetail((prev) => [
                             ...prev,
                             {
@@ -599,12 +645,25 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 quantity,
                                 price,
                                 status: 'active',
+                                bookType,
                             },
                         ]);
+                        showFlashMessage('Book added successfully.', 'success');
                     }
-                } else {
-                    const item = stationeryItemsMaster.find((i) => i._id === selectedItemToAdd);
-                    if (item) {
+                }
+            } else {
+                const item = stationeryItemsMaster.find((i) => i._id === selectedItemToAdd);
+                if (item) {
+                    if (editingItemId) {
+                        setStationeryDetail((prev) =>
+                            prev.map((item) =>
+                                item.item._id === editingItemId
+                                    ? { ...item, quantity, price }
+                                    : item
+                            )
+                        );
+                        showFlashMessage('Stationery item updated successfully.', 'success');
+                    } else {
                         setStationeryDetail((prev) => [
                             ...prev,
                             {
@@ -614,65 +673,13 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 status: 'active',
                             },
                         ]);
+                        showFlashMessage('Stationery item added successfully.', 'success');
                     }
                 }
-                showFlashMessage('Item added successfully.', 'success');
             }
 
-            const payload = {
-                customer: selectedCustomer,
-                class: selectedClass,
-                books: booksDetail.map((b) => ({
-                    book: b.book._id,
-                    quantity: b.quantity,
-                    price: b.price,
-                    status: b.status,
-                })),
-                stationeryItems: stationeryDetail.map((s) => ({
-                    item: s.item._id,
-                    quantity: s.quantity,
-                    price: s.price,
-                    status: s.status,
-                })),
-                quantity: Number(noOfSets) || 1,
-            };
-
-            if (selectedItemType === 'books') {
-                const existingBookIndex = payload.books.findIndex((b) => b.book === selectedItemToAdd);
-                if (existingBookIndex !== -1 && editingItemId) {
-                    payload.books[existingBookIndex] = { book: selectedItemToAdd, quantity, price, status: 'active' };
-                } else if (existingBookIndex === -1) {
-                    payload.books.push({ book: selectedItemToAdd, quantity, price, status: 'active' });
-                }
-            } else {
-                const existingStationeryIndex = payload.stationeryItems.findIndex((s) => s.item === selectedItemToAdd);
-                if (existingStationeryIndex !== -1 && editingItemId) {
-                    payload.stationeryItems[existingStationeryIndex] = { item: selectedItemToAdd, quantity, price, status: 'active' };
-                } else {
-                    payload.stationeryItems.push({ item: selectedItemToAdd, quantity, price, status: 'active' });
-                }
-            }
-
-            let response;
-            if (currentSetId) {
-                response = await api.patch(`/sets/${currentSetId}`, payload);
-            } else {
-                response = await api.post('/sets', payload);
-            }
-
-            if (response.data.status === 'success') {
-                const updatedSet = response.data.data.set;
-                setCurrentSetId(updatedSet._id);
-                setBooksDetail(fetchedToLocalFormat(updatedSet.books, 'book'));
-                setStationeryDetail(fetchedToLocalFormat(updatedSet.stationeryItems, 'stationery'));
-                setNoOfSets(updatedSet.quantity);
-                setIsEditMode(true);
-                showFlashMessage(currentSetId ? 'Set updated successfully!' : 'Set created successfully!', 'success');
-            } else {
-                throw new Error(response.data.message || 'Failed to save set.');
-            }
-
-            setItemQuantity('1');
+            setSelectedItemToAdd('');
+            setItemQuantity('');
             setItemPrice('');
             setEditingItemType(null);
             setEditingItemId(null);
@@ -693,34 +700,18 @@ export default function CreateSetManagement({ showFlashMessage }) {
         showFlashMessage,
         selectedSubtitle,
         subtitles,
-        selectedCustomer,
-        selectedClass,
         booksDetail,
-        stationeryDetail,
-        noOfSets,
-        currentSetId,
-        fetchedToLocalFormat,
     ]);
 
     const handleDeleteBook = useCallback((bookId, bookName) => {
-        if (!currentSetId) {
-            setBooksDetail((prev) => prev.filter((item) => item.book._id !== bookId));
-            showFlashMessage('Book removed from list (not yet saved).', 'info');
-            return;
-        }
-        setItemToDelete({ id: bookId, type: 'book', name: bookName });
-        setShowConfirmModal(true);
-    }, [currentSetId, showFlashMessage]);
+        setBooksDetail((prev) => prev.filter((item) => item.book._id !== bookId));
+        showFlashMessage('Book removed from local set (save to persist).', 'info');
+    }, [showFlashMessage]);
 
     const handleDeleteStationery = useCallback((itemId, itemName) => {
-        if (!currentSetId) {
-            setStationeryDetail((prev) => prev.filter((item) => item.item._id !== itemId));
-            showFlashMessage('Stationery item removed from list (not yet saved).', 'info');
-            return;
-        }
-        setItemToDelete({ id: itemId, type: 'stationery', name: itemName });
-        setShowConfirmModal(true);
-    }, [currentSetId, showFlashMessage]);
+        setStationeryDetail((prev) => prev.filter((item) => item.item._id !== itemId));
+        showFlashMessage('Stationery item removed from local set (save to persist).', 'info');
+    }, [showFlashMessage]);
 
     const handleEditBook = useCallback(
         (bookItem) => {
@@ -784,6 +775,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 price: item.price,
                 status: item.status,
             })),
+            quantity: Number(noOfSets) || 1, // Added quantity to payload to match original behavior
         };
 
         try {
@@ -795,9 +787,14 @@ export default function CreateSetManagement({ showFlashMessage }) {
             }
 
             if (response.data.status === 'success') {
-                showFlashMessage(response.data.message, 'success');
-                setCurrentSetId(response.data.data.set._id);
+                const updatedSet = response.data.data.set;
+                let formattedBooks = fetchedToLocalFormat(updatedSet.books, 'book');
+                formattedBooks = await addBookTypes(formattedBooks);
+                setBooksDetail(formattedBooks);
+                setStationeryDetail(fetchedToLocalFormat(updatedSet.stationeryItems, 'item'));
+                setCurrentSetId(updatedSet._id);
                 setIsEditMode(true);
+                showFlashMessage(response.data.message, 'success');
                 await saveSetQuantities();
                 fetchSetDetails();
             } else {
@@ -811,7 +808,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
         } finally {
             setLoading(false);
         }
-    }, [selectedCustomer, selectedClass, booksDetail, stationeryDetail, isEditMode, currentSetId, showFlashMessage, saveSetQuantities, fetchSetDetails, handleDeleteSet]);
+    }, [selectedCustomer, selectedClass, booksDetail, stationeryDetail, isEditMode, currentSetId, showFlashMessage, noOfSets, saveSetQuantities, fetchSetDetails, handleDeleteSet, fetchedToLocalFormat, addBookTypes]);
 
     const handleCopySet = useCallback(async () => {
         if (!currentSetId || !copyToClass) {
@@ -1153,12 +1150,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
     }, []);
 
     // --- Split books into required and optional before rendering ---
-    const optionalBooksDetail = booksDetail.filter(
-        (item) => bookCatalogs.optionalBooks.some((ob) => ob._id === item.book._id)
-    );
-    const requiredBooksDetail = booksDetail.filter(
-        (item) => bookCatalogs.requiredBooks.some((rb) => rb._id === item.book._id)
-    );
+    const optionalBooksDetail = booksDetail.filter((item) => item.bookType === 'optional');
+    const requiredBooksDetail = booksDetail.filter((item) => item.bookType === 'required');
 
     // Grand totals based on the 3 tables
     const grandTotalItems =
@@ -1340,8 +1333,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         setEditingItemType(null);
                                         setEditingItemId(null);
                                         setShowAllBooksForSubtitle(false);
-                                        setShowAllStationery(true);
-                                        setSelectedStationeryCategories(new Set(stationeryCategories));
+                                        setShowAllStationery(false); // Optional: Set to false to avoid showing all items initially
+                                        setSelectedStationeryCategories(new Set()); // Initialize as empty Set
                                     }}
                                     disabled={isAddItemFormDisabled}
                                     className="hidden"
@@ -1390,12 +1383,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                                 type="checkbox"
                                                 value={category}
                                                 checked={selectedStationeryCategories.has(category)}
-                                                onChange={(e) => {
-                                                    const newSet = new Set(selectedStationeryCategories);
-                                                    if (e.target.checked) newSet.add(category);
-                                                    else newSet.delete(category);
-                                                    setSelectedStationeryCategories(newSet);
-                                                }}
+                                                onChange={(e) => handleCategoryChange(category)}
                                                 className="mr-2"
                                             />
                                             {category}
@@ -1637,7 +1625,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         </tr>
                                     </thead>
                                     <tbody className="table-body">
-                                        {(requiredBooksDetail || []).length === 0 ? (
+                                        {requiredBooksDetail.length === 0 ? (
                                             <tr>
                                                 <td colSpan="7" className="text-center">No required books added yet.</td>
                                             </tr>

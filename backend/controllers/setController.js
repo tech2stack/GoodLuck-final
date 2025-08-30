@@ -437,9 +437,10 @@ exports.getBooksByCustomerAndClass = catchAsync(async (req, res, next) => {
 
     const set = await Set.findOne({ customer: customerId, class: classId })
         .populate({
-            path: 'books.book',
-            select: 'bookName subtitle commonPrice'
-        })
+    path: 'books.book',
+    select: 'bookName subtitle commonPrice language',
+    populate: { path: 'language', select: 'name' }
+})
         .select('books');
 
     if (!set) {
