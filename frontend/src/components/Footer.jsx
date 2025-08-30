@@ -51,9 +51,10 @@ const Footer = () => {
 
       <div className="footer-bottom">
         <p>&copy; {new Date().getFullYear()} Goodluck Book Store. All rights reserved.</p>
-        <p>Developed with ❤️ by <em><b>Tech2Stack</b></em></p>
+        <p>Developed with ❤️ by <em><a href='https://tech2stack.com/' target='_blank' > <b>Tech2Stack</b></a></em></p>
       </div>
     </footer>
+    
   );
 };
 
