@@ -30,7 +30,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     const [isbnVisible, setIsbnVisible] = useState({});
     const [showLanguageField, setShowLanguageField] = useState(false);
 
-
     const [formData, setFormData] = useState({
         bookName: '',
         publication: '',
@@ -47,32 +46,24 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     const [localError, setLocalError] = useState(null);
     const [editingBookCatalogId, setEditingBookCatalogId] = useState(null);
 
-    const [currentClassIndex, setCurrentClassIndex] = useState(0); // 🔹 for swipe navigation
-
-    // States for confirmation modal
+    const [currentClassIndex, setCurrentClassIndex] = useState(0);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [bookCatalogToDeleteId, setBookCatalogToDeleteId] = useState(null);
     const [bookCatalogToDeleteName, setBookCatalogToDeleteName] = useState('');
     const [bookToDelete, setBookToDelete] = useState(null);
 
-    // New state to manage the expanded row for details
     const [priceDropdownId, setPriceDropdownId] = useState(null);
     const dropdownRef = useRef(null);
-    // Ref for scrolling to the new item in the table (if needed)
     const tableBodyRef = useRef(null);
 
-    // States for Search
     const [searchTerm, setSearchTerm] = useState('');
-    const [publicationFilter, setPublicationFilter] = useState('all'); // Default to 'all' for no filter
-    const [subtitleFilter, setSubtitleFilter] = useState('all'); // Default to 'all' for no filter
-    const [languageFilter, setLanguageFilter] = useState('all'); // Default to 'all' for no filter
+    const [publicationFilter, setPublicationFilter] = useState('all');
+    const [subtitleFilter, setSubtitleFilter] = useState('all');
+    const [languageFilter, setLanguageFilter] = useState('all');
 
-    // States for Pagination
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10); // Declared setItemsPerPage here
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
-
-    // --- Helper function for date formatting ---
     const formatDateWithTime = (dateString) => {
         if (!dateString) return 'N/A';
         const options = {
@@ -81,20 +72,19 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-            hour12: true // For AM/PM format
+            hour12: true,
         };
         const date = new Date(dateString);
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
 
-    // --- Fetch Dropdown Data (Publications, Languages, Classes) ---
     const fetchDropdownData = useCallback(async () => {
         try {
             setLoading(true);
             const [publicationsRes, languagesRes, classesRes] = await Promise.all([
                 api.get('/publications?status=active&limit=1000'),
                 api.get('/languages?status=active&limit=1000'),
-                api.get('/classes?status=active&limit=1000')
+                api.get('/classes?status=active&limit=1000'),
             ]);
 
             if (publicationsRes.data.status === 'success') {
@@ -106,9 +96,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             if (classesRes.data.status === 'success') {
                 setClasses(classesRes.data.data.classes);
             }
-
-            // Removed the code that sets the first publication/language as default
-
         } catch (err) {
             console.error('Error fetching dropdown data:', err);
             showFlashMessage('Failed to load necessary data for form (Publications, Languages, Classes).', 'error');
@@ -117,51 +104,46 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         }
     }, [showFlashMessage]);
 
-    // --- Fetch Subtitles based on selected Publication (UPDATED LOGIC) ---
-// --- Fetch Subtitles based on selected Publication (UPDATED LOGIC) ---
-const fetchSubtitles = useCallback(
-    (publicationId, initialSubtitleId = null) => {
-        console.log('Fetching subtitles for publicationId:', publicationId, 'Initial Subtitle ID:', initialSubtitleId);
-        const selectedPub = publications.find((pub) => pub._id === publicationId);
+    const fetchSubtitles = useCallback(
+        (publicationId, initialSubtitleId = null) => {
+            console.log('Fetching subtitles for publicationId:', publicationId, 'Initial Subtitle ID:', initialSubtitleId);
+            const selectedPub = publications.find((pub) => pub._id === publicationId);
 
-        if (!selectedPub) {
-            setSubtitles([]);
-            setFormData((prev) => ({ ...prev, subtitle: '' }));
-            setSubtitleFilter('all'); // ✅ Reset subtitle filter when no publication is selected
-            console.log('Subtitle cleared because no publicationId or publication not found.');
-            return;
-        }
-
-        const fetchedSubtitles = selectedPub.subtitles || [];
-        // ✅ This is the key change: set the state for the filter dropdown
-        setSubtitles(fetchedSubtitles);
-        console.log('Fetched subtitles from state:', fetchedSubtitles);
-
-        if (initialSubtitleId) {
-            const subtitleExistsInFetched = fetchedSubtitles.some((sub) => sub._id === initialSubtitleId);
-            if (subtitleExistsInFetched) {
-                setFormData((prev) => ({ ...prev, subtitle: initialSubtitleId }));
-                console.log('Subtitle set to initialSubtitleId:', initialSubtitleId);
-            } else {
+            if (!selectedPub) {
+                setSubtitles([]);
                 setFormData((prev) => ({ ...prev, subtitle: '' }));
-                console.log('Subtitle set to empty string as initial ID not found.');
+                setSubtitleFilter('all');
+                console.log('Subtitle cleared because no publicationId or publication not found.');
+                return;
             }
-        } else {
-            setFormData((prev) => ({ ...prev, subtitle: fetchedSubtitles[0]?._id || '' }));
-            console.log('Subtitle set to first available or cleared (no initialSubtitleId).');
-        }
-    },
-    [publications]
-);
-    // --- Fetch Book Catalogs ---
-    // --- Fetch Book Catalogs ---
+
+            const fetchedSubtitles = selectedPub.subtitles || [];
+            setSubtitles(fetchedSubtitles);
+            console.log('Fetched subtitles from state:', fetchedSubtitles);
+
+            if (initialSubtitleId) {
+                const subtitleExistsInFetched = fetchedSubtitles.some((sub) => sub._id === initialSubtitleId);
+                if (subtitleExistsInFetched) {
+                    setFormData((prev) => ({ ...prev, subtitle: initialSubtitleId }));
+                    console.log('Subtitle set to initialSubtitleId:', initialSubtitleId);
+                } else {
+                    setFormData((prev) => ({ ...prev, subtitle: '' }));
+                    console.log('Subtitle set to empty string as initial ID not found.');
+                }
+            } else {
+                setFormData((prev) => ({ ...prev, subtitle: fetchedSubtitles[0]?._id || '' }));
+                console.log('Subtitle set to first available or cleared (no initialSubtitleId).');
+            }
+        },
+        [publications]
+    );
+
     const fetchBookCatalogs = useCallback(async () => {
         setLoading(true);
         setLocalError(null);
         try {
             const response = await api.get(`/book-catalogs`);
             if (response.data.status === 'success') {
-                // ✅ Sort by createdAt (latest first)
                 const sorted = response.data.data.bookCatalogs.sort(
                     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
                 );
@@ -186,15 +168,12 @@ const fetchSubtitles = useCallback(
         }
     }, [currentPage, itemsPerPage, showFlashMessage]);
 
-    // Initial data fetch on component mount
     useEffect(() => {
         fetchDropdownData();
         fetchBookCatalogs();
     }, [fetchDropdownData, fetchBookCatalogs]);
-// ✅ New useEffect to handle subtitle filter updates based on publication filter.
+
     useEffect(() => {
-        // This effect will be triggered whenever publicationFilter changes.
-        // If a publication is selected, fetch the corresponding subtitles for the filter dropdown.
         if (publicationFilter !== 'all') {
             const selectedPub = publications.find((pub) => pub._id === publicationFilter);
             if (selectedPub) {
@@ -203,25 +182,18 @@ const fetchSubtitles = useCallback(
                 setSubtitles([]);
             }
         } else {
-            // If 'All Publications' is selected, reset subtitles
             setSubtitles([]);
-            // Also reset the subtitle filter to 'all'
             setSubtitleFilter('all');
         }
-        // Always reset subtitle filter to 'all' when publication filter changes.
-        // This prevents showing an old subtitle selection that's not valid for the new publication.
         setSubtitleFilter('all');
     }, [publicationFilter, publications]);
-    // Effect to fetch subtitles when publication changes (for new entry or manual change)
+
     useEffect(() => {
-        // Only auto-fetch subtitles if not in edit mode (handleEdit calls it explicitly)
         if (!editingBookCatalogId) {
             fetchSubtitles(formData.publication);
         }
     }, [formData.publication, fetchSubtitles, editingBookCatalogId]);
 
-
-    // Debugging useEffect for PDF libraries
     useEffect(() => {
         console.log("PDF Libraries Check (BookCatalogManagement):");
         console.log("window.jspdf (global object):", typeof window.jspdf);
@@ -241,8 +213,6 @@ const fetchSubtitles = useCallback(
         };
     }, []);
 
-
-    // --- Form Handling ---
     const handleChange = (e) => {
         const { name, value, type } = e.target;
 
@@ -284,8 +254,6 @@ const fetchSubtitles = useCallback(
         setLoading(true);
         setLocalError(null);
 
-        // Basic validation
-        // Changed formData.name to formData.bookName
         if (!formData.bookName || !formData.publication || !formData.bookType) {
             setLocalError('Please fill in all required fields (Book Name, Publication, Book Type).');
             showFlashMessage('Please fill in all required fields.', 'error');
@@ -303,10 +271,9 @@ const fetchSubtitles = useCallback(
         }
 
         if (formData.bookType === 'default') {
-            // Further validation for pricesByClass values
             for (const classId in formData.pricesByClass) {
                 const price = formData.pricesByClass[classId];
-                if (price === undefined || price === null || isNaN(price) || price === '' || price < 0) { // Added '' check
+                if (price === undefined || price === null || isNaN(price) || price === '' || price < 0) {
                     setLocalError(`Price for class ${classes.find(c => c._id === classId)?.name || classId} is invalid. Must be a non-negative number.`);
                     showFlashMessage('Invalid class price detected.', 'error');
                     setLoading(false);
@@ -315,22 +282,17 @@ const fetchSubtitles = useCallback(
             }
         }
 
-
-        // Prepare data for API call
         const dataToSend = { ...formData };
-        // Ensure subtitle and language are null if empty strings
         if (dataToSend.subtitle === '') dataToSend.subtitle = null;
         if (dataToSend.language === '') dataToSend.language = null;
 
-        // Clean up unnecessary fields based on bookType
         if (dataToSend.bookType === 'default') {
             delete dataToSend.commonPrice;
             delete dataToSend.commonIsbn;
-            // Convert pricesByClass values to numbers before sending
             const numericPricesByClass = {};
             const nonEmptyIsbnByClass = {};
             for (const key in dataToSend.pricesByClass) {
-                if (dataToSend.pricesByClass[key] !== '') { // Only include if not empty string
+                if (dataToSend.pricesByClass[key] !== '') {
                     numericPricesByClass[key] = parseFloat(dataToSend.pricesByClass[key]);
                 }
             }
@@ -341,58 +303,69 @@ const fetchSubtitles = useCallback(
             }
             dataToSend.pricesByClass = numericPricesByClass;
             dataToSend.isbnByClass = nonEmptyIsbnByClass;
-        } else { // common_price
+        } else {
             delete dataToSend.pricesByClass;
             delete dataToSend.isbnByClass;
-            // Convert commonPrice to number before sending
             dataToSend.commonPrice = parseFloat(dataToSend.commonPrice);
         }
 
-        console.log('Submitting formData:', formData); // DEBUG LOG
-        console.log('Data to send:', dataToSend); // DEBUG LOG
+        console.log('Submitting formData:', formData);
+        console.log('Data to send:', dataToSend);
 
         try {
             let response;
             if (editingBookCatalogId) {
-                // Update existing book catalog
                 response = await api.patch(`/book-catalogs/${editingBookCatalogId}`, dataToSend);
                 if (response.data.status === 'success') {
                     showFlashMessage('Book Catalog updated successfully!', 'success');
-                    fetchBookCatalogs(); // re-fetch after update
+                    await fetchBookCatalogs(); // Re-fetch after update
                 } else {
                     throw new Error(response.data.message || 'Failed to update book catalog.');
                 }
             } else {
-                // ✅ Create case → add new entry at top & reset pagination
+                // Create case: Add new entry and ensure it's visible
                 response = await api.post('/book-catalogs', dataToSend);
                 if (response.data.status === 'success') {
                     showFlashMessage('Book Catalog created successfully!', 'success');
-
-                    setBookCatalogs(prev => [response.data.data.bookCatalog, ...prev]); // add to top
-                    setCurrentPage(1); // reset to first page
+                    // Update bookCatalogs state with the new entry
+                    const newBookCatalog = {
+                        ...response.data.data.bookCatalog,
+                        publication: publications.find(pub => pub._id === formData.publication) || { name: 'N/A' },
+                        subtitle: subtitles.find(sub => sub._id === formData.subtitle) || null,
+                        language: languages.find(lang => lang._id === formData.language) || null,
+                    };
+                    setBookCatalogs(prev => [newBookCatalog, ...prev]);
+                    // Reset filters to ensure the new entry is visible
+                    setSearchTerm('');
+                    setPublicationFilter('all');
+                    setSubtitleFilter('all');
+                    setLanguageFilter('all');
+                    setCurrentPage(1); // Go to first page
+                    // Scroll to the top of the table
+                    if (tableBodyRef.current) {
+                        tableBodyRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }
                 } else {
                     throw new Error(response.data.message || 'Failed to create book catalog.');
                 }
             }
 
             // Reset form
-            // Retain publication, subtitle, and language; reset other fields
             setFormData({
                 bookName: '',
-                publication: formData.publication, // Retain previous value
-                subtitle: formData.subtitle, // Retain previous value
-                language: formData.language, // Retain previous value
+                publication: formData.publication,
+                subtitle: formData.subtitle,
+                language: formData.language,
                 bookType: 'default',
                 commonPrice: 0,
                 pricesByClass: {},
                 commonIsbn: '',
                 isbnByClass: {},
-                status: 'active'
+                status: 'active',
             });
             setEditingBookCatalogId(null);
 
-
-            // Ensure subtitles are fetched for the retained publication
+            // Re-fetch subtitles for the retained publication
             fetchSubtitles(formData.publication, formData.subtitle);
 
         } catch (err) {
@@ -405,11 +378,8 @@ const fetchSubtitles = useCallback(
         }
     };
 
-
-    // --- Edit and Delete Operations ---
     const handleEdit = (bookCatalogItem) => {
-        console.log('Editing book catalog item:', bookCatalogItem); // DEBUG LOG
-        // FIX: Ensure pricesByClass is converted correctly from a plain object (if it came that way)
+        console.log('Editing book catalog item:', bookCatalogItem);
         const pricesMap = bookCatalogItem.pricesByClass
             ? Object.fromEntries(Object.entries(bookCatalogItem.pricesByClass))
             : {};
@@ -417,29 +387,24 @@ const fetchSubtitles = useCallback(
             ? Object.fromEntries(Object.entries(bookCatalogItem.isbnByClass))
             : {};
 
-        // Temporarily set publication and language first, then fetch subtitles
         setFormData(prev => ({
             ...prev,
-            bookName: bookCatalogItem.bookName, // Changed from 'name' to 'bookName'
+            bookName: bookCatalogItem.bookName,
             publication: bookCatalogItem.publication?._id || '',
             language: bookCatalogItem.language?._id || '',
             bookType: bookCatalogItem.bookType,
-            commonPrice: bookCatalogItem.commonPrice || '', // Use empty string for 0 to avoid NaN warning on empty input
+            commonPrice: bookCatalogItem.commonPrice || '',
             pricesByClass: pricesMap,
             commonIsbn: bookCatalogItem.commonIsbn || '',
             isbnByClass: isbnsMap,
-            // discountPercentage: bookCatalogItem.discountPercentage || '', // Use empty string for 0 to avoid NaN warning on empty input // REMOVED
-            // gstPercentage: bookCatalogItem.gstPercentage || '', // Use empty string for 0 to avoid NaN warning on empty input // REMOVED
             status: bookCatalogItem.status,
         }));
         setEditingBookCatalogId(bookCatalogItem._id);
         setLocalError(null);
-        window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // Explicitly fetch subtitles for the selected publication, passing the current subtitle ID
         fetchSubtitles(bookCatalogItem.publication?._id, bookCatalogItem.subtitle?._id);
-
-        console.log('Set formData for editing. Publication:', bookCatalogItem.publication?._id, 'Subtitle:', bookCatalogItem.subtitle?._id); // DEBUG LOG
+        console.log('Set formData for editing. Publication:', bookCatalogItem.publication?._id, 'Subtitle:', bookCatalogItem.subtitle?._id);
     };
 
     const handleDeleteClick = (bookCatalogItem) => {
@@ -487,42 +452,45 @@ const fetchSubtitles = useCallback(
 
     const handleCancelEdit = () => {
         setFormData({
-            bookName: '', publication: '', subtitle: '',
-            language: '', bookType: 'default', commonPrice: 0,
-            pricesByClass: {}, commonIsbn: '', isbnByClass: {}, status: 'active'
+            bookName: '',
+            publication: '',
+            subtitle: '',
+            language: '',
+            bookType: 'default',
+            commonPrice: 0,
+            pricesByClass: {},
+            commonIsbn: '',
+            isbnByClass: {},
+            status: 'active',
         });
         setEditingBookCatalogId(null);
         setLocalError(null);
     };
 
-    // Filtered and paginated data
-const filteredBookCatalogs = useMemo(() => {
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    return bookCatalogs.filter((bookCatalogItem) => {
-        const bookName = bookCatalogItem.bookName || '';
-        const publicationName = bookCatalogItem.publication?.name || '';
-        const languageName = bookCatalogItem.language?.name || '';
-        const subtitleName = bookCatalogItem.subtitle?.name || '';
+    const filteredBookCatalogs = useMemo(() => {
+        const lowerCaseSearchTerm = searchTerm.toLowerCase();
+        return bookCatalogs.filter((bookCatalogItem) => {
+            const bookName = bookCatalogItem.bookName || '';
+            const publicationName = bookCatalogItem.publication?.name || '';
+            const languageName = bookCatalogItem.language?.name || '';
+            const subtitleName = bookCatalogItem.subtitle?.name || '';
 
-        const matchesPublication =
-            publicationFilter === 'all' || bookCatalogItem.publication?._id === publicationFilter;
+            const matchesPublication =
+                publicationFilter === 'all' || bookCatalogItem.publication?._id === publicationFilter;
+            const matchesSubtitle =
+                subtitleFilter === 'all' || bookCatalogItem.subtitle?._id === subtitleFilter;
+            const matchesLanguage =
+                languageFilter === 'all' || bookCatalogItem.language?._id === languageFilter;
+            const matchesSearch =
+                bookName.toLowerCase().includes(lowerCaseSearchTerm) ||
+                publicationName.toLowerCase().includes(lowerCaseSearchTerm) ||
+                languageName.toLowerCase().includes(lowerCaseSearchTerm) ||
+                subtitleName.toLowerCase().includes(lowerCaseSearchTerm);
 
-        // ✅ Corrected logic: Use `subtitleFilter` to match the book's subtitle ID.
-        const matchesSubtitle =
-            subtitleFilter === 'all' || bookCatalogItem.subtitle?._id === subtitleFilter;
+            return matchesPublication && matchesSubtitle && matchesLanguage && matchesSearch;
+        });
+    }, [bookCatalogs, searchTerm, publicationFilter, subtitleFilter, languageFilter]);
 
-        const matchesLanguage =
-            languageFilter === 'all' || bookCatalogItem.language?._id === languageFilter;
-
-        const matchesSearch =
-            bookName.toLowerCase().includes(lowerCaseSearchTerm) ||
-            publicationName.toLowerCase().includes(lowerCaseSearchTerm) ||
-            languageName.toLowerCase().includes(lowerCaseSearchTerm) ||
-            subtitleName.toLowerCase().includes(lowerCaseSearchTerm);
-
-        return matchesPublication && matchesSubtitle && matchesLanguage && matchesSearch;
-    });
-}, [bookCatalogs, searchTerm, publicationFilter, subtitleFilter, languageFilter]);
     const totalRecords = filteredBookCatalogs.length;
     const totalPages = Math.ceil(totalRecords / itemsPerPage);
 
@@ -540,22 +508,18 @@ const filteredBookCatalogs = useMemo(() => {
 
     const handleItemsPerPageChange = (e) => {
         setItemsPerPage(Number(e.target.value));
-        setCurrentPage(1); // Reset to first page when items per page changes
+        setCurrentPage(1);
     };
 
-    // --- Helper function to get class name by ID ---
     const getClassName = (classId) => {
         return classes.find(c => c._id === classId)?.name || 'Unknown';
     };
-
 
     const togglePriceDropdown = (bookId, e) => {
         e.stopPropagation();
         setPriceDropdownId(priceDropdownId === bookId ? null : bookId);
     };
 
-    // --- PDF Download Functionality ---
-    // --- PDF Download Functionality ---
     const downloadPdf = () => {
         if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF !== 'function') {
             showFlashMessage('PDF generation failed: Core libraries are not loaded. Please check your script links.', 'error');
@@ -575,15 +539,13 @@ const filteredBookCatalogs = useMemo(() => {
             book.publication ? book.publication.name : 'N/A',
             book.subtitle ? book.subtitle.name : 'N/A',
             book.language ? book.language.name : 'N/A',
-            // Corrected line: Join ISBNs from pricesByClass, or use commonIsbn
             book.bookType === 'common_price'
                 ? book.commonIsbn || 'N/A'
                 : Object.entries(book.isbnByClass)
                     .filter(([classId, isbn]) => isbn)
                     .map(([classId, isbn]) => `${getClassName(classId)}/${isbn}`)
                     .join(', '),
-            // Corrected line: Format discount percentage
-            `${book.discountPercentage}%`
+            `${book.discountPercentage}%`,
         ]);
 
         addTableToDoc(doc, tableColumn, tableRows, startY);
@@ -591,7 +553,7 @@ const filteredBookCatalogs = useMemo(() => {
         doc.save(`Book_Catalog_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
         showFlashMessage('Book catalog list downloaded as PDF!', 'success');
     };
-    // --- UI Rendering ---
+
     return (
         <div className="book-catalog-management-container">
             <h2 className="main-section-title">Book Catalog Management</h2>
@@ -602,18 +564,12 @@ const filteredBookCatalogs = useMemo(() => {
                 </p>
             )}
 
-            {/* Main content layout for two columns */}
             <div className="main-content-layout">
-
-
-                {/* Book Catalog Creation/Update Form - SECOND CHILD */}
                 <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
                         <h3 className="form-title">{editingBookCatalogId ? 'Edit Book Catalog' : 'Add Book Catalog'}</h3>
 
-                        {/* Book Type and Price Fields */}
                         <div className="form-group">
-                            {/* <label>Book Type:</label> */}
                             <div className="radio-group">
                                 <label>
                                     <input
@@ -638,7 +594,6 @@ const filteredBookCatalogs = useMemo(() => {
                             </div>
                         </div>
                         <div className="form-row">
-
                             <div className="form-group">
                                 <label htmlFor="publication">Publication Name:</label>
                                 <select
@@ -654,13 +609,11 @@ const filteredBookCatalogs = useMemo(() => {
                                     {publications.length === 0 ? (
                                         <option value="" disabled>Loading Publications...</option>
                                     ) : (
-                                        <>
-                                            {publications.map(pub => (
-                                                <option key={pub._id} value={pub._id}>
-                                                    {pub.name}
-                                                </option>
-                                            ))}
-                                        </>
+                                        publications.map(pub => (
+                                            <option key={pub._id} value={pub._id}>
+                                                {pub.name}
+                                            </option>
+                                        ))
                                     )}
                                 </select>
                             </div>
@@ -676,44 +629,34 @@ const filteredBookCatalogs = useMemo(() => {
                                 >
                                     <option value="">Select</option>
                                     {subtitles.length > 0 ? (
-                                        <>
-                                            {subtitles.map(sub => (
-                                                <option key={sub._id} value={sub._id}>
-                                                    {sub.name}
-                                                </option>
-                                            ))}
-                                        </>
+                                        subtitles.map(sub => (
+                                            <option key={sub._id} value={sub._id}>
+                                                {sub.name}
+                                            </option>
+                                        ))
                                     ) : (
                                         <option value="" disabled>No subtitles found</option>
                                     )}
                                 </select>
                             </div>
-
                         </div>
 
                         <div className="form-row">
-
                             <div className="form-group">
-                                <div className="form-group elective-language-toggle">
+                                <div className="elective-language-toggle">
                                     <button
                                         type="button"
                                         className={`toggle-btn ${showLanguageField ? "active" : ""}`}
                                         onClick={() => {
                                             setShowLanguageField(prev => !prev);
                                             if (showLanguageField) {
-                                                // uncheck hone par reset
                                                 setFormData(prev => ({ ...prev, language: '' }));
                                             }
                                         }}
                                     >
                                         {showLanguageField ? " -Hide Language" : "+Add Language"}
                                     </button>
-
-                                    {/* Niche language field tabhi show hoga jab button active h */}
-
                                 </div>
-
-
                                 {showLanguageField && (
                                     <select
                                         id="language"
@@ -732,7 +675,6 @@ const filteredBookCatalogs = useMemo(() => {
                                     </select>
                                 )}
                             </div>
-
                             <div className="form-group">
                                 <label htmlFor="bookName">Book Name:</label>
                                 <input
@@ -749,8 +691,6 @@ const filteredBookCatalogs = useMemo(() => {
                             </div>
                         </div>
 
-
-
                         {formData.bookType === 'common_price' && (
                             <div className="form-row">
                                 <div className="form-group">
@@ -763,7 +703,6 @@ const filteredBookCatalogs = useMemo(() => {
                                         onChange={handleChange}
                                         placeholder="e.g., 150.00"
                                         min="0"
-                                        // step="0.01"
                                         required
                                         disabled={loading}
                                         className="form-input"
@@ -785,16 +724,13 @@ const filteredBookCatalogs = useMemo(() => {
                             </div>
                         )}
 
-                        {/* 🔹 Prices & ISBNs (swipe navigation) */}
                         {formData.bookType === 'default' && (
                             <div className="prices-by-class-section">
                                 <h4 className="sub-section-title">Prices & ISBNs by Class:</h4>
-
                                 {classes.length === 0 ? (
                                     <p className="loading-state">Loading classes...</p>
                                 ) : (
                                     <div className="class-price-container">
-                                        {/* Left Button */}
                                         <button
                                             type="button"
                                             className="nav-btn"
@@ -806,12 +742,8 @@ const filteredBookCatalogs = useMemo(() => {
                                         >
                                             <FaChevronLeft />
                                         </button>
-
-                                        {/* Single Class Input */}
                                         <div className="form-group class-card">
                                             <h5>Class : {classes[currentClassIndex]?.name}</h5>
-
-                                            {/* Price input */}
                                             <label htmlFor={`price_${classes[currentClassIndex]._id}`}>
                                                 Price:
                                             </label>
@@ -819,16 +751,11 @@ const filteredBookCatalogs = useMemo(() => {
                                                 type="number"
                                                 id={`price_${classes[currentClassIndex]._id}`}
                                                 name={`price_${classes[currentClassIndex]._id}`}
-                                                value={
-                                                    formData.pricesByClass[classes[currentClassIndex]._id] || ''
-                                                }
+                                                value={formData.pricesByClass[classes[currentClassIndex]._id] || ''}
                                                 onChange={handleChange}
                                                 min="0"
-                                                // step="0.01"
                                                 className="form-input"
                                             />
-
-                                            {/* Toggle Button for ISBN */}
                                             <button
                                                 type="button"
                                                 className="toggle-isbn-btn"
@@ -841,8 +768,6 @@ const filteredBookCatalogs = useMemo(() => {
                                             >
                                                 {isbnVisible[classes[currentClassIndex]._id] ? '- Hide ISBN' : '+ Add ISBN'}
                                             </button>
-
-                                            {/* ISBN input (only shown when toggled) */}
                                             {isbnVisible[classes[currentClassIndex]._id] && (
                                                 <>
                                                     <label htmlFor={`isbn_${classes[currentClassIndex]._id}`}>
@@ -852,17 +777,13 @@ const filteredBookCatalogs = useMemo(() => {
                                                         type="text"
                                                         id={`isbn_${classes[currentClassIndex]._id}`}
                                                         name={`isbn_${classes[currentClassIndex]._id}`}
-                                                        value={
-                                                            formData.isbnByClass[classes[currentClassIndex]._id] || ''
-                                                        }
+                                                        value={formData.isbnByClass[classes[currentClassIndex]._id] || ''}
                                                         onChange={handleChange}
                                                         className="form-input"
                                                     />
                                                 </>
                                             )}
                                         </div>
-
-                                        {/* Right Button */}
                                         <button
                                             type="button"
                                             className="nav-btn"
@@ -878,42 +799,6 @@ const filteredBookCatalogs = useMemo(() => {
                                 )}
                             </div>
                         )}
-
-
-                        {/* REMOVED: Discount and GST fields */}
-                        {/* <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="discountPercentage">Discount %:</label>
-                                <input
-                                    type="number"
-                                    id="discountPercentage"
-                                    name="discountPercentage"
-                                    value={formData.discountPercentage}
-                                    onChange={handleChange}
-                                    placeholder="e.g., 10"
-                                    min="0"
-                                    // step="0.01"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="gstPercentage">Net Profit %:</label>
-                                <input
-                                    type="number"
-                                    id="gstPercentage"
-                                    name="gstPercentage"
-                                    value={formData.gstPercentage}
-                                    onChange={handleChange}
-                                    placeholder="e.g., 18"
-                                    min="0"
-                                    max="100"
-                                    // step="0.01"
-                                    disabled={loading}
-                                    className="form-input"
-                                />
-                            </div>
-                        </div> */}
 
                         <div className="form-group">
                             <label htmlFor="status">Status:</label>
@@ -948,12 +833,7 @@ const filteredBookCatalogs = useMemo(() => {
                     </form>
                 </div>
 
-                {/* Book Catalog List Table - FIRST CHILD */}
                 <div className="table-section">
-                    {/* <h3 className="table-title">Existing Book Catalogs</h3>  */}
-
-
-
                     {loading && bookCatalogs.length === 0 ? (
                         <p className="loading-state text-center">
                             <FaSpinner className="animate-spin mr-2" /> Loading book catalogs...
@@ -961,8 +841,7 @@ const filteredBookCatalogs = useMemo(() => {
                     ) : filteredBookCatalogs.length === 0 ? (
                         <p className="no-data-message text-center">No book catalogs found matching your criteria. Start by adding one!</p>
                     ) : (
-                        <div className="table-container"> {/* This div is for table overflow, not layout */}
-
+                        <div className="table-container">
                             <div className="table-controls">
                                 <div className="search-input-group">
                                     <input
@@ -978,8 +857,6 @@ const filteredBookCatalogs = useMemo(() => {
                                     />
                                     <FaSearch className="search-icon" />
                                 </div>
-
-                                {/* Add Publication Filter */}
                                 <div className="filter-group">
                                     <label htmlFor="publicationFilter" className="mr-2"></label>
                                     <select
@@ -989,7 +866,6 @@ const filteredBookCatalogs = useMemo(() => {
                                             const selectedPublicationId = e.target.value;
                                             setPublicationFilter(selectedPublicationId);
                                             setCurrentPage(1);
-                                            // Fetch subtitles for the selected publication
                                             fetchSubtitles(selectedPublicationId);
                                         }}
                                         className="form-select"
@@ -1003,7 +879,6 @@ const filteredBookCatalogs = useMemo(() => {
                                         ))}
                                     </select>
                                 </div>
-
                                 <div className="filter-group">
                                     <label htmlFor="subtitleFilter" className="mr-2"></label>
                                     <select
@@ -1021,26 +896,7 @@ const filteredBookCatalogs = useMemo(() => {
                                             <option key={sub._id} value={sub._id}>{sub.name}</option>
                                         ))}
                                     </select>
-
-                                    {/* <label htmlFor="publicationFilter" className="mr-2"> </label>
-                                    <select
-                                        id="publicationFilter"
-                                        value={publicationFilter}
-                                        onChange={(e) => {
-                                            setPublicationFilter(e.target.value);
-                                            setCurrentPage(1);
-                                            fetchSubtitles(e.target.value); // Fetch subtitles based on the new publication filter
-                                        }}
-                                        className="form-select"
-                                        disabled={loading || publications.length === 0}
-                                    >
-                                        <option value="all">All Publications</option>
-                                        {publications.map((pub) => (
-                                            <option key={pub._id} value={pub._id}>{pub.name}</option>
-                                        ))}
-                                    </select> */}
-
-                                    <label htmlFor="languageFilter" className="mr-2"> </label>
+                                    <label htmlFor="languageFilter" className="mr-2"></label>
                                     <select
                                         id="languageFilter"
                                         value={languageFilter}
@@ -1061,7 +917,6 @@ const filteredBookCatalogs = useMemo(() => {
                                     <FaFilePdf className="btn-icon-mr" /> Download PDF
                                 </button>
                             </div>
-
 
                             <table className="app-table">
                                 <thead>
@@ -1155,9 +1010,8 @@ const filteredBookCatalogs = useMemo(() => {
                         </div>
                     )}
                 </div>
-            </div> {/* End of main-content-layout */}
+            </div>
 
-            {/* Confirmation Modal */}
             {showConfirmModal && bookToDelete && (
                 <div className="modal-backdrop">
                     <div className="modal-content">
