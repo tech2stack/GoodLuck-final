@@ -962,3 +962,8 @@
 .toggle-section-btn:hover {
   background: #0056b3;
 }
+
+.highlighted-row {
+  background-color: #d4edda !important; /* हल्का हरा */
+  transition: background-color 10s ease;
+}

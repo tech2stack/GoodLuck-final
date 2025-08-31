@@ -23,6 +23,8 @@ const CityManagement = ({ showFlashMessage }) => {
     const [loading, setLoading] = useState(false);
     const [localError, setLocalError] = useState(null);
     const [editingCityId, setEditingCityId] = useState(null);
+    // NEW: State to track the ID of the newly added city for highlighting
+    const [highlightedCityId, setHighlightedCityId] = useState(null);
 
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [cityToDeleteId, setCityToDeleteId] = useState(null);
@@ -47,59 +49,59 @@ const CityManagement = ({ showFlashMessage }) => {
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
 
-    // ✅ Fetch Cities with latest-first order
-  const fetchCities = useCallback(async () => {
-    setLoading(true);
-    setLocalError(null);
-    try {
-        const response = await api.get('/cities', { params: { _: Date.now() } });
-        if (response.data.status === 'success') {
-            const sorted = response.data.data.cities.sort(
-                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-            );
-            setCities(sorted);
-            const totalPages = Math.ceil(sorted.length / itemsPerPage);
-            if (currentPage > totalPages && totalPages > 0) {
-                setCurrentPage(totalPages);
-            } else if (totalPages === 0) {
-                setCurrentPage(1);
+    const fetchCities = useCallback(async () => {
+        setLoading(true);
+        setLocalError(null);
+        try {
+            const response = await api.get('/cities', { params: { _: Date.now() } });
+            if (response.data.status === 'success') {
+                const sorted = response.data.data.cities.sort(
+                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                );
+                setCities(sorted);
+                const totalPages = Math.ceil(sorted.length / itemsPerPage);
+                if (currentPage > totalPages && totalPages > 0) {
+                    setCurrentPage(totalPages);
+                } else if (totalPages === 0) {
+                    setCurrentPage(1);
+                }
+            } else {
+                setLocalError(response.data.message || 'Failed to fetch cities.');
             }
-        } else {
-            setLocalError(response.data.message || 'Failed to fetch cities.');
+        } catch (err) {
+            console.error('Error fetching cities:', err);
+            setLocalError(err.response?.data?.message || 'Failed to load cities due to network error.');
+        } finally {
+            setLoading(false);
         }
-    } catch (err) {
-        console.error('Error fetching cities:', err);
-        setLocalError(err.response?.data?.message || 'Failed to load cities due to network error.');
-    } finally {
-        setLoading(false);
-    }
-}, [currentPage, itemsPerPage]);
+    }, [currentPage, itemsPerPage]);
 
 
-const fetchZonesForDropdown = useCallback(async () => {
-    try {
-        const response = await api.get('/zones', { params: { _: Date.now() } });
-        if (response.data.status === 'success') {
-            const activeZones = response.data.data.zones.filter(zone => zone.status === 'active');
-            setZones(activeZones);
+    const fetchZonesForDropdown = useCallback(async () => {
+        try {
+            const response = await api.get('/zones', { params: { _: Date.now() } });
+            if (response.data.status === 'success') {
+                const activeZones = response.data.data.zones.filter(zone => zone.status === 'active');
+                setZones(activeZones);
+            }
+        } catch (err) {
+            console.error('Error fetching zones for dropdown:', err);
+            setLocalError('Failed to load zones for dropdown.');
         }
-    } catch (err) {
-        console.error('Error fetching zones for dropdown:', err);
-        setLocalError('Failed to load zones for dropdown.');
-    }
-}, []);
+    }, []);
 
-const fetchSalesRepresentatives = useCallback(async () => {
-    try {
-        const response = await api.get('/employees/sales-representatives', { params: { _: Date.now() } });
-        if (response.data.status === 'success') {
-            setSalesRepresentatives(response.data.data.employees);
+    const fetchSalesRepresentatives = useCallback(async () => {
+        try {
+            const response = await api.get('/employees/sales-representatives', { params: { _: Date.now() } });
+            if (response.data.status === 'success') {
+                setSalesRepresentatives(response.data.data.employees);
+            }
+        } catch (err) {
+            console.error('Error fetching sales representatives:', err);
+            showFlashMessage('Failed to load sales representatives.', 'error');
         }
-    } catch (err) {
-        console.error('Error fetching sales representatives:', err);
-        showFlashMessage('Failed to load sales representatives.', 'error');
-    }
-}, [showFlashMessage]);
+    }, [showFlashMessage]);
+
     useEffect(() => {
         fetchCities();
     }, [fetchCities]);
@@ -117,55 +119,62 @@ const fetchSalesRepresentatives = useCallback(async () => {
         }));
     };
 
-const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setLocalError(null);
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setLocalError(null);
 
-    if (!formData.name.trim() || !formData.zone) {
-        setLocalError('City name and zone are required.');
-        showFlashMessage('City name and zone are required.', 'error');
-        setLoading(false);
-        return;
-    }
-
-    try {
-        let response;
-        if (editingCityId) {
-            response = await api.patch(`/cities/${editingCityId}`, formData);
-            if (response.data.status === 'success') {
-                showFlashMessage('Updated successfully!', 'success');
-                fetchCities();
-            } else {
-                throw new Error(response.data.message || 'Failed to update city.');
-            }
-        } else {
-            response = await api.post('/cities', formData);
-            if (response.data.status === 'success') {
-                showFlashMessage('Created successfully!', 'success');
-                setSearchTerm(''); // Clear search to show new item
-                setCurrentPage(1); // Reset to page 1
-                fetchCities(); // Re-fetch to update table
-            } else {
-                throw new Error(response.data.message || 'Failed to create city.');
-            }
+        if (!formData.name.trim() || !formData.zone) {
+            setLocalError('City name and zone are required.');
+            showFlashMessage('City name and zone are required.', 'error');
+            setLoading(false);
+            return;
         }
-        setFormData({
-            name: '',
-            zone: '',
-            status: 'active',
-            assignedSalesRepresentative: '',
-        });
-        setEditingCityId(null);
-    } catch (err) {
-        console.error('Error saving city:', err);
-        const errorMessage = err.response?.data?.message || 'Failed to save city. Please check your input.';
-        setLocalError(errorMessage);
-        showFlashMessage(errorMessage, 'error');
-    } finally {
-        setLoading(false);
-    }
-};
+
+        try {
+            let response;
+            if (editingCityId) {
+                // Update case
+                response = await api.patch(`/cities/${editingCityId}`, formData);
+                if (response.data.status === 'success') {
+                    showFlashMessage('Updated successfully!', 'success');
+                } else {
+                    throw new Error(response.data.message || 'Failed to update city.');
+                }
+            } else {
+                // Create case
+                response = await api.post('/cities', formData);
+                if (response.data.status === 'success') {
+                    showFlashMessage('Created successfully!', 'success');
+                    const newCity = response.data.data.city;
+                    setCities(prev => [newCity, ...prev]);
+                    setHighlightedCityId(newCity._id);
+                    setSearchTerm(''); // Clear search to show new item
+                    setCurrentPage(1); // Reset to page 1
+                } else {
+                    throw new Error(response.data.message || 'Failed to create city.');
+                }
+            }
+            // NEW: Scroll to the top after submission for both create and update
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            setFormData({
+                name: '',
+                zone: '',
+                status: 'active',
+                assignedSalesRepresentative: '',
+            });
+            setEditingCityId(null);
+            fetchCities(); // Re-fetch to update table
+        } catch (err) {
+            console.error('Error saving city:', err);
+            const errorMessage = err.response?.data?.message || 'Failed to save city. Please check your input.';
+            setLocalError(errorMessage);
+            showFlashMessage(errorMessage, 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleEdit = (cityItem) => {
         setFormData({
@@ -176,6 +185,8 @@ const handleSubmit = async (e) => {
         });
         setEditingCityId(cityItem._id);
         setLocalError(null);
+        // NEW: Clear highlight on edit
+        setHighlightedCityId(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -217,6 +228,8 @@ const handleSubmit = async (e) => {
         setFormData({ name: '', zone: '', status: 'active', assignedSalesRepresentative: '' });
         setEditingCityId(null);
         setLocalError(null);
+        // NEW: Clear highlight on cancel edit
+        setHighlightedCityId(null);
     };
 
     const filteredCities = cities.filter(city =>
@@ -244,7 +257,7 @@ const handleSubmit = async (e) => {
         }
         const doc = new window.jspdf.jsPDF();
         let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
-        startY = addReportTitle(doc, startY, "Zone List Report");
+        startY = addReportTitle(doc, startY, "City List Report"); // Changed to City List Report
 
         const tableColumn = ["S.No.", "City Name", "Zone", "Assigned Sales Rep", "Status"];
         const tableRows = filteredCities.map((cityItem, index) => [
@@ -256,14 +269,13 @@ const handleSubmit = async (e) => {
         ]);
 
         addTableToDoc(doc, tableColumn, tableRows, startY);
-        doc.save(`Zone_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
-        showFlashMessage('Zone list downloaded as PDF!', 'success');
+        doc.save(`City_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`); // Changed to City List
+        showFlashMessage('City list downloaded as PDF!', 'success');
     };
 
     return (
         <div className="city-management-container">
-            {/* <h2 className="main-section-title">City Management</h2> */}
-            <h2 className="main-section-title">Zone Management</h2>
+            <h2 className="main-section-title">City Management</h2>
 
             {localError && (
                 <p className="error-message text-center">{localError}</p>
@@ -272,8 +284,7 @@ const handleSubmit = async (e) => {
             <div className="main-content-layout">
                 <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
-                        {/* <h3 className="form-title">{editingCityId ? 'Edit City' : 'Add City'}</h3> */}
-                        <h3 className="form-title">{editingCityId ? 'Edit Assigned Zone' : 'Assign Zone'}</h3>
+                        <h3 className="form-title">{editingCityId ? 'Edit City' : 'Add City'}</h3>
 
                         <div className="form-row">
                             <div className="form-group">
@@ -331,7 +342,7 @@ const handleSubmit = async (e) => {
                                     className="form-input"
                                 />
                             </div>
-                            
+
                             <div className="form-group">
                                 <label htmlFor="status">Status:</label>
                                 <select
@@ -348,7 +359,7 @@ const handleSubmit = async (e) => {
                                 </select>
                             </div>
                         </div>
-                        
+
 
                         <div className="form-actions">
                             <button type="submit" className="btn btn-primary" disabled={loading || zones.length === 0}>
@@ -390,8 +401,6 @@ const handleSubmit = async (e) => {
                         <p className="loading-state text-center">
                             <FaSpinner className="animate-spin mr-2" /> Loading cities...
                         </p>
-                    ) : filteredCities.length === 0 ? (
-                        <p className="no-data-message text-center">No cities found matching your criteria. Start by adding one!</p>
                     ) : (
                         <>
                             <table className="app-table">
@@ -407,40 +416,46 @@ const handleSubmit = async (e) => {
                                     </tr>
                                 </thead>
                                 <tbody ref={tableBodyRef}>
-                                    {currentCities.map((cityItem, index) => (
-                                        <tr key={cityItem._id}>
-                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                            <td>{cityItem.assignedSalesRepresentative?.name || 'N/A'}</td>
-                                            <td>{cityItem.zone?.name || 'N/A'}</td>
-                                            <td>{cityItem.name}</td>
-                                            
-                                            
-                                            <td>
-                                                <span className={`status-badge ${cityItem.status}`}>
-                                                    {cityItem.status.charAt(0).toUpperCase() + cityItem.status.slice(1)}
-                                                </span>
-                                            </td>
-                                            <td>{formatDateWithTime(cityItem.createdAt)}</td>
-                                            <td className="actions-column">
-                                                <button
-                                                    onClick={() => handleEdit(cityItem)}
-                                                    className="action-icon-button edit-button"
-                                                    title="Edit City"
-                                                    disabled={loading}
-                                                >
-                                                    <FaEdit className="icon" />
-                                                </button>
-                                                <button
-                                                    onClick={() => openConfirmModal(cityItem)}
-                                                    className="action-icon-button delete-button"
-                                                    title="Delete City"
-                                                    disabled={loading}
-                                                >
-                                                    {loading && cityToDeleteId === cityItem._id ? <FaSpinner className="icon animate-spin" /> : <FaTrashAlt className="icon" />}
-                                                </button>
-                                            </td>
+                                    {filteredCities.length > 0 ? (
+                                        currentCities.map((cityItem, index) => (
+                                            // NEW: Add highlight effect
+                                            <tr key={cityItem._id} className={cityItem._id === highlightedCityId ? 'animate-highlight' : ''}>
+                                                <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                                <td>{cityItem.assignedSalesRepresentative?.name || 'N/A'}</td>
+                                                <td>{cityItem.zone?.name || 'N/A'}</td>
+                                                <td>{cityItem.name}</td>
+                                                <td>
+                                                    <span className={`status-badge ${cityItem.status}`}>
+                                                        {cityItem.status.charAt(0).toUpperCase() + cityItem.status.slice(1)}
+                                                    </span>
+                                                </td>
+                                                <td>{formatDateWithTime(cityItem.createdAt)}</td>
+                                                <td className="actions-column">
+                                                    <button
+                                                        onClick={() => handleEdit(cityItem)}
+                                                        className="action-icon-button edit-button"
+                                                        title="Edit City"
+                                                        disabled={loading}
+                                                    >
+                                                        <FaEdit className="icon" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openConfirmModal(cityItem)}
+                                                        className="action-icon-button delete-button"
+                                                        title="Delete City"
+                                                        disabled={loading}
+                                                    >
+                                                        {loading && cityToDeleteId === cityItem._id ? <FaSpinner className="icon animate-spin" /> : <FaTrashAlt className="icon" />}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            {/* NEW: Show "No data" message but keep headers */}
+                                            <td colSpan="7" className="no-data-message text-center">No cities found matching your criteria.</td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
 
@@ -461,8 +476,6 @@ const handleSubmit = async (e) => {
                         </>
                     )}
                 </div>
-
-
             </div>
 
             {showConfirmModal && (

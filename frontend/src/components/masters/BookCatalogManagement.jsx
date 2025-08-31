@@ -29,10 +29,10 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     const [classes, setClasses] = useState([]);
     const [isbnVisible, setIsbnVisible] = useState({});
     const [showLanguageField, setShowLanguageField] = useState(false);
-// states add karein
-const [showPriceSection, setShowPriceSection] = useState(false);
-const [showAllIsbn, setShowAllIsbn] = useState(false);
 
+    // NEW: UI states
+    const [showPriceSection, setShowPriceSection] = useState(false);
+    const [showAllIsbn, setShowAllIsbn] = useState(false);
 
     const [formData, setFormData] = useState({
         bookName: '',
@@ -46,6 +46,7 @@ const [showAllIsbn, setShowAllIsbn] = useState(false);
         status: 'active',
     });
 
+    const topRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [localError, setLocalError] = useState(null);
     const [editingBookCatalogId, setEditingBookCatalogId] = useState(null);
@@ -67,6 +68,9 @@ const [showAllIsbn, setShowAllIsbn] = useState(false);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    // NEW: highlight state for newly added row
+    const [highlightedId, setHighlightedId] = useState(null);
 
     const formatDateWithTime = (dateString) => {
         if (!dateString) return 'N/A';
@@ -339,16 +343,22 @@ const [showAllIsbn, setShowAllIsbn] = useState(false);
                         language: languages.find(lang => lang._id === formData.language) || null,
                     };
                     setBookCatalogs(prev => [newBookCatalog, ...prev]);
+
+                    // NEW: highlight the newly added row for a few seconds
+                    setHighlightedId(newBookCatalog._id);
+                    setTimeout(() => setHighlightedId(null), 4000);
+
                     // Reset filters to ensure the new entry is visible
                     setSearchTerm('');
                     setPublicationFilter('all');
                     setSubtitleFilter('all');
                     setLanguageFilter('all');
                     setCurrentPage(1); // Go to first page
+
                     // Scroll to the top of the table
-                    if (tableBodyRef.current) {
-                        tableBodyRef.current.scrollIntoView({ behavior: 'smooth' });
-                    }
+                if (topRef.current) {
+                    topRef.current.scrollIntoView({ behavior: 'smooth' });
+                }
                 } else {
                     throw new Error(response.data.message || 'Failed to create book catalog.');
                 }
@@ -454,23 +464,6 @@ const [showAllIsbn, setShowAllIsbn] = useState(false);
         showFlashMessage('Deletion cancelled.', 'info');
     };
 
-    const handleCancelEdit = () => {
-        setFormData({
-            bookName: '',
-            publication: '',
-            subtitle: '',
-            language: '',
-            bookType: 'default',
-            commonPrice: 0,
-            pricesByClass: {},
-            commonIsbn: '',
-            isbnByClass: {},
-            status: 'active',
-        });
-        setEditingBookCatalogId(null);
-        setLocalError(null);
-    };
-
     const filteredBookCatalogs = useMemo(() => {
         const lowerCaseSearchTerm = searchTerm.toLowerCase();
         return bookCatalogs.filter((bookCatalogItem) => {
@@ -496,7 +489,7 @@ const [showAllIsbn, setShowAllIsbn] = useState(false);
     }, [bookCatalogs, searchTerm, publicationFilter, subtitleFilter, languageFilter]);
 
     const totalRecords = filteredBookCatalogs.length;
-    const totalPages = Math.ceil(totalRecords / itemsPerPage);
+    const totalPages = Math.ceil(totalRecords / itemsPerPage) || 1;
 
     const paginatedItems = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -505,7 +498,7 @@ const [showAllIsbn, setShowAllIsbn] = useState(false);
     }, [filteredBookCatalogs, currentPage, itemsPerPage]);
 
     const handlePageChange = (page) => {
-        if (page > 0 && page <= totalPages) {
+        if (page > 0 && page <= Math.max(totalPages, 1)) {
             setCurrentPage(page);
         }
     };
@@ -545,7 +538,7 @@ const [showAllIsbn, setShowAllIsbn] = useState(false);
             book.language ? book.language.name : 'N/A',
             book.bookType === 'common_price'
                 ? book.commonIsbn || 'N/A'
-                : Object.entries(book.isbnByClass)
+                : Object.entries(book.isbnByClass || {})
                     .filter(([classId, isbn]) => isbn)
                     .map(([classId, isbn]) => `${getClassName(classId)}/${isbn}`)
                     .join(', '),
@@ -560,6 +553,7 @@ const [showAllIsbn, setShowAllIsbn] = useState(false);
 
     return (
         <div className="book-catalog-management-container">
+            <div ref={topRef}></div>
             <h2 className="main-section-title">Book Catalog Management</h2>
 
             {localError && (
@@ -597,6 +591,7 @@ const [showAllIsbn, setShowAllIsbn] = useState(false);
                                 </label>
                             </div>
                         </div>
+
                         <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="publication">Publication Name:</label>
@@ -727,79 +722,77 @@ const [showAllIsbn, setShowAllIsbn] = useState(false);
                                 </div>
                             </div>
                         )}
-{/* Master Toggle Button */}
-<div className="section-toggle-container">
-    <button
-        type="button"
-        className="toggle-section-btn"
-        onClick={() => setShowPriceSection((prev) => !prev)}
-    >
-        {showPriceSection ? "- Hide Prices & ISBNs" : "+ Add Prices & ISBNs"}
-    </button>
-</div>
 
-{/* Section content (only when open) */}
-{showPriceSection && formData.bookType === 'default' && (
-    <div className="prices-by-class-section">
-        <h4 className="sub-section-title">Prices & ISBNs by Class:</h4>
+                        {/* Master Toggle Button */}
+                        <div className="section-toggle-container">
+                            <button
+                                type="button"
+                                className="toggle-section-btn"
+                                onClick={() => setShowPriceSection((prev) => !prev)}
+                            >
+                                {showPriceSection ? "- Hide Prices & ISBNs" : "+ Add Prices & ISBNs"}
+                            </button>
+                        </div>
 
-        {/* ISBN toggle button */}
-        <div className="isbn-toggle-container">
-    <label className="switch">
-        <input
-            type="checkbox"
-            checked={showAllIsbn}
-            onChange={() => setShowAllIsbn((prev) => !prev)}
-        />
-        <span className="slider"></span>
-    </label>
-    <span className="toggle-label">
-        {showAllIsbn ? "Hide All ISBNs" : "Show All ISBNs"}
-    </span>
-</div>
+                        {/* Section content (only when open) */}
+                        {showPriceSection && formData.bookType === 'default' && (
+                            <div className="prices-by-class-section">
+                                <h4 className="sub-section-title">Prices & ISBNs by Class:</h4>
 
+                                {/* ISBN toggle button */}
+                                <div className="isbn-toggle-container">
+                                    <label className="switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={showAllIsbn}
+                                            onChange={() => setShowAllIsbn((prev) => !prev)}
+                                        />
+                                        <span className="slider"></span>
+                                    </label>
+                                    <span className="toggle-label">
+                                        {showAllIsbn ? "Hide All ISBNs" : "Show All ISBNs"}
+                                    </span>
+                                </div>
 
-        {classes.length === 0 ? (
-            <p className="loading-state">Loading classes...</p>
-        ) : (
-            <div className="class-price-list">
-                {classes.map((cls) => (
-                    <div key={cls._id} className="form-group class-row">
-                        {/* Class name */}
-                        <span className="class-label">Class: {cls.name}</span>
+                                {classes.length === 0 ? (
+                                    <p className="loading-state">Loading classes...</p>
+                                ) : (
+                                    <div className="class-price-list">
+                                        {classes.map((cls) => (
+                                            <div key={cls._id} className="form-group class-row">
+                                                {/* Class name */}
+                                                <span className="class-label">Class: {cls.name}</span>
 
-                        {/* Price field */}
-                        <input
-                            type="number"
-                            id={`price_${cls._id}`}
-                            name={`price_${cls._id}`}
-                            value={formData.pricesByClass[cls._id] || ""}
-                            onChange={handleChange}
-                            min="0"
-                            placeholder="Enter Price"
-                            className="form-input price-input"
-                        />
+                                                {/* Price field */}
+                                                <input
+                                                    type="number"
+                                                    id={`price_${cls._id}`}
+                                                    name={`price_${cls._id}`}
+                                                    value={formData.pricesByClass[cls._id] || ""}
+                                                    onChange={handleChange}
+                                                    min="0"
+                                                    placeholder="Enter Price"
+                                                    className="form-input price-input"
+                                                />
 
-                        {/* ISBN field (toggle ke basis pe dikhega) */}
-                        {showAllIsbn && (
-                            <input
-                                type="text"
-                                id={`isbn_${cls._id}`}
-                                name={`isbn_${cls._id}`}
-                                value={formData.isbnByClass[cls._id] || ""}
-                                onChange={handleChange}
-                                placeholder="Enter ISBN"
-                                className="form-input isbn-input"
-                            />
+                                                {/* ISBN field (toggle ke basis pe dikhega) */}
+                                                {showAllIsbn && (
+                                                    <input
+                                                        type="text"
+                                                        id={`isbn_${cls._id}`}
+                                                        name={`isbn_${cls._id}`}
+                                                        value={formData.isbnByClass[cls._id] || ""}
+                                                        onChange={handleChange}
+                                                        placeholder="Enter ISBN"
+                                                        className="form-input isbn-input"
+                                                    />
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         )}
-                    </div>
-                ))}
-            </div>
-        )}
-    </div>
-)}
-
-
 
                         <div className="form-group">
                             <label htmlFor="status">Status:</label>
@@ -824,7 +817,22 @@ const [showAllIsbn, setShowAllIsbn] = useState(false);
                                 <button
                                     type="button"
                                     className="btn btn-secondary ml-2"
-                                    onClick={handleCancelEdit}
+                                    onClick={() => {
+                                        setFormData({
+                                            bookName: '',
+                                            publication: '',
+                                            subtitle: '',
+                                            language: '',
+                                            bookType: 'default',
+                                            commonPrice: 0,
+                                            pricesByClass: {},
+                                            commonIsbn: '',
+                                            isbnByClass: {},
+                                            status: 'active',
+                                        });
+                                        setEditingBookCatalogId(null);
+                                        setLocalError(null);
+                                    }}
                                     disabled={loading}
                                 >
                                     Cancel Edit
@@ -839,8 +847,6 @@ const [showAllIsbn, setShowAllIsbn] = useState(false);
                         <p className="loading-state text-center">
                             <FaSpinner className="animate-spin mr-2" /> Loading book catalogs...
                         </p>
-                    ) : filteredBookCatalogs.length === 0 ? (
-                        <p className="no-data-message text-center">No book catalogs found matching your criteria. Start by adding one!</p>
                     ) : (
                         <div className="table-container">
                             <div className="table-controls">
@@ -933,75 +939,86 @@ const [showAllIsbn, setShowAllIsbn] = useState(false);
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
+
                                 <tbody ref={tableBodyRef}>
-                                    {paginatedItems.map((book, index) => (
-                                        <tr key={book._id}>
-                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                            <td>{book.publication?.name || 'N/A'}</td>
-                                            <td>{book.subtitle?.name || 'N/A'}</td>
-                                            <td>{book.bookName}</td>
-                                            <td className="price-cell">
-                                                {book.bookType === 'common_price' ? (
-                                                    `${book.commonPrice}`
-                                                ) : (
-                                                    <div className="price-dropdown-container" ref={dropdownRef}>
-                                                        <span
-                                                            className="view-prices"
-                                                            onClick={(e) => togglePriceDropdown(book._id, e)}
-                                                        >
-                                                            View Prices
-                                                        </span>
-                                                        {priceDropdownId === book._id && (
-                                                            <div className="price-dropdown">
-                                                                <strong><h5>Class-wise Prices:</h5></strong>
-                                                                <ul>
-                                                                    {classes.map(cls => (
-                                                                        <li key={cls._id}>
-                                                                            <strong>{cls.name}:</strong> {book.pricesByClass[cls._id] || 'N/A'}
-                                                                            {book.isbnByClass[cls._id] && (
-                                                                                <span> / ISBN: {book.isbnByClass[cls._id]}</span>
-                                                                            )}
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td>{book.language?.name || 'General Book'}</td>
-                                            <td>{book.bookType === 'common_price' ? 'Common Price' : 'By Class'}</td>
-                                            <td>
-                                                <span className={`status-badge ${book.status}`}>{book.status}</span>
-                                            </td>
-                                            <td className="actions-column">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleEdit(book); }}
-                                                    className="action-icon-button edit-button"
-                                                    title="Edit"
-                                                    disabled={loading}
-                                                >
-                                                    <FaEdit className="icon" />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(book); }}
-                                                    className="action-icon-button delete-button"
-                                                    title="Delete"
-                                                    disabled={loading}
-                                                >
-                                                    <FaTrashAlt className="icon" />
-                                                </button>
+                                    {filteredBookCatalogs.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="9" className="text-center no-data-message">
+                                                No book catalogs found matching your criteria. Start by adding one!
                                             </td>
                                         </tr>
-                                    ))}
+                                    ) : (
+                                        paginatedItems.map((book, index) => (
+                                            <tr key={book._id} className={highlightedId === book._id ? "highlighted-row" : ""}>
+                                                <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                                <td>{book.publication?.name || 'N/A'}</td>
+                                                <td>{book.subtitle?.name || 'N/A'}</td>
+                                                <td>{book.bookName}</td>
+                                                <td className="price-cell">
+                                                    {book.bookType === 'common_price' ? (
+                                                        `${book.commonPrice}`
+                                                    ) : (
+                                                        <div className="price-dropdown-container" ref={dropdownRef}>
+                                                            <span
+                                                                className="view-prices"
+                                                                onClick={(e) => togglePriceDropdown(book._id, e)}
+                                                            >
+                                                                View Prices
+                                                            </span>
+                                                            {priceDropdownId === book._id && (
+                                                                <div className="price-dropdown">
+                                                                    <strong><h5>Class-wise Prices:</h5></strong>
+                                                                    <ul>
+                                                                        {classes.map(cls => (
+                                                                            <li key={cls._id}>
+                                                                                <strong>{cls.name}:</strong> {book.pricesByClass?.[cls._id] || 'N/A'}
+                                                                                {book.isbnByClass?.[cls._id] && (
+                                                                                    <span> / ISBN: {book.isbnByClass[cls._id]}</span>
+                                                                                )}
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td>{book.language?.name || 'General Book'}</td>
+                                                <td>{book.bookType === 'common_price' ? 'Common Price' : 'By Class'}</td>
+                                                <td>
+                                                    <span className={`status-badge ${book.status}`}>{book.status}</span>
+                                                </td>
+                                                <td className="actions-column">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleEdit(book); }}
+                                                        className="action-icon-button edit-button"
+                                                        title="Edit"
+                                                        disabled={loading}
+                                                    >
+                                                        <FaEdit className="icon" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDeleteClick(book); }}
+                                                        className="action-icon-button delete-button"
+                                                        title="Delete"
+                                                        disabled={loading}
+                                                    >
+                                                        <FaTrashAlt className="icon" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
+
+                            {/* Pagination + totals (visible even if no data, but disabled appropriately) */}
                             <div className="pagination-controls">
                                 <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1 || loading} className="btn-page">
                                     <FaChevronLeft className="btn-icon-mr" /> Previous
                                 </button>
-                                <span>Page {currentPage} of {totalPages}</span>
-                                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || loading} className="btn-page">
+                                <span>Page {Math.min(currentPage, Math.max(totalPages, 1))} of {Math.max(totalPages, 1)}</span>
+                                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages || loading || filteredBookCatalogs.length === 0} className="btn-page">
                                     Next <FaChevronRight className="btn-icon-ml" />
                                 </button>
                             </div>

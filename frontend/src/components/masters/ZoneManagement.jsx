@@ -20,6 +20,8 @@ const ZoneManagement = ({ showFlashMessage }) => {
     const [loading, setLoading] = useState(false);
     const [localError, setLocalError] = useState(null);
     const [editingZoneId, setEditingZoneId] = useState(null);
+    // NEW: State to track the ID of the newly added zone for highlighting
+    const [highlightedZoneId, setHighlightedZoneId] = useState(null);
 
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [zoneToDeleteId, setZoneToDeleteId] = useState(null);
@@ -44,41 +46,22 @@ const ZoneManagement = ({ showFlashMessage }) => {
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
 
-    const fetchZones = useCallback(async (scrollToNew = false) => {
+    const fetchZones = useCallback(async () => {
         setLoading(true);
         setLocalError(null);
         try {
             const response = await api.get('/zones');
             if (response.data.status === 'success') {
-                const fetchedZones = response.data.data.zones;
-                setZones(fetchedZones);
-                const totalPages = Math.ceil(fetchedZones.length / itemsPerPage);
+                // ✅ Sort by latest createdAt first
+                const sorted = response.data.data.zones.sort(
+                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                );
+                setZones(sorted);
+                const totalPages = Math.ceil(sorted.length / itemsPerPage);
                 if (currentPage > totalPages && totalPages > 0) {
                     setCurrentPage(totalPages);
                 } else if (totalPages === 0) {
                     setCurrentPage(1);
-                }
-                
-                if (scrollToNew && tableBodyRef.current) {
-                    setTimeout(() => {
-                        const lastPageIndex = Math.ceil(fetchedZones.length / itemsPerPage);
-                        if (currentPage !== lastPageIndex) {
-                           setCurrentPage(lastPageIndex);
-                           setTimeout(() => {
-                                if (tableBodyRef.current.lastElementChild) {
-                                    tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                } else {
-                                    tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                                }
-                           }, 50);
-                        } else {
-                            if (tableBodyRef.current.lastElementChild) {
-                                tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                            } else {
-                                tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                            }
-                        }
-                    }, 100);
                 }
             } else {
                 setLocalError(response.data.message || 'Failed to fetch zones.');
@@ -107,7 +90,7 @@ const ZoneManagement = ({ showFlashMessage }) => {
         e.preventDefault();
         setLoading(true);
         setLocalError(null);
-        
+
         if (!formData.name.trim()) {
             setLocalError('Zone name cannot be empty.');
             showFlashMessage('Zone name cannot be empty.', 'error');
@@ -118,6 +101,7 @@ const ZoneManagement = ({ showFlashMessage }) => {
         try {
             let response;
             if (editingZoneId) {
+                // Update case
                 response = await api.patch(`/zones/${editingZoneId}`, formData);
                 if (response.data.status === 'success') {
                     showFlashMessage('Zone updated successfully!', 'success');
@@ -125,19 +109,27 @@ const ZoneManagement = ({ showFlashMessage }) => {
                     throw new Error(response.data.message || 'Failed to update zone.');
                 }
             } else {
+                // Create case
                 response = await api.post('/zones', formData);
                 if (response.data.status === 'success') {
                     showFlashMessage('Zone created successfully!', 'success');
+                    const newZone = response.data.data.zone;
+                    setZones(prev => [newZone, ...prev]);
+                    setHighlightedZoneId(newZone._id);
+                    setCurrentPage(1); // Reset to page 1 to show the new entry
                 } else {
                     throw new Error(response.data.message || 'Failed to create zone.');
                 }
             }
+            // NEW: Scroll to the top after submission for both create and update
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
             setFormData({
                 name: '',
                 status: 'active',
             });
             setEditingZoneId(null);
-            fetchZones(true);
+            fetchZones();
         } catch (err) {
             console.error('Error saving zone:', err);
             const errorMessage = err.response?.data?.message || 'Failed to save zone. Please check your input and ensure zone name is unique.';
@@ -155,6 +147,8 @@ const ZoneManagement = ({ showFlashMessage }) => {
         });
         setEditingZoneId(zoneItem._id);
         setLocalError(null);
+        // NEW: Clear highlight on edit
+        setHighlightedZoneId(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -197,6 +191,8 @@ const ZoneManagement = ({ showFlashMessage }) => {
         setFormData({ name: '', status: 'active' });
         setEditingZoneId(null);
         setLocalError(null);
+        // NEW: Clear highlight on cancel edit
+        setHighlightedZoneId(null);
     };
 
     const filteredZones = zones.filter(zone =>
@@ -228,7 +224,7 @@ const ZoneManagement = ({ showFlashMessage }) => {
         }
 
         const doc = new window.jspdf.jsPDF();
-        
+
         let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
         startY = addReportTitle(doc, startY, "Zone List Report");
 
@@ -254,10 +250,10 @@ const ZoneManagement = ({ showFlashMessage }) => {
             )}
 
             <div className="main-content-layout">
-                                <div className="form-container-card">
+                <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
                         <h3 className="form-title">{editingZoneId ? 'Edit Zone' : 'Add Zone'}</h3>
-                        
+
                         <div className="form-group">
                             <label htmlFor="name">Zone Name:</label>
                             <input
@@ -286,7 +282,7 @@ const ZoneManagement = ({ showFlashMessage }) => {
                                 <option value="inactive">Inactive</option>
                             </select>
                         </div>
-                        
+
                         <div className="form-actions">
                             <button type="submit" className="btn btn-primary" disabled={loading}>
                                 {loading ? (editingZoneId ? 'Updating...' : 'Adding...') : (editingZoneId ? 'Update Zone' : 'Add Zone')}
@@ -306,8 +302,6 @@ const ZoneManagement = ({ showFlashMessage }) => {
                     </form>
                 </div>
                 <div className="table-container">
-                    {/* <h3 className="table-title">Existing Zones</h3> */}
-
                     <div className="table-controls">
                         <div className="search-input-group">
                             <FaSearch className="search-icon" />
@@ -329,8 +323,6 @@ const ZoneManagement = ({ showFlashMessage }) => {
                         <p className="loading-state text-center">
                             <FaSpinner className="animate-spin mr-2" /> Loading zones...
                         </p>
-                    ) : filteredZones.length === 0 ? (
-                        <p className="no-data-message text-center">No zones found matching your criteria. Start by adding one!</p>
                     ) : (
                         <>
                             <table className="app-table">
@@ -344,36 +336,44 @@ const ZoneManagement = ({ showFlashMessage }) => {
                                     </tr>
                                 </thead>
                                 <tbody ref={tableBodyRef}>
-                                    {currentZones.map((zoneItem, index) => (
-                                        <tr key={zoneItem._id}>
-                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                            <td>{zoneItem.name}</td>
-                                            <td>
-                                                <span className={`status-badge ${zoneItem.status}`}>
-                                                    {zoneItem.status.charAt(0).toUpperCase() + zoneItem.status.slice(1)}
-                                                </span>
-                                            </td>
-                                            <td>{formatDateWithTime(zoneItem.createdAt)}</td>
-                                            <td className="actions-column">
-                                                <button
-                                                    onClick={() => handleEdit(zoneItem)}
-                                                    className="action-icon-button edit-button"
-                                                    title="Edit Zone"
-                                                    disabled={loading}
-                                                >
-                                                    <FaEdit className="icon" />
-                                                </button>
-                                                <button
-                                                    onClick={() => openConfirmModal(zoneItem)}
-                                                    className="action-icon-button delete-button"
-                                                    title="Delete Zone"
-                                                    disabled={loading}
-                                                >
-                                                    {loading && zoneToDeleteId === zoneItem._id ? <FaSpinner className="icon animate-spin" /> : <FaTrashAlt className="icon" />}
-                                                </button>
-                                            </td>
+                                    {filteredZones.length > 0 ? (
+                                        currentZones.map((zoneItem, index) => (
+                                            // NEW: Add highlight effect
+                                            <tr key={zoneItem._id} className={zoneItem._id === highlightedZoneId ? 'animate-highlight' : ''}>
+                                                <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                                <td>{zoneItem.name}</td>
+                                                <td>
+                                                    <span className={`status-badge ${zoneItem.status}`}>
+                                                        {zoneItem.status.charAt(0).toUpperCase() + zoneItem.status.slice(1)}
+                                                    </span>
+                                                </td>
+                                                <td>{formatDateWithTime(zoneItem.createdAt)}</td>
+                                                <td className="actions-column">
+                                                    <button
+                                                        onClick={() => handleEdit(zoneItem)}
+                                                        className="action-icon-button edit-button"
+                                                        title="Edit Zone"
+                                                        disabled={loading}
+                                                    >
+                                                        <FaEdit className="icon" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openConfirmModal(zoneItem)}
+                                                        className="action-icon-button delete-button"
+                                                        title="Delete Zone"
+                                                        disabled={loading}
+                                                    >
+                                                        {loading && zoneToDeleteId === zoneItem._id ? <FaSpinner className="icon animate-spin" /> : <FaTrashAlt className="icon" />}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            {/* NEW: Show "No data" message but keep headers */}
+                                            <td colSpan="5" className="no-data-message text-center">No zones found matching your criteria.</td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
 
@@ -394,8 +394,6 @@ const ZoneManagement = ({ showFlashMessage }) => {
                         </>
                     )}
                 </div>
-
-
             </div>
 
             {showConfirmModal && (
