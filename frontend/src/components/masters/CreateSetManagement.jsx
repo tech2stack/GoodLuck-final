@@ -22,7 +22,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const [stationeryItemsMaster, setStationeryItemsMaster] = useState([]);
     const [existingSetsClasses, setExistingSetsClasses] = useState(new Set());
     const [stationeryCategories, setStationeryCategories] = useState([]);
-    const [selectedStationeryCategory, setSelectedStationeryCategory] = useState('');
+    const [selectedStationeryCategories, setSelectedStationeryCategories] = useState(new Set());
 
     // State for Main Set Filters/Details
     const [selectedCustomer, setSelectedCustomer] = useState('');
@@ -43,6 +43,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const [showAllBooksForSubtitle, setShowAllBooksForSubtitle] = useState(false);
     const [showAllStationery, setShowAllStationery] = useState(false);
     const [editingItemType, setEditingItemType] = useState(null);
+    const [selectedBookTypeFilter, setSelectedBookTypeFilter] = useState('all');
     const [editingItemId, setEditingItemId] = useState(null);
 
     // State for Copying Sets
@@ -51,7 +52,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
 
     // Loading and Error States
     const [loading, setLoading] = useState(false);
-    const [itemLoading, setItemLoading] = useState(false);
+    const [itemLoading, setItemLoading] = useState(false); // Granular loading for item operations
     const [localError, setLocalError] = useState(null);
     const [isEditMode, setIsEditMode] = useState(false);
 
@@ -131,6 +132,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
 
             const uniqueCategories = [...new Set(validStationeryItems.map((item) => item.category))].filter(Boolean);
             setStationeryCategories(uniqueCategories);
+            setSelectedStationeryCategories(new Set(uniqueCategories));
 
             const allPublications = publicationsRes.data.data.publications || [];
             const allSubtitles = allPublications.flatMap((pub) =>
@@ -173,7 +175,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setEditingItemId(null);
         setShowAllBooksForSubtitle(false);
         setShowAllStationery(false);
-        setSelectedStationeryCategory('');
+        setSelectedStationeryCategories(new Set());
+        setSelectedBookTypeFilter('all');
         setShowConfirmModal(false);
         setItemToDelete(null);
         setShowQuantityModal(false);
@@ -263,7 +266,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         item: {
                             _id: item.item?._id || '',
                             itemName: item.item?.itemName || 'Unnamed Stationery Item',
-                            category: item.item?.category || '',
                         },
                         quantity: item.quantity || 1,
                         price: item.price || 0,
@@ -315,7 +317,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     }
                 }
             }
-            return { ...item, bookType: 'required' };
+            return { ...item, bookType: 'required' }; // Default to required if unknown
         });
     }, [subtitles, selectedClass]);
 
@@ -601,8 +603,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
             return;
         }
 
-        if (selectedItemType === 'books' && (!itemPrice || Number(itemPrice) <= 0)) {
-            showFlashMessage('Please provide a valid price for the book.', 'error');
+        if (selectedItemType === 'books' && !itemPrice && itemPrice !== '0') {
+            showFlashMessage('Please provide a price for the book.', 'warning');
             return;
         }
         if (selectedItemType === 'stationery' && (!itemPrice || Number(itemPrice) <= 0)) {
@@ -622,7 +624,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
             }
         }
 
-        const price = Number(itemPrice);
+        const price = itemPrice ? Number(itemPrice) : null;
         setItemLoading(true);
 
         try {
@@ -631,51 +633,70 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 const book = allBooks.find((b) => b._id === selectedItemToAdd);
                 const bookType = bookCatalogs.requiredBooks.some((b) => b._id === selectedItemToAdd) ? 'required' : 'optional';
                 if (book) {
-                    const bookData = {
-                        book: {
-                            _id: selectedItemToAdd,
-                            bookName: book.bookName,
-                            subtitle: subtitles.find((s) => s._id === selectedSubtitle)?.name || '',
-                        },
-                        quantity,
-                        price,
-                        status: 'active',
-                        bookType,
-                    };
                     if (editingItemId) {
                         setBooksDetail((prev) =>
                             prev.map((item) =>
-                                item.book._id === editingItemId ? bookData : item
+                                item.book._id === editingItemId
+                                    ? {
+                                        book: {
+                                            _id: selectedItemToAdd,
+                                            bookName: book.bookName,
+                                            subtitle: subtitles.find((s) => s._id === selectedSubtitle)?.name || '',
+                                        },
+                                        quantity,
+                                        price,
+                                        status: 'active',
+                                        bookType,
+                                    }
+                                    : item
                             )
                         );
                         showFlashMessage('Book updated successfully.', 'success');
                     } else {
-                        setBooksDetail((prev) => [...prev, bookData]);
+                        setBooksDetail((prev) => [
+                            ...prev,
+                            {
+                                book: {
+                                    _id: selectedItemToAdd,
+                                    bookName: book.bookName,
+                                    subtitle: subtitles.find((s) => s._id === selectedSubtitle)?.name || '',
+                                },
+                                quantity,
+                                price,
+                                status: 'active',
+                                bookType,
+                            },
+                        ]);
                         showFlashMessage('Book added successfully.', 'success');
                     }
                 }
             } else {
                 const item = stationeryItemsMaster.find((i) => i._id === selectedItemToAdd);
                 if (item) {
-                    const itemData = {
-                        item: {
-                            _id: selectedItemToAdd,
-                            itemName: item.itemName,
-                            category: item.category,
-                        },
-                        quantity,
-                        price,
-                        status: 'active',
-                    };
                     if (editingItemId) {
                         setStationeryDetail((prev) =>
-                            prev.map((i) =>
-                                i.item._id === editingItemId ? itemData : i
+                            prev.map((item) =>
+                                item.item._id === editingItemId
+                                    ? {
+                                        item: { _id: selectedItemToAdd, itemName: item.itemName },
+                                        quantity,
+                                        price,
+                                        status: 'active',
+                                    }
+                                    : item
                             )
                         );
                         showFlashMessage('Stationery item updated successfully.', 'success');
                     } else {
-                        setStationeryDetail((prev) => [...prev, itemData]);
+                        setStationeryDetail((prev) => [
+                            ...prev,
+                            {
+                                item: { _id: selectedItemToAdd, itemName: item.itemName },
+                                quantity,
+                                price,
+                                status: 'active',
+                            },
+                        ]);
                         showFlashMessage('Stationery item added successfully.', 'success');
                     }
                 }
@@ -689,7 +710,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
             setSelectedSubtitle('');
             setShowAllBooksForSubtitle(false);
             setShowAllStationery(false);
-            setSelectedStationeryCategory('');
+            setSelectedStationeryCategories(new Set(stationeryCategories));
+            setSelectedBookTypeFilter('all');
         } catch (err) {
             console.error('Error adding/updating item:', err);
             showFlashMessage(err.response?.data?.message || 'Failed to add/update item.', 'error');
@@ -709,6 +731,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
         subtitles,
         booksDetail,
         stationeryDetail,
+        stationeryCategories,
     ]);
 
     const handleDeleteBook = useCallback((bookId, bookName) => {
@@ -733,6 +756,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
             setEditingItemType('book');
             setEditingItemId(bookItem.book._id);
             setShowAllBooksForSubtitle(true);
+            setSelectedBookTypeFilter('all');
             showFlashMessage('Book loaded for editing.', 'info');
         },
         [subtitles, showFlashMessage]
@@ -747,9 +771,9 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setEditingItemType('stationery');
         setEditingItemId(stationeryItem.item._id);
         setShowAllStationery(true);
-        setSelectedStationeryCategory(stationeryItem.item.category);
+        setSelectedStationeryCategories(new Set(stationeryCategories));
         showFlashMessage('Stationery item loaded for editing.', 'info');
-    }, [showFlashMessage]);
+    }, [stationeryCategories, showFlashMessage]);
 
     const handleSaveSet = useCallback(async () => {
         if (!selectedCustomer || !selectedClass) {
@@ -1061,64 +1085,35 @@ export default function CreateSetManagement({ showFlashMessage }) {
         [booksDetail, stationeryDetail, customers, selectedCustomer, classes, selectedClass, showFlashMessage]
     );
 
+    const filteredBookCatalogs = useMemo(() => {
+        const allBooks = [...bookCatalogs.requiredBooks, ...bookCatalogs.optionalBooks];
+        if (selectedBookTypeFilter === 'all') {
+            return allBooks;
+        }
+        return allBooks.filter((book) => book.bookType === selectedBookTypeFilter);
+
+    }, [bookCatalogs, selectedBookTypeFilter]);
+
     const itemDropdownOptions = useMemo(() => {
         if (selectedItemType === 'stationery') {
-            if (showAllStationery) {
-                return stationeryItemsMaster;
-            }
-            if (selectedStationeryCategory) {
-                return stationeryItemsMaster.filter((item) => item.category === selectedStationeryCategory);
-            }
-            return [];
+            return stationeryItemsMaster.filter((item) =>
+                showAllStationery || selectedStationeryCategories.has(item.category)
+            );
+        } else if (selectedItemType === 'books' && showAllBooksForSubtitle) {
+            return filteredBookCatalogs;
         }
-        if (selectedItemType === 'books' && selectedSubtitle) {
-            const allBooks = [...bookCatalogs.requiredBooks, ...bookCatalogs.optionalBooks];
-            if (isEditMode && !showAllBooksForSubtitle) {
-                const selectedSubtitleObj = subtitles.find((s) => s._id === selectedSubtitle);
-                const selectedSubtitleName = selectedSubtitleObj ? selectedSubtitleObj.name : null;
-                if (!selectedSubtitleName) return [];
-
-                const booksInCurrentSet = booksDetail
-                    .filter((item) => item.book.subtitle === selectedSubtitleName)
-                    .map((item) => ({
-                        _id: item.book._id,
-                        bookName: item.book.bookName,
-                        price: item.price,
-                    }));
-
-                if (editingItemType === 'book' && editingItemId) {
-                    const currentBook = allBooks.find((book) => book._id === editingItemId);
-                    if (currentBook && !booksInCurrentSet.some((b) => b._id === currentBook._id)) {
-                        booksInCurrentSet.push({
-                            _id: currentBook._id,
-                            bookName: currentBook.bookName,
-                            price: currentBook.commonPrice || currentBook.classPrice,
-                        });
-                    }
-                }
-                return booksInCurrentSet;
-            }
-            return allBooks.map((book) => ({
-                ...book,
-                price: book.bookType === 'common_price' ? book.commonPrice : book.classPrice,
-            }));
-        }
-        return [];
+        return filteredBookCatalogs.filter((book) =>
+            bookCatalogs.requiredBooks.some((reqBook) => reqBook._id === book._id)
+        );
     }, [
         selectedItemType,
-        selectedSubtitle,
-        isEditMode,
-        showAllBooksForSubtitle,
-        showAllStationery,
-        selectedStationeryCategory,
         stationeryItemsMaster,
-        booksDetail,
-        bookCatalogs,
-        subtitles,
-        editingItemType,
-        editingItemId,
+        showAllStationery,
+        selectedStationeryCategories,
+        showAllBooksForSubtitle,
+        filteredBookCatalogs,
+        bookCatalogs.requiredBooks,
     ]);
-
     const isFormDisabled = !selectedCustomer;
     const isAddItemFormDisabled = !selectedCustomer || !selectedClass;
     const isAddItemButtonDisabled = isAddItemFormDisabled || !selectedItemToAdd || itemQuantity === '' || (selectedItemType === 'books' && !selectedSubtitle);
@@ -1126,12 +1121,26 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const availableClassesForCopy = useMemo(() => classes.filter((cls) => !existingSetsClasses.has(cls._id)), [classes, existingSetsClasses]);
     const isCopySetButtonDisabled = !currentSetId || !selectedCustomer || !copyToClass || availableClassesForCopy.length === 0;
 
+    const handleCategoryChange = useCallback((category) => {
+        setSelectedStationeryCategories((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(category)) {
+                newSet.delete(category);
+            } else {
+                newSet.add(category);
+            }
+            setShowAllStationery(false);
+            setSelectedItemToAdd('');
+            return newSet;
+        });
+    }, []);
+
     const handleShowAllStationeryChange = useCallback((e) => {
         const isChecked = e.target.checked;
         setShowAllStationery(isChecked);
         setSelectedItemToAdd('');
-        setSelectedStationeryCategory('');
-    }, []);
+        setSelectedStationeryCategories(isChecked ? new Set(stationeryCategories) : new Set());
+    }, [stationeryCategories]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -1161,7 +1170,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const grandTotalPrice =
         requiredBooksDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0) +
         optionalBooksDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0) +
-        stationeryDetail.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+        stationeryDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0);
 
     return (
         <div className="create-set-management-container">
@@ -1197,7 +1206,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         setEditingItemId(null);
                                         setShowAllBooksForSubtitle(false);
                                         setShowAllStationery(false);
-                                        setSelectedStationeryCategory('');
+                                        setSelectedStationeryCategories(new Set());
                                     }}
                                     disabled={loading}
                                     className="form-select"
@@ -1296,7 +1305,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         setEditingItemId(null);
                                         setShowAllBooksForSubtitle(false);
                                         setShowAllStationery(false);
-                                        setSelectedStationeryCategory('');
+                                        setSelectedStationeryCategories(new Set());
                                     }}
                                     disabled={isAddItemFormDisabled}
                                     className="hidden"
@@ -1325,7 +1334,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         setEditingItemId(null);
                                         setShowAllBooksForSubtitle(false);
                                         setShowAllStationery(false);
-                                        setSelectedStationeryCategory('');
+                                        setSelectedStationeryCategories(new Set());
                                     }}
                                     disabled={isAddItemFormDisabled}
                                     className="hidden"
@@ -1358,10 +1367,10 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             </div>
                         )}
 
-                        {/* Stationery Category Dropdown */}
+                        {/* Stationery Categories */}
                         {selectedItemType === 'stationery' && (
                             <div>
-                                {/* <label className="flex items-center gap-2 text-sm mb-2">
+                                <label className="flex items-center gap-2 text-sm mb-2">
                                     <input
                                         type="checkbox"
                                         checked={showAllStationery}
@@ -1369,68 +1378,115 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         disabled={isAddItemFormDisabled || loading}
                                     />
                                     Show all stationery items
-                                </label> */}
-                                <select
-                                    value={selectedStationeryCategory}
-                                    onChange={(e) => {
-                                        setSelectedStationeryCategory(e.target.value);
-                                        setSelectedItemToAdd('');
-                                    }}
-                                    disabled={isAddItemFormDisabled || loading || showAllStationery}
-                                    className="w-full border rounded-md px-2 py-1 text-sm"
-                                >
-                                    <option value="">-- Select Category --</option>
+                                </label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                     {stationeryCategories.map((category) => (
-                                        <option key={category} value={category}>
+                                        <label
+                                            key={category}
+                                            className="flex items-center border rounded-md px-2 py-1 text-sm cursor-pointer hover:border-gray-400"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                value={category}
+                                                checked={selectedStationeryCategories.has(category)}
+                                                onChange={() => handleCategoryChange(category)}
+                                                disabled={showAllStationery}
+                                                className="mr-2"
+                                            />
                                             {category}
-                                        </option>
+                                        </label>
                                     ))}
-                                </select>
+                                </div>
                             </div>
                         )}
+
+                        <div className="mb-3">
+                            <h3 className="text-sm font-medium mb-1">Filter by Book Type:</h3>
+                            <div className="flex gap-4">
+                                <label className="flex items-center gap-2 text-sm">
+                                    <input
+                                        type="radio"
+                                        name="bookTypeFilter"
+                                        value="all"
+                                        checked={selectedBookTypeFilter === 'all'}
+                                        onChange={() => {
+                                            setSelectedBookTypeFilter('all');
+                                            setSelectedItemToAdd('');
+                                        }}
+                                        disabled={loading || !selectedSubtitle}
+                                    />
+                                    All
+                                </label>
+                                <label className="flex items-center gap-2 text-sm">
+                                    <input
+                                        type="radio"
+                                        name="bookTypeFilter"
+                                        value="common_price"
+                                        checked={selectedBookTypeFilter === 'common_price'}
+                                        onChange={() => {
+                                            setSelectedBookTypeFilter('common_price');
+                                            setSelectedItemToAdd('');
+                                        }}
+                                        disabled={loading || !selectedSubtitle}
+                                    />
+                                    Common Price
+                                </label>
+                                <label className="flex items-center gap-2 text-sm">
+                                    <input
+                                        type="radio"
+                                        name="bookTypeFilter"
+                                        value="default"
+                                        checked={selectedBookTypeFilter === 'default'}
+                                        onChange={() => {
+                                            setSelectedBookTypeFilter('default');
+                                            setSelectedItemToAdd('');
+                                        }}
+                                        disabled={loading || !selectedSubtitle}
+                                    />
+                                    Default
+                                </label>
+                            </div>
+                        </div>
 
                         {/* Item Select */}
                         <div>
                             <select
                                 value={selectedItemToAdd}
-                                onChange={(e) => {
-                                    setSelectedItemToAdd(e.target.value);
-                                    if (selectedItemType === 'stationery') {
-                                        const itemInfo = stationeryItemsMaster.find((item) => item._id === e.target.value);
-                                        if (itemInfo) {
-                                            setItemQuantity('1');
-                                            setItemPrice(String(itemInfo.price || '0'));
-                                        }
-                                    } else {
-                                        handleBookSelection(e.target.value);
-                                    }
-                                }}
+                                onChange={(e) => handleBookSelection(e.target.value)}
                                 disabled={
                                     isAddItemFormDisabled ||
                                     (selectedItemType === 'books' && !selectedSubtitle) ||
                                     itemDropdownOptions.length === 0
                                 }
                                 className="w-full border rounded-md px-2 py-1 text-sm"
+                                aria-label={`Select ${selectedItemType === 'stationery' ? 'Stationery Item' : 'Book'}`}
                             >
                                 <option value="">-- Select {selectedItemType === 'stationery' ? 'Stationery Item' : 'Book'} --</option>
+
                                 {selectedItemType === 'books' ? (
                                     <>
-                                        {bookCatalogs.requiredBooks.length > 0 && (
+                                        {filteredBookCatalogs.filter((book) => bookCatalogs.requiredBooks.some((req) => req._id === book._id)).length > 0 && (
                                             <optgroup label="Normal Books">
-                                                {bookCatalogs.requiredBooks.map((book) => (
-                                                    <option key={book._id} value={book._id}>
-                                                        {book.bookName}
-                                                    </option>
-                                                ))}
+                                                {filteredBookCatalogs
+                                                    .filter((book) => bookCatalogs.requiredBooks.some((req) => req._id === book._id))
+                                                    .map((book) => (
+                                                        <option key={book._id} value={book._id}>
+                                                            {book.bookName} ({book.bookType === 'common_price' ? 'Common' : 'Default'})
+                                                        </option>
+                                                    ))
+                                                }
                                             </optgroup>
                                         )}
-                                        {bookCatalogs.optionalBooks.length > 0 && (
+                                        {showAllBooksForSubtitle && filteredBookCatalogs.filter((book) => bookCatalogs.optionalBooks.some((opt) => opt._id === book._id)).length > 0 && (
                                             <optgroup label="Optional Books">
-                                                {bookCatalogs.optionalBooks.map((book) => (
-                                                    <option key={book._id} value={book._id}>
-                                                        {book.bookName}
-                                                    </option>
-                                                ))}
+                                                {filteredBookCatalogs
+                                                    .filter((book) => bookCatalogs.optionalBooks.some((opt) => opt._id === book._id))
+                                                    .map((book) => (
+                                                        <option key={book._id} value={book._id}>
+                                                            {book.bookName} ({book.bookType === 'common_price' ? 'Common' : 'Default'})
+                                                        </option>
+                                                    ))
+                                                }
                                             </optgroup>
                                         )}
                                     </>
@@ -1443,6 +1499,19 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 )}
                             </select>
                         </div>
+
+                        {/* Show all books toggle */}
+                        {/* {selectedItemType === 'books' && isEditMode && (
+                            <label className="flex items-center gap-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={showAllBooksForSubtitle}
+                                    onChange={(e) => setShowAllBooksForSubtitle(e.target.checked)}
+                                    disabled={isAddItemFormDisabled || loading}
+                                />
+                                Show all books for this subtitle
+                            </label>
+                        )} */}
 
                         {/* Quantity + Price in one row */}
                         <div className="grid grid-cols-2 gap-3">
@@ -1592,9 +1661,11 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         <header className="moved-header-container">
                             <h1 className="moved-header-title"></h1>
                             <div className="moved-header-totals">
+                                {/* <div className="total-item">Items: {grandTotalItems}</div> */}
                                 <div className="total-item">Books Qty: {totalBooksQuantity}</div>
                                 <div className="total-item1">Total Price: Rs.{grandTotalPrice.toFixed(2)}</div>
                                 <div className="total-item">Stationery Qty: {totalStationeryQuantity}</div>
+                                {/* <div className="total-item">Total Qty: {totalQuantity}</div> */}
                             </div>
                         </header>
                     </section>
@@ -1690,34 +1761,16 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                             </tr>
                                         ) : (
                                             optionalBooksDetail.map((item, index) => (
-                                                <tr key={item.book._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
-                                                    <td className="table-cell whitespace-nowrap font-medium">{index + 1}</td>
-                                                    <td className="table-cell whitespace-nowrap">{getStringValue(item.book.subtitle)}</td>
-                                                    <td className="table-cell whitespace-normal">{getStringValue(item.book.bookName)}</td>
-                                                    <td className="table-cell whitespace-nowrap">{item.quantity}</td>
-                                                    <td className="table-cell whitespace-nowrap">
-                                                        {item.price != null ? `Rs.${item.price}` : 'N/A'}
-                                                    </td>
-                                                    <td className="table-cell whitespace-nowrap">
-                                                        {item.price != null ? `Rs.${(item.quantity * item.price)}` : 'N/A'}
-                                                    </td>
-                                                    <td className="table-cell whitespace-nowrap text-center">
-                                                        <button
-                                                            onClick={() => handleEditBook(item)}
-                                                            className="table-action-btn edit-btn"
-                                                            title="Edit Book"
-                                                            disabled={loading}
-                                                        >
-                                                            <FaEdit className="table-action-icon" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteBook(item.book._id, item.book.bookName)}
-                                                            className="table-action-btn delete-btn"
-                                                            title="Delete Book"
-                                                            disabled={loading}
-                                                        >
-                                                            <FaTrashAlt className="table-action-icon" />
-                                                        </button>
+                                                <tr key={item.book._id}>
+                                                    <td>{index + 1}</td>
+                                                    <td>{item.book.subtitle}</td>
+                                                    <td>{item.book.bookName}</td>
+                                                    <td>{item.quantity}</td>
+                                                    <td>Rs.{item.price}</td>
+                                                    <td>Rs.{item.quantity * item.price}</td>
+                                                    <td>
+                                                        <button onClick={() => handleEditBook(item)} className="table-action-btn edit-btn"><FaEdit /></button>
+                                                        <button onClick={() => handleDeleteBook(item.book._id, item.book.bookName)} className="table-action-btn delete-btn"><FaTrashAlt /></button>
                                                     </td>
                                                 </tr>
                                             ))
@@ -1735,6 +1788,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                             <td className="table-footer-cell"></td>
                                         </tr>
                                     </tfoot>
+
                                 </table>
                             </div>
 
@@ -1762,14 +1816,15 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                                     <td className="table-cell whitespace-nowrap font-medium">{index + 1}</td>
                                                     <td className="table-cell whitespace-normal">{getStringValue(item.item.itemName)}</td>
                                                     <td className="table-cell whitespace-nowrap">{item.quantity}</td>
-                                                    <td className="table-cell whitespace-nowrap">Rs.{item.price}</td>
-                                                    <td className="table-cell whitespace-nowrap">Rs.{(item.quantity * item.price)}</td>
+                                                    <td className="table-cell whitespace-nowrap">Rs.{item.price.toFixed(2)}</td>
+                                                    <td className="table-cell whitespace-nowrap">Rs.{(item.quantity * item.price).toFixed(2)}</td>
                                                     <td className="table-cell whitespace-nowrap text-center">
                                                         <button
                                                             onClick={() => handleEditStationery(item)}
                                                             className="table-action-btn edit-btn"
                                                             title="Edit Stationery Item"
-                                                            disabled={loading}
+                                                            disabled={loading || itemLoading}
+                                                            aria-label={`Edit ${item.item.itemName}`}
                                                         >
                                                             <FaEdit className="table-action-icon" />
                                                         </button>
@@ -1777,23 +1832,22 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                                             onClick={() => handleDeleteStationery(item.item._id, item.item.itemName)}
                                                             className="table-action-btn delete-btn"
                                                             title="Delete Stationery Item"
-                                                            disabled={loading}
+                                                            disabled={loading || itemLoading}
+                                                            aria-label={`Delete ${item.item.itemName}`}
                                                         >
                                                             <FaTrashAlt className="table-action-icon" />
                                                         </button>
                                                     </td>
-                                                    </tr>
+                                                </tr>
                                             ))
                                         )}
                                     </tbody>
                                     <tfoot>
                                         <tr className="table-footer-row">
                                             <td colSpan="2" className="table-footer-cell text-right">Total QTY/Amount</td>
-                                            <td className="table-footer-cell text-left">
-                                                {stationeryDetail.reduce((sum, item) => sum + item.quantity, 0)}
-                                            </td>
+                                            <td className="table-footer-cell text-left">{stationeryDetail.reduce((sum, item) => sum + item.quantity, 0)}</td>
                                             <td colSpan="2" className="table-footer-cell text-left">
-                                                Rs.{stationeryDetail.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)}
+                                                Rs.{stationeryDetail.reduce((sum, item) => sum + item.quantity * item.price, 0).toFixed(2)}
                                             </td>
                                             <td className="table-footer-cell"></td>
                                         </tr>
@@ -1802,46 +1856,32 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             </div>
                         </section>
                     )}
-
-                    {/* Grand Totals Section */}
-                    {(booksDetail.length > 0 || stationeryDetail.length > 0) && (
-                        <section className="section-container mt-6">
-                            <div className="grand-totals">
-                                <h2 className="section-header">Grand Totals</h2>
-                                <div className="flex justify-between">
-                                    <div>Total Items: {grandTotalItems}</div>
-                                    <div>Total Quantity: {grandTotalQty}</div>
-                                    <div>Total Price: Rs.{grandTotalPrice.toFixed(2)}</div>
-                                </div>
-                            </div>
-                        </section>
-                    )}
                 </div>
             </div>
 
-            {/* Confirmation Modal for Item Deletion */}
-            {showConfirmModal && itemToDelete && (
+            {showConfirmModal && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h3 className="modal-title">Confirm Deletion</h3>
-                        <p className="modal-message">
-                            Are you sure you want to remove {itemToDelete.name} from the set?
-                        </p>
+                        <h2 className="modal-title">Confirm Deletion</h2>
+                        <p className="modal-message">Are you sure you want to delete {itemToDelete?.name || 'this item'} from the set?</p>
                         <div className="modal-buttons">
                             <button
                                 onClick={confirmDeletion}
-                                disabled={itemLoading}
+                                disabled={loading || itemLoading}
                                 className="btn-danger"
+                                aria-label="Confirm Deletion"
                             >
-                                {itemLoading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Yes, Delete'}
+                                {itemLoading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Confirm'}
                             </button>
+
                             <button
                                 onClick={() => {
                                     setShowConfirmModal(false);
                                     setItemToDelete(null);
                                 }}
-                                disabled={itemLoading}
+                                disabled={loading || itemLoading}
                                 className="btn-secondary"
+                                aria-label="Cancel Deletion"
                             >
                                 Cancel
                             </button>
@@ -1850,12 +1890,22 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 </div>
             )}
 
-            {/* Set Quantity Management Modal */}
             {showQuantityModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content modal-wide">
-                        <h3 className="modal-title">Manage Set Quantities</h3>
-                        <div className="modal-body">
+                <div
+                    className="modal-overlay"
+                    onClick={() => {
+                        setShowQuantityModal(false);
+                        setEditedQuantities({});
+                        setSetQuantities([]);
+                    }}
+                >
+                    <div
+                        className="modal-content modal-content-wide"
+                        onClick={(e) => e.stopPropagation()} // prevent inside clicks from closing
+                    >
+                        <strong><h2 className="modal-title">Manage Set Quantities</h2></strong>
+                        <p className="modal-message">Update the number of sets for each class for {customers.find(c => c._id === selectedCustomer)?.customerName || 'the selected school'}.</p>
+                        <div className="table-container">
                             <table className="app-table">
                                 <thead className="table-header-group">
                                     <tr>
@@ -1865,59 +1915,66 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                     </tr>
                                 </thead>
                                 <tbody className="table-body">
-                                    {classes.map((cls, index) => (
-                                        <tr key={cls._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
-                                            <td className="table-cell">{cls.name}</td>
-                                            <td className="table-cell">
-                                                <input
-                                                    type="number"
-                                                    value={editedQuantities[cls._id] ?? ''}
-                                                    onChange={(e) => handleQuantityChange(cls._id, e.target.value)}
-                                                    onBlur={() => {
-                                                        if (editedQuantities[cls._id] === '' || Number(editedQuantities[cls._id]) < 0) {
-                                                            handleQuantityChange(cls._id, '');
-                                                        }
-                                                    }}
-                                                    min="0"
-                                                    className="form-input w-full"
-                                                    aria-label={`Quantity for ${cls.name}`}
-                                                />
-                                            </td>
-                                            <td className="table-cell text-center">
-                                                <button
-                                                    onClick={() => handleEditQuantity(cls._id, cls.name)}
-                                                    className="table-action-btn edit-btn"
-                                                    title="Edit Quantity"
-                                                    disabled={loading}
-                                                >
-                                                    <FaEdit className="table-action-icon" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteQuantity(cls._id, cls.name)}
-                                                    className="table-action-btn delete-btn"
-                                                    title="Delete Quantity"
-                                                    disabled={loading || !editedQuantities[cls._id]}
-                                                >
-                                                    <FaTrashAlt className="table-action-icon" />
-                                                </button>
-                                            </td>
+                                    {(classes || []).length === 0 ? (
+                                        <tr>
+                                            <td colSpan="3" className="text-center">No classes available.</td>
                                         </tr>
-                                    ))}
+                                    ) : (
+                                        classes.map((cls, index) => (
+                                            <tr key={cls._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
+                                                <td className="table-cell whitespace-nowrap">{cls.name}</td>
+                                                <td className="table-cell whitespace-nowrap">
+                                                    <input
+                                                        type="number"
+                                                        value={editedQuantities[cls._id] ?? ''}
+                                                        onChange={(e) => handleQuantityChange(cls._id, e.target.value)}
+                                                        onBlur={() => {
+                                                            if (!editedQuantities[cls._id] || Number(editedQuantities[cls._id]) < 0) {
+                                                                handleQuantityChange(cls._id, '');
+                                                            }
+                                                        }}
+                                                        min="0"
+                                                        disabled={loading}
+                                                        className="form-input w-20"
+                                                    />
+                                                </td>
+                                                <td className="table-cell whitespace-nowrap text-center">
+                                                    <button
+                                                        onClick={() => handleEditQuantity(cls._id, cls.name)}
+                                                        className="table-action-btn edit-btn"
+                                                        title="Edit Quantity"
+                                                        disabled={loading}
+                                                    >
+                                                        <FaEdit className="table-action-icon" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteQuantity(cls._id, cls.name)}
+                                                        className="table-action-btn delete-btn"
+                                                        title="Delete Quantity"
+                                                        disabled={loading || !editedQuantities[cls._id]}
+                                                    >
+                                                        <FaTrashAlt className="table-action-icon" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                         <div className="modal-buttons">
                             <button
                                 onClick={saveSetQuantities}
-                                disabled={loading}
-                                className="btn-blue"
+                                disabled={loading || Object.values(editedQuantities).every(q => !q || Number(q) <= 0)}
+                                className="btn-success"
                             >
-                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Save Quantities'}
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Save '}
                             </button>
                             <button
                                 onClick={() => {
                                     setShowQuantityModal(false);
-                                    fetchSetQuantities();
+                                    setEditedQuantities({});
+                                    setSetQuantities([]);
                                 }}
                                 disabled={loading}
                                 className="btn-secondary"
@@ -1929,13 +1986,21 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 </div>
             )}
 
-            {/* Delete Quantity Confirmation Modal */}
-            {showDeleteQuantityModal && quantityToDelete && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
-                        <h3 className="modal-title">Confirm Quantity Deletion</h3>
+            {showDeleteQuantityModal && (
+                <div
+                    className="modal-overlay"
+                    onClick={() => {
+                        setShowDeleteQuantityModal(false);
+                        setQuantityToDelete(null);
+                    }}
+                >
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+                    >
+                        <h2 className="modal-title">Confirm Quantity Deletion</h2>
                         <p className="modal-message">
-                            Are you sure you want to delete the quantity for class {quantityToDelete.className}?
+                            Are you sure you want to delete the quantity for {quantityToDelete?.className || 'this class'}?
                         </p>
                         <div className="modal-buttons">
                             <button
@@ -1943,7 +2008,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 disabled={loading}
                                 className="btn-danger"
                             >
-                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Yes, Delete'}
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Confirm'}
                             </button>
                             <button
                                 onClick={() => {
@@ -1959,6 +2024,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     </div>
                 </div>
             )}
+
         </div>
     );
 }
