@@ -125,6 +125,9 @@ const CustomerManagement = ({ showFlashMessage }) => {
     // Ref for scrolling to the new item in the table
     const tableBodyRef = useRef(null);
 
+    // State to highlight the newly added row
+    const [newlyAddedCustomerId, setNewlyAddedCustomerId] = useState(null);
+
     // States for Search
     const [searchTerm, setSearchTerm] = useState('');
     // --- Filter States ---
@@ -260,60 +263,38 @@ const CustomerManagement = ({ showFlashMessage }) => {
     };
 
     // --- Fetch Customers ---
-    const fetchCustomers = useCallback(async (scrollToNew = false) => {
-        setLoading(true);
-        setLocalError(null);
-        try {
-            const queryParams = new URLSearchParams();
-            if (selectedBranchFilter) queryParams.append('branch', selectedBranchFilter);
-            if (selectedFirmFilter) queryParams.append('firm', selectedFirmFilter);
-            if (selectedCityFilter) queryParams.append('city', selectedCityFilter);
-            if (selectedSalesRepFilter) queryParams.append('salesBy', selectedSalesRepFilter);
-            if (selectedCustomerTypeFilter) queryParams.append('customerType', selectedCustomerTypeFilter);
-            if (searchTerm) queryParams.append('search', searchTerm);
+    const fetchCustomers = useCallback(async () => {
+    setLoading(true);
+    setLocalError(null);
+    try {
+        const queryParams = new URLSearchParams();
+        if (selectedBranchFilter) queryParams.append('branch', selectedBranchFilter);
+        if (selectedFirmFilter) queryParams.append('firm', selectedFirmFilter);
+        if (selectedCityFilter) queryParams.append('city', selectedCityFilter);
+        if (selectedSalesRepFilter) queryParams.append('salesBy', selectedSalesRepFilter);
+        if (selectedCustomerTypeFilter) queryParams.append('customerType', selectedCustomerTypeFilter);
+        if (searchTerm) queryParams.append('search', searchTerm);
 
-            const response = await api.get(`/customers?${queryParams.toString()}`);
-            if (response.data.status === 'success' && response.data.data && Array.isArray(response.data.data.customers)) {
-                setCustomers(response.data.data.customers);
+        const response = await api.get(`/customers?${queryParams.toString()}`);
+        if (response.data.status === 'success' && response.data.data && Array.isArray(response.data.data.customers)) {
+            setCustomers(response.data.data.customers);
 
-                const totalPagesCalculated = Math.ceil(response.data.data.customers.length / itemsPerPage);
-                if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
-                    setCurrentPage(totalPagesCalculated);
-                } else if (response.data.data.customers.length === 0) {
-                    setCurrentPage(1);
-                }
-
-                if (scrollToNew && tableBodyRef.current) {
-                    setTimeout(() => {
-                        const lastPageIndex = Math.ceil(response.data.data.customers.length / itemsPerPage);
-                        if (currentPage !== lastPageIndex) {
-                            setCurrentPage(lastPageIndex);
-                            setTimeout(() => {
-                                if (tableBodyRef.current.lastElementChild) {
-                                    tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                } else {
-                                    tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                                }
-                            }, 50);
-                        } else {
-                            if (tableBodyRef.current.lastElementChild) {
-                                tableBodyRef.current.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                            } else {
-                                tableBodyRef.current.scrollTop = tableBodyRef.current.scrollHeight;
-                            }
-                        }
-                    }, 100);
-                }
-            } else {
-                setLocalError(response.data.message || 'Failed to fetch customers due to unexpected response structure.');
+            const totalPagesCalculated = Math.ceil(response.data.data.customers.length / itemsPerPage);
+            if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
+                setCurrentPage(totalPagesCalculated);
+            } else if (response.data.data.customers.length === 0) {
+                setCurrentPage(1);
             }
-        } catch (err) {
-            console.error('Error fetching customers:', err);
-            setLocalError(err.response?.data?.message || 'Failed to load customers due to network error.');
-        } finally {
-            setLoading(false);
+        } else {
+            setLocalError(response.data.message || 'Failed to fetch customers due to unexpected response structure.');
         }
-    }, [currentPage, itemsPerPage, selectedBranchFilter, selectedFirmFilter, selectedCityFilter, selectedSalesRepFilter, selectedCustomerTypeFilter, searchTerm]);
+    } catch (err) {
+        console.error('Error fetching customers:', err);
+        setLocalError(err.response?.data?.message || 'Failed to load customers due to network error.');
+    } finally {
+        setLoading(false);
+    }
+}, [currentPage, itemsPerPage, selectedBranchFilter, selectedFirmFilter, selectedCityFilter, selectedSalesRepFilter, selectedCustomerTypeFilter, searchTerm]);
 
     // --- Fetch Branches, Cities, and Sales Representatives for Dropdowns ---
     const fetchDropdownData = useCallback(async () => {
@@ -384,13 +365,23 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
     // Fetch data on component mount and when filters change
     useEffect(() => {
-        fetchCustomers();
+    fetchCustomers();
     }, [fetchCustomers]); // Now depends on selectedBranchFilter and searchTerm via fetchCustomers
 
     useEffect(() => {
         fetchDropdownData();
     }, [fetchDropdownData]); // This fetches branches, cities, and sales reps once or when editingCustomerId changes
 
+
+    // Effect to clear the highlight after a delay
+    useEffect(() => {
+        if (newlyAddedCustomerId) {
+            const timer = setTimeout(() => {
+                setNewlyAddedCustomerId(null);
+            }, 10000); // Highlight for 10 seconds
+            return () => clearTimeout(timer);
+        }
+    }, [newlyAddedCustomerId]);
 
 
     // --- Form Handling ---
@@ -600,8 +591,17 @@ const CustomerManagement = ({ showFlashMessage }) => {
                 });
                 if (response.data.status === 'success') {
                     showFlashMessage('Customer created successfully!', 'success');
-                    setCustomers(prev => [response.data.data.customer, ...prev]); // add at top
-                    setCurrentPage(1); // reset to page 1
+                    setCustomers(prev => [response.data.data.customer, ...prev]);
+                    setNewlyAddedCustomerId(response.data.data.customer._id);
+                    setCurrentPage(1);
+                    // Add the new scroll and highlight logic here
+                    setTimeout(() => {
+                        const newRow = document.getElementById(`customer-row-${response.data.data.customer._id}`);
+                        if (newRow) {
+                            newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            // The highlight class is added automatically via state update
+                        }
+                    }, 100);
                 } else {
                     throw new Error(response.data.message || 'Failed to create customer.');
                 }
@@ -1550,6 +1550,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             <FaFilePdf className="icon mr-2" /> Download PDF
                         </button>
                     </div>
+
+                    <div>
                     {loading && customers.length === 0 ? (
                         <p className="loading-state text-center">
                             <FaSpinner className="icon animate-spin" /> Fetching customer data...
@@ -1598,7 +1600,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                 </thead>
                                 <tbody ref={tableBodyRef}>
                                     {currentItems.map((customer, index) => (
-                                        <tr key={customer._id}>
+                                        <tr key={customer._id} id={`customer-row-${customer._id}`} className={newlyAddedCustomerId === customer._id ? 'highlight-row' : ''}>
                                             <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                             <td>{customer.firm ? customer.firm.name : 'N/A'}</td> {/* NEW: Firm value */}
                                             <td>{customer.customerName} ({customer.customerType || 'N/A'})</td>
@@ -1671,6 +1673,8 @@ const CustomerManagement = ({ showFlashMessage }) => {
                             </div>
                         </div>
                     )}
+
+                    </div>
                 </div>
 
             </div> {/* End of main-content-layout */}
