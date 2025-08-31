@@ -1,5 +1,3 @@
-// src/components/masters/CreateSetManagement.jsx
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import api from '../../utils/api';
 import { toast } from 'sonner';
@@ -83,12 +81,15 @@ export default function CreateSetManagement({ showFlashMessage }) {
     }, [booksDetail, stationeryDetail]);
 
     const totalItems = useMemo(() => booksDetail.length + stationeryDetail.length, [booksDetail, stationeryDetail]);
-    const totalQuantity = useMemo(
-        () => booksDetail.reduce((sum, item) => sum + item.quantity, 0) + stationeryDetail.reduce((sum, item) => sum + item.quantity, 0),
-        [booksDetail, stationeryDetail]
+    const totalBooksQuantity = useMemo(
+        () => booksDetail.reduce((sum, item) => sum + item.quantity, 0),
+        [booksDetail]
     );
-
-
+    const totalStationeryQuantity = useMemo(
+        () => stationeryDetail.reduce((sum, item) => sum + item.quantity, 0),
+        [stationeryDetail]
+    );
+    const totalQuantity = useMemo(() => totalBooksQuantity + totalStationeryQuantity, [totalBooksQuantity, totalStationeryQuantity]);
 
     // Helper Functions
     const getStringValue = (field) => String(field ?? 'N/A').trim() || 'N/A';
@@ -382,8 +383,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 setStationeryDetail(fetchedToLocalFormat(fetchedSet.stationeryItems, 'item'));
                 setIsEditMode(true);
                 showFlashMessage('Existing set loaded successfully!', 'success');
-            }
-            else {
+            } else {
                 setCurrentSetId(null);
                 setBooksDetail([]);
                 setStationeryDetail([]);
@@ -610,9 +610,16 @@ export default function CreateSetManagement({ showFlashMessage }) {
             return;
         }
 
-        if (selectedItemType === 'books' && !editingItemId && booksDetail.some((item) => item.book._id === selectedItemToAdd)) {
-            showFlashMessage('This book is already added to the set.', 'warning');
-            return;
+        // Check for duplicates only when adding a new item, not when updating
+        if (!editingItemId) {
+            if (selectedItemType === 'books' && booksDetail.some((item) => item.book._id === selectedItemToAdd)) {
+                showFlashMessage('This book is already added to the set.', 'warning');
+                return;
+            }
+            if (selectedItemType === 'stationery' && stationeryDetail.some((item) => item.item._id === selectedItemToAdd)) {
+                showFlashMessage('This stationery item is already added to the set.', 'warning');
+                return;
+            }
         }
 
         const price = itemPrice ? Number(itemPrice) : null;
@@ -628,7 +635,17 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         setBooksDetail((prev) =>
                             prev.map((item) =>
                                 item.book._id === editingItemId
-                                    ? { ...item, quantity, price, bookType }
+                                    ? {
+                                          book: {
+                                              _id: selectedItemToAdd,
+                                              bookName: book.bookName,
+                                              subtitle: subtitles.find((s) => s._id === selectedSubtitle)?.name || '',
+                                          },
+                                          quantity,
+                                          price,
+                                          status: 'active',
+                                          bookType,
+                                      }
                                     : item
                             )
                         );
@@ -658,7 +675,12 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         setStationeryDetail((prev) =>
                             prev.map((item) =>
                                 item.item._id === editingItemId
-                                    ? { ...item, quantity, price }
+                                    ? {
+                                          item: { _id: selectedItemToAdd, itemName: item.itemName },
+                                          quantity,
+                                          price,
+                                          status: 'active',
+                                      }
                                     : item
                             )
                         );
@@ -683,6 +705,10 @@ export default function CreateSetManagement({ showFlashMessage }) {
             setItemPrice('');
             setEditingItemType(null);
             setEditingItemId(null);
+            setSelectedSubtitle('');
+            setShowAllBooksForSubtitle(false);
+            setShowAllStationery(false);
+            setSelectedStationeryCategories(new Set(stationeryCategories));
         } catch (err) {
             console.error('Error adding/updating item:', err);
             showFlashMessage(err.response?.data?.message || 'Failed to add/update item.', 'error');
@@ -701,16 +727,18 @@ export default function CreateSetManagement({ showFlashMessage }) {
         selectedSubtitle,
         subtitles,
         booksDetail,
+        stationeryDetail,
+        stationeryCategories,
     ]);
 
     const handleDeleteBook = useCallback((bookId, bookName) => {
-        setBooksDetail((prev) => prev.filter((item) => item.book._id !== bookId));
-        showFlashMessage('Book removed from local set (save to persist).', 'info');
+        setItemToDelete({ id: bookId, type: 'book', name: bookName });
+        setShowConfirmModal(true);
     }, [showFlashMessage]);
 
     const handleDeleteStationery = useCallback((itemId, itemName) => {
-        setStationeryDetail((prev) => prev.filter((item) => item.item._id !== itemId));
-        showFlashMessage('Stationery item removed from local set (save to persist).', 'info');
+        setItemToDelete({ id: itemId, type: 'stationery', name: itemName });
+        setShowConfirmModal(true);
     }, [showFlashMessage]);
 
     const handleEditBook = useCallback(
@@ -775,7 +803,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 price: item.price,
                 status: item.status,
             })),
-            quantity: Number(noOfSets) || 1, // Added quantity to payload to match original behavior
+            quantity: Number(noOfSets) || 1,
         };
 
         try {
@@ -1149,7 +1177,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // --- Split books into required and optional before rendering ---
+    // Split books into required and optional before rendering
     const optionalBooksDetail = booksDetail.filter((item) => item.bookType === 'optional');
     const requiredBooksDetail = booksDetail.filter((item) => item.bookType === 'required');
 
@@ -1168,7 +1196,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         requiredBooksDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0) +
         optionalBooksDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0) +
         stationeryDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0);
-
 
     return (
         <div className="create-set-management-container">
@@ -1230,8 +1257,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         </div>
 
                         <div className="form-grid-2x2">
-
-
                             <div className="form-group">
                                 <label htmlFor="class-select" className="form-label">Class:</label>
                                 <select
@@ -1333,8 +1358,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         setEditingItemType(null);
                                         setEditingItemId(null);
                                         setShowAllBooksForSubtitle(false);
-                                        setShowAllStationery(false); // Optional: Set to false to avoid showing all items initially
-                                        setSelectedStationeryCategories(new Set()); // Initialize as empty Set
+                                        setShowAllStationery(false);
+                                        setSelectedStationeryCategories(new Set());
                                     }}
                                     disabled={isAddItemFormDisabled}
                                     className="hidden"
@@ -1353,9 +1378,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         setSelectedItemToAdd('');
                                         setItemQuantity('');
                                         setItemPrice('');
-                                        setEditingItemType(null);
-                                        setEditingItemId(null);
-                                        setShowAllBooksForSubtitle(false);
                                     }}
                                     disabled={isAddItemFormDisabled || subtitles.length === 0}
                                     className="w-full border rounded-md px-2 py-1 text-sm"
@@ -1373,6 +1395,15 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         {/* Stationery Categories */}
                         {selectedItemType === 'stationery' && (
                             <div>
+                                <label className="flex items-center gap-2 text-sm mb-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={showAllStationery}
+                                        onChange={handleShowAllStationeryChange}
+                                        disabled={isAddItemFormDisabled || loading}
+                                    />
+                                    Show all stationery items
+                                </label>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                     {stationeryCategories.map((category) => (
                                         <label
@@ -1383,7 +1414,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                                 type="checkbox"
                                                 value={category}
                                                 checked={selectedStationeryCategories.has(category)}
-                                                onChange={(e) => handleCategoryChange(category)}
+                                                onChange={() => handleCategoryChange(category)}
+                                                disabled={showAllStationery}
                                                 className="mr-2"
                                             />
                                             {category}
@@ -1494,7 +1526,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         </div>
                     </section>
 
-
                     <section className="section-container">
                         <h2 className="section-header1">Copy Set</h2>
                         <div className="form-grid-left-right">
@@ -1601,12 +1632,12 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             <div className="moved-header-totals">
                                 <div className="total-item">Items: {grandTotalItems}</div>
                                 <div className="total-item1">Total Price: Rs.{grandTotalPrice.toFixed(2)}</div>
-                                <div className="total-item">Qty: {grandTotalQty}</div>
+                                <div className="total-item">Books Qty: {totalBooksQuantity}</div>
+                                <div className="total-item">Stationery Qty: {totalStationeryQuantity}</div>
+                                <div className="total-item">Total Qty: {totalQuantity}</div>
                             </div>
                         </header>
                     </section>
-
-
 
                     {(booksDetail.length > 0 || stationeryDetail.length > 0) && (
                         <section className="section-container">
@@ -1676,7 +1707,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                             <td className="table-footer-cell"></td>
                                         </tr>
                                     </tfoot>
-
                                 </table>
                             </div>
                             <div className="table-container mt-6">
@@ -1684,13 +1714,13 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 <table className="app-table">
                                     <thead className="table-header-group">
                                         <tr>
-                                            <th>No.</th>
-                                            <th>Subtitle</th>
-                                            <th>Book Name</th>
-                                            <th>QTY</th>
-                                            <th>Price</th>
-                                            <th>Total</th>
-                                            <th>Action</th>
+                                            <th className="table-header-cell">No.</th>
+                                            <th className="table-header-cell">Subtitle</th>
+                                            <th className="table-header-cell">Book Name</th>
+                                            <th className="table-header-cell">QTY</th>
+                                            <th className="table-header-cell">Price</th>
+                                            <th className="table-header-cell">Total</th>
+                                            <th className="table-header-cell table-cell-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1828,7 +1858,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     </div>
                 </div>
             )}
-
 
             {showQuantityModal && (
                 <div
