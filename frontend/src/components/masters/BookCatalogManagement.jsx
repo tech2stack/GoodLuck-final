@@ -356,9 +356,9 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                     setCurrentPage(1); // Go to first page
 
                     // Scroll to the top of the table
-                if (topRef.current) {
-                    topRef.current.scrollIntoView({ behavior: 'smooth' });
-                }
+                    if (topRef.current) {
+                        topRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }
                 } else {
                     throw new Error(response.data.message || 'Failed to create book catalog.');
                 }
@@ -724,69 +724,94 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                         )}
 
                         {/* Master Toggle Button */}
-<div className="section-toggle-container">
-    <button
-        type="button"
-        className="toggle-section-btn"
-        onClick={() => setShowPriceSection((prev) => !prev)}
-    >
-        {showPriceSection ? "- Hide Prices & ISBNs" : "+ Add Prices & ISBNs"}
-    </button>
-</div>
-
-{showPriceSection && formData.bookType === 'default' && (
-    <div className="prices-by-class-section">
-        {/* <h4 className="sub-section-title">Prices & ISBNs by Class</h4> */}
-
-        <div className="isbn-toggle-container">
-            <label className="switch">
-                <input
-                    type="checkbox"
-                    checked={showAllIsbn}
-                    onChange={() => setShowAllIsbn((prev) => !prev)}
-                />
-                <span className="slider"></span>
-            </label>
-            <span className="toggle-label">
-                {showAllIsbn ? "Hide ISBNs" : "Show ISBNs"}
-            </span>
-        </div>
-
-        {classes.length === 0 ? (
-            <p className="loading-state">Loading classes...</p>
-        ) : (
-            <div className="class-price-list">
-                {classes.map((cls) => (
-                    <div key={cls._id} className="form-group class-row">
-                        <span className="class-label">Class: {cls.name}</span>
-                        <input
-                            type="number"
-                            id={`price_${cls._id}`}
-                            name={`price_${cls._id}`}
-                            value={formData.pricesByClass[cls._id] || ""}
-                            onChange={handleChange}
-                            min="0"
-                            placeholder="Price"
-                            className="form-input price-input"
-                        />
-                        {showAllIsbn && (
-                            <input
-                                type="text"
-                                id={`isbn_${cls._id}`}
-                                name={`isbn_${cls._id}`}
-                                value={formData.isbnByClass[cls._id] || ""}
-                                onChange={handleChange}
-                                placeholder="ISBN"
-                                className="form-input isbn-input"
-                            />
+                        {formData.bookType === 'default' && (
+                            <div className="section-toggle-container">
+                                <button
+                                    type="button"
+                                    className="toggle-section-btn"
+                                    onClick={() => setShowPriceSection((prev) => !prev)}
+                                >
+                                    {showPriceSection ? "- Hide Prices & ISBNs" : "+ Add Prices & ISBNs"}
+                                </button>
+                            </div>
                         )}
-                    </div>
-                ))}
-            </div>
-        )}
-    </div>
-)}
 
+                        {formData.bookType === 'default' && showPriceSection && (
+                            <div
+                                className="modal-backdrop"
+                                onClick={(e) => {
+                                    if (e.target === e.currentTarget) {
+                                        setShowPriceSection(false);
+                                    }
+                                }}
+                            >
+                                <div className="modal-content">
+                                    <button
+                                        className="modal-close-btn"
+                                        onClick={() => setShowPriceSection(false)}
+                                    >
+                                        ✕
+                                    </button>
+                                    <h4 className="sub-section-title">Prices & ISBNs by Class</h4>
+
+                                    <div className="isbn-toggle-container">
+                                        <label className="switch">
+                                            <input
+                                                type="checkbox"
+                                                checked={showAllIsbn}
+                                                onChange={() => setShowAllIsbn((prev) => !prev)}
+                                            />
+                                            <span className="slider"></span>
+                                        </label>
+                                        <span className="toggle-label">
+                                            {showAllIsbn ? "Hide ISBNs" : "Show ISBNs"}
+                                        </span>
+                                    </div>
+
+                                    {classes.length === 0 ? (
+                                        <p className="loading-state">Loading classes...</p>
+                                    ) : (
+                                        <div className="class-price-list">
+                                            {classes.map((cls) => (
+                                                <div key={cls._id} className="form-group class-row">
+                                                    <span className="class-label">Class: {cls.name}</span>
+                                                    <input
+                                                        type="number"
+                                                        id={`price_${cls._id}`}
+                                                        name={`price_${cls._id}`}
+                                                        value={formData.pricesByClass[cls._id] || ""}
+                                                        onChange={handleChange}
+                                                        min="0"
+                                                        placeholder="Price"
+                                                        className="form-input price-input"
+                                                    />
+                                                    {showAllIsbn && (
+                                                        <input
+                                                            type="text"
+                                                            id={`isbn_${cls._id}`}
+                                                            name={`isbn_${cls._id}`}
+                                                            value={formData.isbnByClass[cls._id] || ""}
+                                                            onChange={handleChange}
+                                                            placeholder="ISBN"
+                                                            className="form-input isbn-input"
+                                                        />
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div className="modal-actions">
+                                        <button
+                                            type="button"
+                                            className="btn btn-primary"
+                                            onClick={() => setShowPriceSection(false)}
+                                        >
+                                            Submit
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         <div className="form-group">
                             <label htmlFor="status">Status:</label>
                             <select
