@@ -172,3 +172,32 @@
   border-color: #007bff;
   box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
 }
+@keyframes highlight-blink {
+  0%   { background-color: transparent; }
+  25%  { background-color: #a0fda5; } /* Light reddish color */
+  50%  { background-color: transparent; }
+  75%  { background-color: #afed8b; }
+  100% { background-color: #cdff91; } /* End with a light reddish highlight color */
+}
+
+/* Apply the animation to the row */
+.animate-highlight {
+    animation: highlight-blink 1.5s ease-in-out forwards;
+}
+
+.highlighted-row {
+    background-color: #cdeb7c !important;
+    border-left: 5px solid #9fe494; /* Darker reddish border */
+    transition: background-color 0.5s ease-in-out, border-left-color 0.5s ease-in-out;
+}
+
+/* Optional: Add a class to make the highlight fade out */
+.highlighted-row.fade-out {
+    animation: fadeAndMoveOut 5s forwards;
+}
+
+@keyframes fadeAndMoveOut {
+    0% { background-color: #cef036; }
+    80% { background-color: #afe06b; }
+    100% { background-color: transparent; }
+}

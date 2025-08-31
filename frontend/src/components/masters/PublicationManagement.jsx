@@ -1,15 +1,15 @@
 // src/components/masters/PublicationManagement.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import api from '../../utils/api'; // API utility for backend calls
-import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaTimes, FaSpinner } from 'react-icons/fa'; // Icons for UI
+import api from '../../utils/api';
+import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaTimes, FaSpinner } from 'react-icons/fa';
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 
 // Stylesheets (assuming these are already present and styled for consistency)
 import '../../styles/Form.css';
 import '../../styles/Table.css';
 import '../../styles/Modal.css';
-import '../../styles/PublicationManagement.css'; // Component-specific layout overrides
-import '../../styles/CommonLayout.css'; // Ensure CommonLayout is imported
+import '../../styles/PublicationManagement.css';
+import '../../styles/CommonLayout.css';
 
 // Import the logo image directly
 import companyLogo from '../../assets/glbs-logo.jpg';
@@ -50,6 +50,8 @@ const PublicationManagement = ({ showFlashMessage }) => {
     const [localError, setLocalError] = useState(null);
     // State to track if we are in edit mode and which publication is being edited
     const [editingPublicationId, setEditingPublicationId] = useState(null);
+    // State to track the ID of the newly added publication for highlighting
+    const [highlightedPublicationId, setHighlightedPublicationId] = useState(null);
 
     // States for confirmation modal (for deleting main publication)
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -224,10 +226,12 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 if (response.data.status === 'success') {
                     showFlashMessage('Publication updated successfully!', 'success');
                     fetchPublications();
+                    // Reset all states after a successful update
                     setFormData(initialFormData);
                     setEditingPublicationId(null);
                     setSelectedPublicationForSubtitle(null);
                     setNewPublicationSubtitles([]);
+                    setHighlightedPublicationId(null);
                 } else {
                     throw new Error(response.data.message || 'Failed to update publication.');
                 }
@@ -240,15 +244,17 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 response = await api.post('/publications', newPublicationData);
                 if (response.data.status === 'success') {
                     showFlashMessage('Publication created successfully!', 'success');
-                    setPublications(prev => [response.data.data.publication, ...prev]);
+                    const newPublication = response.data.data.publication;
+                    setPublications(prev => [newPublication, ...prev]);
                     setCurrentPage(1);
+                    setHighlightedPublicationId(newPublication._id);
+                    // Reset all states after a successful creation
+                    setFormData(initialFormData);
+                    setEditingPublicationId(null);
+                    setSelectedPublicationForSubtitle(null);
                     setNewPublicationSubtitles([]);
-                    setEditingPublicationId(response.data.data.publication._id);
-                    setSelectedPublicationForSubtitle(response.data.data.publication);
-                    setFormData({
-                        ...response.data.data.publication,
-                        city: response.data.data.publication.city ? response.data.data.publication.city.name : ''
-                    });
+                    // Scroll to top after successful submission of a new entry
+                    window.scrollTo({ top: 0, behavior: 'smooth' }); 
                 } else {
                     throw new Error(response.data.message || 'Failed to create publication.');
                 }
@@ -285,6 +291,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
         // Clear temporary subtitles when starting to edit an existing one
         setNewPublicationSubtitles([]);
         setLocalError(null);
+        setHighlightedPublicationId(null); // Clear highlight on edit
         window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to form
     };
 
@@ -465,6 +472,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
         setSelectedPublicationForSubtitle(null); // Also clear selected publication for subtitle ops
         setNewPublicationSubtitles([]); // IMPORTANT: Clear temporary subtitles
         setLocalError(null);
+        setHighlightedPublicationId(null); // Clear highlight on cancel edit
     };
 
     // --- Search Filtering ---
@@ -828,165 +836,164 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 </div>
                 {/* Publication List Table - FIRST CHILD */}
                 <div className="table-section">
-                    {/* <h3 className="table-title">Existing Publications</h3> */}
-
                     {/* Search and PDF Download Section */}
-
+                    <div className="table-controls">
+                        <div className="search-input-group">
+                            <input
+                                type="text"
+                                placeholder="Search by Name, Person, City, Mobile, GSTIN..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="search-input"
+                            />
+                            <FaSearch className="search-icon" />
+                        </div>
+                        <div className="publication-type-filter">
+                            <label htmlFor="publicationNameFilter" className="mr-2"></label>
+                            <select
+                                id="publicationNameFilter"
+                                value={publicationNameFilter}
+                                onChange={(e) => {
+                                    setPublicationNameFilter(e.target.value);
+                                    setCurrentPage(1); // Reset to first page when filter changes
+                                }}
+                                className="form-select"
+                            >
+                                <option value="all">All Publications</option>
+                                {/* Map over a unique list of publication names here */}
+                                {publications.map(pub => (
+                                    <option key={pub._id} value={pub.name}>
+                                        {pub.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        {/* NEW: Publication Type Filter Dropdown */}
+                        <div className="publication-type-filter">
+                            <label htmlFor="publicationTypeFilter" className="mr-2"></label>
+                            <select
+                                id="publicationTypeFilter"
+                                value={publicationTypeFilter}
+                                onChange={(e) => {
+                                    setPublicationTypeFilter(e.target.value);
+                                    setCurrentPage(1); // Reset to first page when filter changes
+                                }}
+                                className="form-select"
+                            >
+                                <option value="all">All Types</option>
+                                <option value="Private Pub">Private</option>
+                                <option value="Govt. Pub">Government</option>
+                                <option value="Other Pub">Other</option>
+                            </select>
+                        </div>
+                        <button
+                            onClick={downloadPdf}
+                            className="btn btn-info download-pdf-btn"
+                            disabled={loading || filteredPublications.length === 0}
+                        >
+                            <FaFilePdf className="mr-2" /> Download PDF
+                        </button>
+                    </div>
 
                     {loading && publications.length === 0 ? (
-                        <p className="loading-state">Loading publications...</p>
-                    ) : filteredPublications.length === 0 ? (
-                        <p className="no-data-message">No publications found matching your criteria. Start by adding one!</p>
+                        <p className="loading-state text-center">Loading publications...</p>
                     ) : (
                         <div className="table-container"> {/* This div is for table overflow, not layout */}
-                            <div className="table-controls">
-                                <div className="search-input-group">
-                                    <input
-                                        type="text"
-                                        placeholder="Search by Name, Person, City, Mobile, GSTIN..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="search-input"
-                                    />
-                                    <FaSearch className="search-icon" />
-                                </div>
-                                <div className="publication-type-filter">
-                                    <label htmlFor="publicationNameFilter" className="mr-2"></label>
-                                    <select
-                                        id="publicationNameFilter"
-                                        value={publicationNameFilter}
-                                        onChange={(e) => {
-                                            setPublicationNameFilter(e.target.value);
-                                            setCurrentPage(1); // Reset to first page when filter changes
-                                        }}
-                                        className="form-select"
-                                    >
-                                        <option value="all">All Publications</option>
-                                        {/* Map over a unique list of publication names here */}
-                                        {publications.map(pub => (
-                                            <option key={pub._id} value={pub.name}>
-                                                {pub.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                {/* NEW: Publication Type Filter Dropdown */}
-                                <div className="publication-type-filter">
-                                    <label htmlFor="publicationTypeFilter" className="mr-2"></label>
-                                    <select
-                                        id="publicationTypeFilter"
-                                        value={publicationTypeFilter}
-                                        onChange={(e) => {
-                                            setPublicationTypeFilter(e.target.value);
-                                            setCurrentPage(1); // Reset to first page when filter changes
-                                        }}
-                                        className="form-select"
-                                    >
-                                        <option value="all">All Types</option>
-                                        <option value="Private Pub">Private</option>
-                                        <option value="Govt. Pub">Government</option>
-                                        <option value="Other Pub">Other</option>
-                                    </select>
-                                </div>
-                                <button
-                                    onClick={downloadPdf}
-                                    className="btn btn-info download-pdf-btn"
-                                    disabled={loading || filteredPublications.length === 0}
-                                >
-                                    <FaFilePdf className="mr-2" /> Download PDF
-                                </button>
-                            </div>
                             <table className="app-table">
                                 <thead>
                                     <tr>
-                                        {/* <th>S.No.</th><th>Name</th><th>Sub Title</th><th>Person</th><th>Address</th><th>City</th><th>Phone</th><th>Bank</th><th>Acc No.</th><th>IFSC</th><th>OTHER (GSTIN/Disc)</th><th>Add Date</th><th>Status</th><th>Action</th> */}
                                         <th>S.No.</th><th>Publication Type</th><th>Publication Name</th><th>Contact Person Name</th><th>Sub Title</th><th>Mobile No</th><th>Address</th><th>City</th><th>GST No.</th><th>Bank</th><th>Acc No.</th><th>IFSC</th><th>Add Date</th><th>Status</th><th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody ref={tableBodyRef}>
-                                    {currentPublications.map((pubItem, index) => (
-                                        <tr key={pubItem._id}>
-                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                            <td>{pubItem.publicationType}</td>
-                                            <td>{pubItem.name}</td>
-                                            <td>{pubItem.personName}</td>
-                                            <td>
-                                                {pubItem.subtitles && pubItem.subtitles.length > 0 ? (
-                                                    <details>
-                                                        <summary style={{ cursor: "pointer", color: "#007bff" }}>
-                                                            View Subtitles ({pubItem.subtitles.length})
-                                                        </summary>
-                                                        <div className="subtitle-list">
-                                                            {pubItem.subtitles.map(sub => (
-                                                                <div key={sub._id} className="subtitle-tag-container">
-                                                                    <span className="subtitle-tag">
-                                                                        {sub.name} ({sub.discount}%)
-                                                                    </span>
-                                                                    <button
-                                                                        onClick={() => handleEditSubtitle(sub, pubItem)}
-                                                                        className="action-icon-button edit-button"
-                                                                        title="Edit Subtitle"
-                                                                        disabled={loading}
-                                                                    >
-                                                                        <FaEdit />
-                                                                    </button>
-                                                                    <button
-                                                                        className="action-icon-button remove-subtitle-btn"
-                                                                        onClick={() => handleRemoveSubtitle(sub._id, pubItem._id, sub.name)}
-                                                                        title="Remove Subtitle"
-                                                                        disabled={loading}
-                                                                    >
-                                                                        <FaTimes />
-                                                                    </button>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </details>
-                                                ) : (
-                                                    <span>No subtitles</span>
-                                                )}
-                                            </td>
+                                    {filteredPublications.length > 0 ? (
+                                        currentPublications.map((pubItem, index) => (
+                                            <tr key={pubItem._id} className={pubItem._id === highlightedPublicationId ? 'animate-highlight' : ''}>
+                                                <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                                <td>{pubItem.publicationType}</td>
+                                                <td>{pubItem.name}</td>
+                                                <td>{pubItem.personName}</td>
+                                                <td>
+                                                    {pubItem.subtitles && pubItem.subtitles.length > 0 ? (
+                                                        <details>
+                                                            <summary style={{ cursor: "pointer", color: "#007bff" }}>
+                                                                View Subtitles ({pubItem.subtitles.length})
+                                                            </summary>
+                                                            <div className="subtitle-list">
+                                                                {pubItem.subtitles.map(sub => (
+                                                                    <div key={sub._id} className="subtitle-tag-container">
+                                                                        <span className="subtitle-tag">
+                                                                            {sub.name} ({sub.discount}%)
+                                                                        </span>
+                                                                        <button
+                                                                            onClick={() => handleEditSubtitle(sub, pubItem)}
+                                                                            className="action-icon-button edit-button"
+                                                                            title="Edit Subtitle"
+                                                                            disabled={loading}
+                                                                        >
+                                                                            <FaEdit />
+                                                                        </button>
+                                                                        <button
+                                                                            className="action-icon-button remove-subtitle-btn"
+                                                                            onClick={() => handleRemoveSubtitle(sub._id, pubItem._id, sub.name)}
+                                                                            title="Remove Subtitle"
+                                                                            disabled={loading}
+                                                                        >
+                                                                            <FaTimes />
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </details>
+                                                    ) : (
+                                                        <span>No subtitles</span>
+                                                    )}
+                                                </td>
 
-                                            <td>{pubItem.mobileNumber}</td>
-                                            <td>{pubItem.address}</td>
-                                            <td>{pubItem.city ? pubItem.city.name : 'N/A'}</td>
-                                            <td>
-                                                {pubItem.gstin && `${pubItem.gstin}`}
-                                            </td>
-                                            <td>{pubItem.bank}</td>
-                                            <td>{pubItem.accountNumber}</td>
-                                            <td>{pubItem.ifsc}</td>
-                                            <td>{formatDateWithTime(pubItem.createdAt)}</td>
-                                            <td>
-                                                <span className={`status-badge ${pubItem.status}`}>
-                                                    {pubItem.status.charAt(0).toUpperCase() + pubItem.status.slice(1)}
-                                                </span>
-                                            </td>
-                                            <td className="actions-column">
-                                                <button
-                                                    onClick={() => handleEdit(pubItem)}
-                                                    className="action-icon-button edit-button"
-                                                    title="Edit Publication"
-                                                    disabled={loading}
-                                                >
-                                                    <FaEdit />
-                                                </button>
-                                                <button
-                                                    onClick={() => openConfirmModal(pubItem)}
-                                                    className="action-icon-button delete-button"
-                                                    title="Delete Publication"
-                                                    disabled={loading}
-                                                >
-                                                    {loading && publicationToDeleteId === pubItem._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
-                                                </button>
-                                            </td>
+                                                <td>{pubItem.mobileNumber}</td>
+                                                <td>{pubItem.address}</td>
+                                                <td>{pubItem.city ? pubItem.city.name : 'N/A'}</td>
+                                                <td>
+                                                    {pubItem.gstin && `${pubItem.gstin}`}
+                                                </td>
+                                                <td>{pubItem.bank}</td>
+                                                <td>{pubItem.accountNumber}</td>
+                                                <td>{pubItem.ifsc}</td>
+                                                <td>{formatDateWithTime(pubItem.createdAt)}</td>
+                                                <td>
+                                                    <span className={`status-badge ${pubItem.status}`}>
+                                                        {pubItem.status.charAt(0).toUpperCase() + pubItem.status.slice(1)}
+                                                    </span>
+                                                </td>
+                                                <td className="actions-column">
+                                                    <button
+                                                        onClick={() => handleEdit(pubItem)}
+                                                        className="action-icon-button edit-button"
+                                                        title="Edit Publication"
+                                                        disabled={loading}
+                                                    >
+                                                        <FaEdit />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openConfirmModal(pubItem)}
+                                                        className="action-icon-button delete-button"
+                                                        title="Delete Publication"
+                                                        disabled={loading}
+                                                    >
+                                                        {loading && publicationToDeleteId === pubItem._id ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="15" className="no-data-message text-center">No publications found matching your criteria.</td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
-
                             {/* Pagination Controls */}
-                            {totalPages > 1 && (
+                            {filteredPublications.length > 0 && totalPages > 1 && (
                                 <div className="pagination-controls">
                                     <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
                                         <FaChevronLeft /> Previous
