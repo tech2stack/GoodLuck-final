@@ -690,7 +690,7 @@ exports.getAllBookCatalogsForDropdown = catchAsync(async (req, res, next) => {
 
         // Group based on language name
         const languageName = catalog.language ? catalog.language.name : null;
-        if (languageName === 'N/A') {
+        if (languageName === null) {
             requiredBooks.push(catalogObj);
         } else {
             optionalBooks.push(catalogObj);

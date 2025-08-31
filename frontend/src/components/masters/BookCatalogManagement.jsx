@@ -968,7 +968,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                                     </div>
                                                 )}
                                             </td>
-                                            <td>{book.language?.name || 'N/A'}</td>
+                                            <td>{book.language?.name || 'General Book'}</td>
                                             <td>{book.bookType === 'common_price' ? 'Common Price' : 'By Class'}</td>
                                             <td>
                                                 <span className={`status-badge ${book.status}`}>{book.status}</span>
