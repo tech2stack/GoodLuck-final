@@ -51,7 +51,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
 
     // Loading and Error States
     const [loading, setLoading] = useState(false);
-    const [itemLoading, setItemLoading] = useState(false); // Granular loading for item operations
+    const [itemLoading, setItemLoading] = useState(false);
     const [localError, setLocalError] = useState(null);
     const [isEditMode, setIsEditMode] = useState(false);
 
@@ -264,6 +264,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         item: {
                             _id: item.item?._id || '',
                             itemName: item.item?.itemName || 'Unnamed Stationery Item',
+                            category: item.item?.category || '',
                         },
                         quantity: item.quantity || 1,
                         price: item.price || 0,
@@ -315,7 +316,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     }
                 }
             }
-            return { ...item, bookType: 'required' }; // Default to required if unknown
+            return { ...item, bookType: 'required' };
         });
     }, [subtitles, selectedClass]);
 
@@ -601,8 +602,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
             return;
         }
 
-        if (selectedItemType === 'books' && !itemPrice && itemPrice !== '0') {
-            showFlashMessage('Please provide a price for the book.', 'warning');
+        if (selectedItemType === 'books' && (!itemPrice || Number(itemPrice) <= 0)) {
+            showFlashMessage('Please provide a valid price for the book.', 'error');
             return;
         }
         if (selectedItemType === 'stationery' && (!itemPrice || Number(itemPrice) <= 0)) {
@@ -622,7 +623,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
             }
         }
 
-        const price = itemPrice ? Number(itemPrice) : null;
+        const price = Number(itemPrice);
         setItemLoading(true);
 
         try {
@@ -631,70 +632,51 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 const book = allBooks.find((b) => b._id === selectedItemToAdd);
                 const bookType = bookCatalogs.requiredBooks.some((b) => b._id === selectedItemToAdd) ? 'required' : 'optional';
                 if (book) {
+                    const bookData = {
+                        book: {
+                            _id: selectedItemToAdd,
+                            bookName: book.bookName,
+                            subtitle: subtitles.find((s) => s._id === selectedSubtitle)?.name || '',
+                        },
+                        quantity,
+                        price,
+                        status: 'active',
+                        bookType,
+                    };
                     if (editingItemId) {
                         setBooksDetail((prev) =>
                             prev.map((item) =>
-                                item.book._id === editingItemId
-                                    ? {
-                                          book: {
-                                              _id: selectedItemToAdd,
-                                              bookName: book.bookName,
-                                              subtitle: subtitles.find((s) => s._id === selectedSubtitle)?.name || '',
-                                          },
-                                          quantity,
-                                          price,
-                                          status: 'active',
-                                          bookType,
-                                      }
-                                    : item
+                                item.book._id === editingItemId ? bookData : item
                             )
                         );
                         showFlashMessage('Book updated successfully.', 'success');
                     } else {
-                        setBooksDetail((prev) => [
-                            ...prev,
-                            {
-                                book: {
-                                    _id: selectedItemToAdd,
-                                    bookName: book.bookName,
-                                    subtitle: subtitles.find((s) => s._id === selectedSubtitle)?.name || '',
-                                },
-                                quantity,
-                                price,
-                                status: 'active',
-                                bookType,
-                            },
-                        ]);
+                        setBooksDetail((prev) => [...prev, bookData]);
                         showFlashMessage('Book added successfully.', 'success');
                     }
                 }
             } else {
                 const item = stationeryItemsMaster.find((i) => i._id === selectedItemToAdd);
                 if (item) {
+                    const itemData = {
+                        item: {
+                            _id: selectedItemToAdd,
+                            itemName: item.itemName,
+                            category: item.category,
+                        },
+                        quantity,
+                        price,
+                        status: 'active',
+                    };
                     if (editingItemId) {
                         setStationeryDetail((prev) =>
-                            prev.map((item) =>
-                                item.item._id === editingItemId
-                                    ? {
-                                          item: { _id: selectedItemToAdd, itemName: item.itemName },
-                                          quantity,
-                                          price,
-                                          status: 'active',
-                                      }
-                                    : item
+                            prev.map((i) =>
+                                i.item._id === editingItemId ? itemData : i
                             )
                         );
                         showFlashMessage('Stationery item updated successfully.', 'success');
                     } else {
-                        setStationeryDetail((prev) => [
-                            ...prev,
-                            {
-                                item: { _id: selectedItemToAdd, itemName: item.itemName },
-                                quantity,
-                                price,
-                                status: 'active',
-                            },
-                        ]);
+                        setStationeryDetail((prev) => [...prev, itemData]);
                         showFlashMessage('Stationery item added successfully.', 'success');
                     }
                 }
@@ -767,9 +749,9 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setEditingItemType('stationery');
         setEditingItemId(stationeryItem.item._id);
         setShowAllStationery(true);
-        setSelectedStationeryCategories(new Set(stationeryCategories));
+        setSelectedStationeryCategories(new Set([stationeryItem.item.category]));
         showFlashMessage('Stationery item loaded for editing.', 'info');
-    }, [stationeryCategories, showFlashMessage]);
+    }, [showFlashMessage]);
 
     const handleSaveSet = useCallback(async () => {
         if (!selectedCustomer || !selectedClass) {
@@ -1195,7 +1177,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const grandTotalPrice =
         requiredBooksDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0) +
         optionalBooksDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0) +
-        stationeryDetail.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0);
+        stationeryDetail.reduce((sum, item) => sum + (item.quantity * item.price), 0);
 
     return (
         <div className="create-set-management-container">
@@ -1429,7 +1411,18 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         <div>
                             <select
                                 value={selectedItemToAdd}
-                                onChange={(e) => handleBookSelection(e.target.value)}
+                                onChange={(e) => {
+                                    setSelectedItemToAdd(e.target.value);
+                                    if (selectedItemType === 'stationery') {
+                                        const itemInfo = stationeryItemsMaster.find((item) => item._id === e.target.value);
+                                        if (itemInfo) {
+                                            setItemQuantity('1');
+                                            setItemPrice(String(itemInfo.price || '0'));
+                                        }
+                                    } else {
+                                        handleBookSelection(e.target.value);
+                                    }
+                                }}
                                 disabled={
                                     isAddItemFormDisabled ||
                                     (selectedItemType === 'books' && !selectedSubtitle) ||
@@ -1468,19 +1461,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 )}
                             </select>
                         </div>
-
-                        {/* Show all books toggle */}
-                        {selectedItemType === 'books' && isEditMode && (
-                            <label className="flex items-center gap-2 text-sm">
-                                <input
-                                    type="checkbox"
-                                    checked={showAllBooksForSubtitle}
-                                    onChange={(e) => setShowAllBooksForSubtitle(e.target.checked)}
-                                    disabled={isAddItemFormDisabled || loading}
-                                />
-                                Show all books for this subtitle
-                            </label>
-                        )}
 
                         {/* Quantity + Price in one row */}
                         <div className="grid grid-cols-2 gap-3">
@@ -1630,11 +1610,9 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         <header className="moved-header-container">
                             <h1 className="moved-header-title"></h1>
                             <div className="moved-header-totals">
-                                <div className="total-item">Items: {grandTotalItems}</div>
-                                <div className="total-item1">Total Price: Rs.{grandTotalPrice.toFixed(2)}</div>
                                 <div className="total-item">Books Qty: {totalBooksQuantity}</div>
+                                <div className="total-item1">Total Price: Rs.{grandTotalPrice.toFixed(2)}</div>
                                 <div className="total-item">Stationery Qty: {totalStationeryQuantity}</div>
-                                <div className="total-item">Total Qty: {totalQuantity}</div>
                             </div>
                         </header>
                     </section>
@@ -1730,16 +1708,34 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                             </tr>
                                         ) : (
                                             optionalBooksDetail.map((item, index) => (
-                                                <tr key={item.book._id}>
-                                                    <td>{index + 1}</td>
-                                                    <td>{item.book.subtitle}</td>
-                                                    <td>{item.book.bookName}</td>
-                                                    <td>{item.quantity}</td>
-                                                    <td>Rs.{item.price}</td>
-                                                    <td>Rs.{item.quantity * item.price}</td>
-                                                    <td>
-                                                        <button onClick={() => handleEditBook(item)} className="table-action-btn edit-btn"><FaEdit /></button>
-                                                        <button onClick={() => handleDeleteBook(item.book._id, item.book.bookName)} className="table-action-btn delete-btn"><FaTrashAlt /></button>
+                                                <tr key={item.book._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
+                                                    <td className="table-cell whitespace-nowrap font-medium">{index + 1}</td>
+                                                    <td className="table-cell whitespace-nowrap">{getStringValue(item.book.subtitle)}</td>
+                                                    <td className="table-cell whitespace-normal">{getStringValue(item.book.bookName)}</td>
+                                                    <td className="table-cell whitespace-nowrap">{item.quantity}</td>
+                                                    <td className="table-cell whitespace-nowrap">
+                                                        {item.price != null ? `Rs.${item.price}` : 'N/A'}
+                                                    </td>
+                                                    <td className="table-cell whitespace-nowrap">
+                                                        {item.price != null ? `Rs.${(item.quantity * item.price)}` : 'N/A'}
+                                                    </td>
+                                                    <td className="table-cell whitespace-nowrap text-center">
+                                                        <button
+                                                            onClick={() => handleEditBook(item)}
+                                                            className="table-action-btn edit-btn"
+                                                            title="Edit Book"
+                                                            disabled={loading}
+                                                        >
+                                                            <FaEdit className="table-action-icon" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteBook(item.book._id, item.book.bookName)}
+                                                            className="table-action-btn delete-btn"
+                                                            title="Delete Book"
+                                                            disabled={loading}
+                                                        >
+                                                            <FaTrashAlt className="table-action-icon" />
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))
@@ -1757,7 +1753,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                             <td className="table-footer-cell"></td>
                                         </tr>
                                     </tfoot>
-
                                 </table>
                             </div>
 
@@ -1785,15 +1780,14 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                                     <td className="table-cell whitespace-nowrap font-medium">{index + 1}</td>
                                                     <td className="table-cell whitespace-normal">{getStringValue(item.item.itemName)}</td>
                                                     <td className="table-cell whitespace-nowrap">{item.quantity}</td>
-                                                    <td className="table-cell whitespace-nowrap">Rs.{item.price.toFixed(2)}</td>
-                                                    <td className="table-cell whitespace-nowrap">Rs.{(item.quantity * item.price).toFixed(2)}</td>
+                                                    <td className="table-cell whitespace-nowrap">Rs.{item.price}</td>
+                                                    <td className="table-cell whitespace-nowrap">Rs.{(item.quantity * item.price)}</td>
                                                     <td className="table-cell whitespace-nowrap text-center">
                                                         <button
                                                             onClick={() => handleEditStationery(item)}
                                                             className="table-action-btn edit-btn"
                                                             title="Edit Stationery Item"
-                                                            disabled={loading || itemLoading}
-                                                            aria-label={`Edit ${item.item.itemName}`}
+                                                            disabled={loading}
                                                         >
                                                             <FaEdit className="table-action-icon" />
                                                         </button>
@@ -1801,8 +1795,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                                             onClick={() => handleDeleteStationery(item.item._id, item.item.itemName)}
                                                             className="table-action-btn delete-btn"
                                                             title="Delete Stationery Item"
-                                                            disabled={loading || itemLoading}
-                                                            aria-label={`Delete ${item.item.itemName}`}
+                                                            disabled={loading}
                                                         >
                                                             <FaTrashAlt className="table-action-icon" />
                                                         </button>
@@ -1814,9 +1807,11 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                     <tfoot>
                                         <tr className="table-footer-row">
                                             <td colSpan="2" className="table-footer-cell text-right">Total QTY/Amount</td>
-                                            <td className="table-footer-cell text-left">{stationeryDetail.reduce((sum, item) => sum + item.quantity, 0)}</td>
+                                            <td className="table-footer-cell text-left">
+                                                {stationeryDetail.reduce((sum, item) => sum + item.quantity, 0)}
+                                            </td>
                                             <td colSpan="2" className="table-footer-cell text-left">
-                                                Rs.{stationeryDetail.reduce((sum, item) => sum + item.quantity * item.price, 0).toFixed(2)}
+                                                Rs.{stationeryDetail.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)}
                                             </td>
                                             <td className="table-footer-cell"></td>
                                         </tr>
@@ -1825,32 +1820,46 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             </div>
                         </section>
                     )}
+
+                    {/* Grand Totals Section */}
+                    {(booksDetail.length > 0 || stationeryDetail.length > 0) && (
+                        <section className="section-container mt-6">
+                            <div className="grand-totals">
+                                <h2 className="section-header">Grand Totals</h2>
+                                <div className="flex justify-between">
+                                    <div>Total Items: {grandTotalItems}</div>
+                                    <div>Total Quantity: {grandTotalQty}</div>
+                                    <div>Total Price: Rs.{grandTotalPrice.toFixed(2)}</div>
+                                </div>
+                            </div>
+                        </section>
+                    )}
                 </div>
             </div>
 
-            {showConfirmModal && (
+            {/* Confirmation Modal for Item Deletion */}
+            {showConfirmModal && itemToDelete && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h2 className="modal-title">Confirm Deletion</h2>
-                        <p className="modal-message">Are you sure you want to delete {itemToDelete?.name || 'this item'} from the set?</p>
+                        <h3 className="modal-title">Confirm Deletion</h3>
+                        <p className="modal-message">
+                            Are you sure you want to remove {itemToDelete.name} from the set?
+                        </p>
                         <div className="modal-buttons">
                             <button
                                 onClick={confirmDeletion}
-                                disabled={loading || itemLoading}
+                                disabled={itemLoading}
                                 className="btn-danger"
-                                aria-label="Confirm Deletion"
                             >
-                                {itemLoading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Confirm'}
+                                {itemLoading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Yes, Delete'}
                             </button>
-
                             <button
                                 onClick={() => {
                                     setShowConfirmModal(false);
                                     setItemToDelete(null);
                                 }}
-                                disabled={loading || itemLoading}
+                                disabled={itemLoading}
                                 className="btn-secondary"
-                                aria-label="Cancel Deletion"
                             >
                                 Cancel
                             </button>
@@ -1859,22 +1868,12 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 </div>
             )}
 
+            {/* Set Quantity Management Modal */}
             {showQuantityModal && (
-                <div
-                    className="modal-overlay"
-                    onClick={() => {
-                        setShowQuantityModal(false);
-                        setEditedQuantities({});
-                        setSetQuantities([]);
-                    }}
-                >
-                    <div
-                        className="modal-content modal-content-wide"
-                        onClick={(e) => e.stopPropagation()} // prevent inside clicks from closing
-                    >
-                        <strong><h2 className="modal-title">Manage Set Quantities</h2></strong>
-                        <p className="modal-message">Update the number of sets for each class for {customers.find(c => c._id === selectedCustomer)?.customerName || 'the selected school'}.</p>
-                        <div className="table-container">
+                <div className="modal-overlay">
+                    <div className="modal-content modal-wide">
+                        <h3 className="modal-title">Manage Set Quantities</h3>
+                        <div className="modal-body">
                             <table className="app-table">
                                 <thead className="table-header-group">
                                     <tr>
@@ -1884,66 +1883,59 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                     </tr>
                                 </thead>
                                 <tbody className="table-body">
-                                    {(classes || []).length === 0 ? (
-                                        <tr>
-                                            <td colSpan="3" className="text-center">No classes available.</td>
+                                    {classes.map((cls, index) => (
+                                        <tr key={cls._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
+                                            <td className="table-cell">{cls.name}</td>
+                                            <td className="table-cell">
+                                                <input
+                                                    type="number"
+                                                    value={editedQuantities[cls._id] ?? ''}
+                                                    onChange={(e) => handleQuantityChange(cls._id, e.target.value)}
+                                                    onBlur={() => {
+                                                        if (editedQuantities[cls._id] === '' || Number(editedQuantities[cls._id]) < 0) {
+                                                            handleQuantityChange(cls._id, '');
+                                                        }
+                                                    }}
+                                                    min="0"
+                                                    className="form-input w-full"
+                                                    aria-label={`Quantity for ${cls.name}`}
+                                                />
+                                            </td>
+                                            <td className="table-cell text-center">
+                                                <button
+                                                    onClick={() => handleEditQuantity(cls._id, cls.name)}
+                                                    className="table-action-btn edit-btn"
+                                                    title="Edit Quantity"
+                                                    disabled={loading}
+                                                >
+                                                    <FaEdit className="table-action-icon" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteQuantity(cls._id, cls.name)}
+                                                    className="table-action-btn delete-btn"
+                                                    title="Delete Quantity"
+                                                    disabled={loading || !editedQuantities[cls._id]}
+                                                >
+                                                    <FaTrashAlt className="table-action-icon" />
+                                                </button>
+                                            </td>
                                         </tr>
-                                    ) : (
-                                        classes.map((cls, index) => (
-                                            <tr key={cls._id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
-                                                <td className="table-cell whitespace-nowrap">{cls.name}</td>
-                                                <td className="table-cell whitespace-nowrap">
-                                                    <input
-                                                        type="number"
-                                                        value={editedQuantities[cls._id] ?? ''}
-                                                        onChange={(e) => handleQuantityChange(cls._id, e.target.value)}
-                                                        onBlur={() => {
-                                                            if (!editedQuantities[cls._id] || Number(editedQuantities[cls._id]) < 0) {
-                                                                handleQuantityChange(cls._id, '');
-                                                            }
-                                                        }}
-                                                        min="0"
-                                                        disabled={loading}
-                                                        className="form-input w-20"
-                                                    />
-                                                </td>
-                                                <td className="table-cell whitespace-nowrap text-center">
-                                                    <button
-                                                        onClick={() => handleEditQuantity(cls._id, cls.name)}
-                                                        className="table-action-btn edit-btn"
-                                                        title="Edit Quantity"
-                                                        disabled={loading}
-                                                    >
-                                                        <FaEdit className="table-action-icon" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteQuantity(cls._id, cls.name)}
-                                                        className="table-action-btn delete-btn"
-                                                        title="Delete Quantity"
-                                                        disabled={loading || !editedQuantities[cls._id]}
-                                                    >
-                                                        <FaTrashAlt className="table-action-icon" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
+                                    ))}
                                 </tbody>
                             </table>
                         </div>
                         <div className="modal-buttons">
                             <button
                                 onClick={saveSetQuantities}
-                                disabled={loading || Object.values(editedQuantities).every(q => !q || Number(q) <= 0)}
-                                className="btn-success"
+                                disabled={loading}
+                                className="btn-blue"
                             >
-                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Save '}
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Save Quantities'}
                             </button>
                             <button
                                 onClick={() => {
                                     setShowQuantityModal(false);
-                                    setEditedQuantities({});
-                                    setSetQuantities([]);
+                                    fetchSetQuantities();
                                 }}
                                 disabled={loading}
                                 className="btn-secondary"
@@ -1955,21 +1947,13 @@ export default function CreateSetManagement({ showFlashMessage }) {
                 </div>
             )}
 
-            {showDeleteQuantityModal && (
-                <div
-                    className="modal-overlay"
-                    onClick={() => {
-                        setShowDeleteQuantityModal(false);
-                        setQuantityToDelete(null);
-                    }}
-                >
-                    <div
-                        className="modal-content"
-                        onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
-                    >
-                        <h2 className="modal-title">Confirm Quantity Deletion</h2>
+            {/* Delete Quantity Confirmation Modal */}
+            {showDeleteQuantityModal && quantityToDelete && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h3 className="modal-title">Confirm Quantity Deletion</h3>
                         <p className="modal-message">
-                            Are you sure you want to delete the quantity for {quantityToDelete?.className || 'this class'}?
+                            Are you sure you want to delete the quantity for class {quantityToDelete.className}?
                         </p>
                         <div className="modal-buttons">
                             <button
@@ -1977,7 +1961,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 disabled={loading}
                                 className="btn-danger"
                             >
-                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Confirm'}
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Yes, Delete'}
                             </button>
                             <button
                                 onClick={() => {
@@ -1993,7 +1977,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
                     </div>
                 </div>
             )}
-
         </div>
     );
 }
