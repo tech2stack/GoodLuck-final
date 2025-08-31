@@ -22,7 +22,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const [stationeryItemsMaster, setStationeryItemsMaster] = useState([]);
     const [existingSetsClasses, setExistingSetsClasses] = useState(new Set());
     const [stationeryCategories, setStationeryCategories] = useState([]);
-    const [selectedStationeryCategories, setSelectedStationeryCategories] = useState(new Set());
+    const [selectedStationeryCategory, setSelectedStationeryCategory] = useState('');
 
     // State for Main Set Filters/Details
     const [selectedCustomer, setSelectedCustomer] = useState('');
@@ -131,7 +131,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
 
             const uniqueCategories = [...new Set(validStationeryItems.map((item) => item.category))].filter(Boolean);
             setStationeryCategories(uniqueCategories);
-            setSelectedStationeryCategories(new Set(uniqueCategories));
 
             const allPublications = publicationsRes.data.data.publications || [];
             const allSubtitles = allPublications.flatMap((pub) =>
@@ -174,7 +173,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setEditingItemId(null);
         setShowAllBooksForSubtitle(false);
         setShowAllStationery(false);
-        setSelectedStationeryCategories(new Set());
+        setSelectedStationeryCategory('');
         setShowConfirmModal(false);
         setItemToDelete(null);
         setShowQuantityModal(false);
@@ -690,7 +689,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
             setSelectedSubtitle('');
             setShowAllBooksForSubtitle(false);
             setShowAllStationery(false);
-            setSelectedStationeryCategories(new Set(stationeryCategories));
+            setSelectedStationeryCategory('');
         } catch (err) {
             console.error('Error adding/updating item:', err);
             showFlashMessage(err.response?.data?.message || 'Failed to add/update item.', 'error');
@@ -710,7 +709,6 @@ export default function CreateSetManagement({ showFlashMessage }) {
         subtitles,
         booksDetail,
         stationeryDetail,
-        stationeryCategories,
     ]);
 
     const handleDeleteBook = useCallback((bookId, bookName) => {
@@ -749,7 +747,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
         setEditingItemType('stationery');
         setEditingItemId(stationeryItem.item._id);
         setShowAllStationery(true);
-        setSelectedStationeryCategories(new Set([stationeryItem.item.category]));
+        setSelectedStationeryCategory(stationeryItem.item.category);
         showFlashMessage('Stationery item loaded for editing.', 'info');
     }, [showFlashMessage]);
 
@@ -1068,8 +1066,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
             if (showAllStationery) {
                 return stationeryItemsMaster;
             }
-            if (selectedStationeryCategories.size > 0) {
-                return stationeryItemsMaster.filter((item) => selectedStationeryCategories.has(item.category));
+            if (selectedStationeryCategory) {
+                return stationeryItemsMaster.filter((item) => item.category === selectedStationeryCategory);
             }
             return [];
         }
@@ -1112,7 +1110,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
         isEditMode,
         showAllBooksForSubtitle,
         showAllStationery,
-        selectedStationeryCategories,
+        selectedStationeryCategory,
         stationeryItemsMaster,
         booksDetail,
         bookCatalogs,
@@ -1128,26 +1126,12 @@ export default function CreateSetManagement({ showFlashMessage }) {
     const availableClassesForCopy = useMemo(() => classes.filter((cls) => !existingSetsClasses.has(cls._id)), [classes, existingSetsClasses]);
     const isCopySetButtonDisabled = !currentSetId || !selectedCustomer || !copyToClass || availableClassesForCopy.length === 0;
 
-    const handleCategoryChange = useCallback((category) => {
-        setSelectedStationeryCategories((prev) => {
-            const newSet = new Set(prev);
-            if (newSet.has(category)) {
-                newSet.delete(category);
-            } else {
-                newSet.add(category);
-            }
-            setShowAllStationery(false);
-            setSelectedItemToAdd('');
-            return newSet;
-        });
-    }, []);
-
     const handleShowAllStationeryChange = useCallback((e) => {
         const isChecked = e.target.checked;
         setShowAllStationery(isChecked);
         setSelectedItemToAdd('');
-        setSelectedStationeryCategories(isChecked ? new Set(stationeryCategories) : new Set());
-    }, [stationeryCategories]);
+        setSelectedStationeryCategory('');
+    }, []);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -1213,7 +1197,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         setEditingItemId(null);
                                         setShowAllBooksForSubtitle(false);
                                         setShowAllStationery(false);
-                                        setSelectedStationeryCategories(new Set());
+                                        setSelectedStationeryCategory('');
                                     }}
                                     disabled={loading}
                                     className="form-select"
@@ -1312,7 +1296,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         setEditingItemId(null);
                                         setShowAllBooksForSubtitle(false);
                                         setShowAllStationery(false);
-                                        setSelectedStationeryCategories(new Set());
+                                        setSelectedStationeryCategory('');
                                     }}
                                     disabled={isAddItemFormDisabled}
                                     className="hidden"
@@ -1341,7 +1325,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         setEditingItemId(null);
                                         setShowAllBooksForSubtitle(false);
                                         setShowAllStationery(false);
-                                        setSelectedStationeryCategories(new Set());
+                                        setSelectedStationeryCategory('');
                                     }}
                                     disabled={isAddItemFormDisabled}
                                     className="hidden"
@@ -1374,10 +1358,10 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             </div>
                         )}
 
-                        {/* Stationery Categories */}
+                        {/* Stationery Category Dropdown */}
                         {selectedItemType === 'stationery' && (
                             <div>
-                                <label className="flex items-center gap-2 text-sm mb-2">
+                                {/* <label className="flex items-center gap-2 text-sm mb-2">
                                     <input
                                         type="checkbox"
                                         checked={showAllStationery}
@@ -1385,25 +1369,23 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         disabled={isAddItemFormDisabled || loading}
                                     />
                                     Show all stationery items
-                                </label>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                </label> */}
+                                <select
+                                    value={selectedStationeryCategory}
+                                    onChange={(e) => {
+                                        setSelectedStationeryCategory(e.target.value);
+                                        setSelectedItemToAdd('');
+                                    }}
+                                    disabled={isAddItemFormDisabled || loading || showAllStationery}
+                                    className="w-full border rounded-md px-2 py-1 text-sm"
+                                >
+                                    <option value="">-- Select Category --</option>
                                     {stationeryCategories.map((category) => (
-                                        <label
-                                            key={category}
-                                            className="flex items-center border rounded-md px-2 py-1 text-sm cursor-pointer hover:border-gray-400"
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                value={category}
-                                                checked={selectedStationeryCategories.has(category)}
-                                                onChange={() => handleCategoryChange(category)}
-                                                disabled={showAllStationery}
-                                                className="mr-2"
-                                            />
+                                        <option key={category} value={category}>
                                             {category}
-                                        </label>
+                                        </option>
                                     ))}
-                                </div>
+                                </select>
                             </div>
                         )}
 
@@ -1800,7 +1782,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                                             <FaTrashAlt className="table-action-icon" />
                                                         </button>
                                                     </td>
-                                                </tr>
+                                                    </tr>
                                             ))
                                         )}
                                     </tbody>
