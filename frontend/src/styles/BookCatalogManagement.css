@@ -817,23 +817,43 @@
 .elective-language-toggle {
   margin-bottom: 1rem;
 }
-
 .toggle-btn {
-  background-color: #a9d5f9;
-  border: 1px solid #aaa;
-  padding: 0px 48px;
-  border-radius: 6px;
+  background: linear-gradient(135deg, #4facfe, #00f2fe); /* Gradient blue */
+  color: #fff;
+  border: none;
+  padding: 2px 20px;
+  border-radius: 25px; /* Pill shape */
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  margin-top: 40px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease, transform 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.toggle-btn:hover {
+  background: linear-gradient(135deg, #007bff, #00c6ff);
+  transform: translateY(-2px); /* lift effect */
+}
+
+.toggle-btn:active {
+  transform: scale(0.97); /* press effect */
 }
 
 .toggle-btn.active {
-  background-color: #409cff;
-  color: white;
-  border-color: #0056b3;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
 }
+
+.toggle-btn::before {
+  content: "";
+  font-size: 18px;
+  font-weight: bold;
+}
+
 
 .language-select-box {
   margin-top: 10px;
@@ -843,4 +863,102 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
+}
+.class-price-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.class-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.class-label {
+  min-width: 80px;
+  font-weight: bold;
+}
+
+.price-input {
+  width: 120px;
+}
+
+.isbn-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+/* Toggle switch container */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+
+/* Hide the default checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider (toggle button look) */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 26px;
+}
+
+/* Circle inside the slider */
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px; width: 20px;
+  left: 3px; bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+/* Checked state */
+.switch input:checked + .slider {
+  background-color: #007bff;
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+.toggle-label {
+  font-weight: 500;
+  color: #333;
+}
+
+.section-toggle-container {
+  display: flex;
+  justify-content: center; /* Horizontal center */
+  margin: 20px 0; /* Thoda upar-niche spacing */
+}
+
+.toggle-section-btn {
+  background: #007bff;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.toggle-section-btn:hover {
+  background: #0056b3;
 }

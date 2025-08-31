@@ -29,6 +29,10 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     const [classes, setClasses] = useState([]);
     const [isbnVisible, setIsbnVisible] = useState({});
     const [showLanguageField, setShowLanguageField] = useState(false);
+// states add karein
+const [showPriceSection, setShowPriceSection] = useState(false);
+const [showAllIsbn, setShowAllIsbn] = useState(false);
+
 
     const [formData, setFormData] = useState({
         bookName: '',
@@ -654,7 +658,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                             }
                                         }}
                                     >
-                                        {showLanguageField ? " -Hide Language" : "+Add Language"}
+                                        {showLanguageField ? "-Hide Language" : "+Add Language"}
                                     </button>
                                 </div>
                                 {showLanguageField && (
@@ -723,82 +727,79 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 </div>
                             </div>
                         )}
+{/* Master Toggle Button */}
+<div className="section-toggle-container">
+    <button
+        type="button"
+        className="toggle-section-btn"
+        onClick={() => setShowPriceSection((prev) => !prev)}
+    >
+        {showPriceSection ? "- Hide Prices & ISBNs" : "+ Add Prices & ISBNs"}
+    </button>
+</div>
 
-                        {formData.bookType === 'default' && (
-                            <div className="prices-by-class-section">
-                                <h4 className="sub-section-title">Prices & ISBNs by Class:</h4>
-                                {classes.length === 0 ? (
-                                    <p className="loading-state">Loading classes...</p>
-                                ) : (
-                                    <div className="class-price-container">
-                                        <button
-                                            type="button"
-                                            className="nav-btn"
-                                            onClick={() =>
-                                                setCurrentClassIndex((prev) =>
-                                                    prev > 0 ? prev - 1 : classes.length - 1
-                                                )
-                                            }
-                                        >
-                                            <FaChevronLeft />
-                                        </button>
-                                        <div className="form-group class-card">
-                                            <h5>Class : {classes[currentClassIndex]?.name}</h5>
-                                            <label htmlFor={`price_${classes[currentClassIndex]._id}`}>
-                                                Price:
-                                            </label>
-                                            <input
-                                                type="number"
-                                                id={`price_${classes[currentClassIndex]._id}`}
-                                                name={`price_${classes[currentClassIndex]._id}`}
-                                                value={formData.pricesByClass[classes[currentClassIndex]._id] || ''}
-                                                onChange={handleChange}
-                                                min="0"
-                                                className="form-input"
-                                            />
-                                            <button
-                                                type="button"
-                                                className="toggle-isbn-btn"
-                                                onClick={() =>
-                                                    setIsbnVisible((prev) => ({
-                                                        ...prev,
-                                                        [classes[currentClassIndex]._id]: !prev[classes[currentClassIndex]._id],
-                                                    }))
-                                                }
-                                            >
-                                                {isbnVisible[classes[currentClassIndex]._id] ? '- Hide ISBN' : '+ Add ISBN'}
-                                            </button>
-                                            {isbnVisible[classes[currentClassIndex]._id] && (
-                                                <>
-                                                    <label htmlFor={`isbn_${classes[currentClassIndex]._id}`}>
-                                                        ISBN:
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        id={`isbn_${classes[currentClassIndex]._id}`}
-                                                        name={`isbn_${classes[currentClassIndex]._id}`}
-                                                        value={formData.isbnByClass[classes[currentClassIndex]._id] || ''}
-                                                        onChange={handleChange}
-                                                        className="form-input"
-                                                    />
-                                                </>
-                                            )}
-                                        </div>
-                                        <button
-                                            type="button"
-                                            className="nav-btn"
-                                            onClick={() =>
-                                                setCurrentClassIndex((prev) =>
-                                                    prev < classes.length - 1 ? prev + 1 : 0
-                                                )
-                                            }
-                                        >
-                                            <FaChevronRight />
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+{/* Section content (only when open) */}
+{showPriceSection && formData.bookType === 'default' && (
+    <div className="prices-by-class-section">
+        <h4 className="sub-section-title">Prices & ISBNs by Class:</h4>
+
+        {/* ISBN toggle button */}
+        <div className="isbn-toggle-container">
+    <label className="switch">
+        <input
+            type="checkbox"
+            checked={showAllIsbn}
+            onChange={() => setShowAllIsbn((prev) => !prev)}
+        />
+        <span className="slider"></span>
+    </label>
+    <span className="toggle-label">
+        {showAllIsbn ? "Hide All ISBNs" : "Show All ISBNs"}
+    </span>
+</div>
+
+
+        {classes.length === 0 ? (
+            <p className="loading-state">Loading classes...</p>
+        ) : (
+            <div className="class-price-list">
+                {classes.map((cls) => (
+                    <div key={cls._id} className="form-group class-row">
+                        {/* Class name */}
+                        <span className="class-label">Class: {cls.name}</span>
+
+                        {/* Price field */}
+                        <input
+                            type="number"
+                            id={`price_${cls._id}`}
+                            name={`price_${cls._id}`}
+                            value={formData.pricesByClass[cls._id] || ""}
+                            onChange={handleChange}
+                            min="0"
+                            placeholder="Enter Price"
+                            className="form-input price-input"
+                        />
+
+                        {/* ISBN field (toggle ke basis pe dikhega) */}
+                        {showAllIsbn && (
+                            <input
+                                type="text"
+                                id={`isbn_${cls._id}`}
+                                name={`isbn_${cls._id}`}
+                                value={formData.isbnByClass[cls._id] || ""}
+                                onChange={handleChange}
+                                placeholder="Enter ISBN"
+                                className="form-input isbn-input"
+                            />
                         )}
+                    </div>
+                ))}
+            </div>
+        )}
+    </div>
+)}
+
+
 
                         <div className="form-group">
                             <label htmlFor="status">Status:</label>
