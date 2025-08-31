@@ -724,75 +724,68 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                         )}
 
                         {/* Master Toggle Button */}
-                        <div className="section-toggle-container">
-                            <button
-                                type="button"
-                                className="toggle-section-btn"
-                                onClick={() => setShowPriceSection((prev) => !prev)}
-                            >
-                                {showPriceSection ? "- Hide Prices & ISBNs" : "+ Add Prices & ISBNs"}
-                            </button>
-                        </div>
+<div className="section-toggle-container">
+    <button
+        type="button"
+        className="toggle-section-btn"
+        onClick={() => setShowPriceSection((prev) => !prev)}
+    >
+        {showPriceSection ? "- Hide Prices & ISBNs" : "+ Add Prices & ISBNs"}
+    </button>
+</div>
 
-                        {/* Section content (only when open) */}
-                        {showPriceSection && formData.bookType === 'default' && (
-                            <div className="prices-by-class-section">
-                                <h4 className="sub-section-title">Prices & ISBNs by Class:</h4>
+{showPriceSection && formData.bookType === 'default' && (
+    <div className="prices-by-class-section">
+        {/* <h4 className="sub-section-title">Prices & ISBNs by Class</h4> */}
 
-                                {/* ISBN toggle button */}
-                                <div className="isbn-toggle-container">
-                                    <label className="switch">
-                                        <input
-                                            type="checkbox"
-                                            checked={showAllIsbn}
-                                            onChange={() => setShowAllIsbn((prev) => !prev)}
-                                        />
-                                        <span className="slider"></span>
-                                    </label>
-                                    <span className="toggle-label">
-                                        {showAllIsbn ? "Hide All ISBNs" : "Show All ISBNs"}
-                                    </span>
-                                </div>
+        <div className="isbn-toggle-container">
+            <label className="switch">
+                <input
+                    type="checkbox"
+                    checked={showAllIsbn}
+                    onChange={() => setShowAllIsbn((prev) => !prev)}
+                />
+                <span className="slider"></span>
+            </label>
+            <span className="toggle-label">
+                {showAllIsbn ? "Hide ISBNs" : "Show ISBNs"}
+            </span>
+        </div>
 
-                                {classes.length === 0 ? (
-                                    <p className="loading-state">Loading classes...</p>
-                                ) : (
-                                    <div className="class-price-list">
-                                        {classes.map((cls) => (
-                                            <div key={cls._id} className="form-group class-row">
-                                                {/* Class name */}
-                                                <span className="class-label">Class: {cls.name}</span>
-
-                                                {/* Price field */}
-                                                <input
-                                                    type="number"
-                                                    id={`price_${cls._id}`}
-                                                    name={`price_${cls._id}`}
-                                                    value={formData.pricesByClass[cls._id] || ""}
-                                                    onChange={handleChange}
-                                                    min="0"
-                                                    placeholder="Enter Price"
-                                                    className="form-input price-input"
-                                                />
-
-                                                {/* ISBN field (toggle ke basis pe dikhega) */}
-                                                {showAllIsbn && (
-                                                    <input
-                                                        type="text"
-                                                        id={`isbn_${cls._id}`}
-                                                        name={`isbn_${cls._id}`}
-                                                        value={formData.isbnByClass[cls._id] || ""}
-                                                        onChange={handleChange}
-                                                        placeholder="Enter ISBN"
-                                                        className="form-input isbn-input"
-                                                    />
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+        {classes.length === 0 ? (
+            <p className="loading-state">Loading classes...</p>
+        ) : (
+            <div className="class-price-list">
+                {classes.map((cls) => (
+                    <div key={cls._id} className="form-group class-row">
+                        <span className="class-label">Class: {cls.name}</span>
+                        <input
+                            type="number"
+                            id={`price_${cls._id}`}
+                            name={`price_${cls._id}`}
+                            value={formData.pricesByClass[cls._id] || ""}
+                            onChange={handleChange}
+                            min="0"
+                            placeholder="Price"
+                            className="form-input price-input"
+                        />
+                        {showAllIsbn && (
+                            <input
+                                type="text"
+                                id={`isbn_${cls._id}`}
+                                name={`isbn_${cls._id}`}
+                                value={formData.isbnByClass[cls._id] || ""}
+                                onChange={handleChange}
+                                placeholder="ISBN"
+                                className="form-input isbn-input"
+                            />
                         )}
+                    </div>
+                ))}
+            </div>
+        )}
+    </div>
+)}
 
                         <div className="form-group">
                             <label htmlFor="status">Status:</label>
