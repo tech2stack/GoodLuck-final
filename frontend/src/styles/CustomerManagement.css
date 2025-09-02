@@ -176,3 +176,40 @@ input[type="number"] {
 }
 
 /* --- END: Custom styles for fields and dropdowns --- */
+
+/* Highlight the newly added customer row */
+.highlight-row {
+  background-color: #81ea49 !important; /* A light blue background color */
+  transition: background-color 0.5s ease-in-out;
+}
+
+/* Optional: Remove highlight after a delay */
+/* You can use a keyframe animation for a more dynamic effect */
+@keyframes fadeOutHighlight {
+  from {
+    background-color: #7be04c;
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+.highlight-row.fading-out {
+  animation: fadeOutHighlight 10s forwards;
+}
+
+/* New CSS to fix the disappearing table header */
+.table-scroll-container {
+    max-height: 500px; /* Ya koi bhi height jo aapko theek lage */
+    overflow-y: auto;
+    border: 1px solid #64d029;
+    border-radius: 8px;
+}
+
+.table-scroll-container thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f7f7f7; /* Header ka background color */
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.2); /* Thoda shadow */
+}
