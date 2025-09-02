@@ -996,8 +996,8 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         getStringValue(item.book.subtitle),
                         getStringValue(item.book.bookName),
                         item.quantity,
-                        item.price != null ? `Rs.${item.price}` : 'N/A',
-                        item.price != null ? `Rs.${itemTotal}` : 'N/A',
+                        item.price != null ? `Rs.${item.price}` : 0,
+                        item.price != null ? `Rs.${itemTotal}` : 0,
                     ]);
                 });
                 tableRows.push(['', '', 'Total QTY/Amount', totalQty, '', `Rs.${totalAmt}`]);
@@ -1699,10 +1699,10 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                                     <td className="table-cell whitespace-normal">{getStringValue(item.book.bookName)}</td>
                                                     <td className="table-cell whitespace-nowrap">{item.quantity}</td>
                                                     <td className="table-cell whitespace-nowrap">
-                                                        {item.price != null ? `Rs.${item.price}` : 'N/A'}
+                                                        {item.price != null ? `Rs.${item.price}` : 0}
                                                     </td>
                                                     <td className="table-cell whitespace-nowrap">
-                                                        {item.price != null ? `Rs.${(item.quantity * item.price)}` : 'N/A'}
+                                                        {item.price != null ? `Rs.${(item.quantity * item.price)}` : 0}
                                                     </td>
                                                     <td className="table-cell whitespace-nowrap text-center">
                                                         <button

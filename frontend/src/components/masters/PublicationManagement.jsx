@@ -1,4 +1,3 @@
-// src/components/masters/PublicationManagement.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../utils/api';
 import { FaEdit, FaTrashAlt, FaPlusCircle, FaSearch, FaFilePdf, FaChevronLeft, FaChevronRight, FaTimes, FaSpinner } from 'react-icons/fa';
@@ -15,84 +14,51 @@ import '../../styles/CommonLayout.css';
 import companyLogo from '../../assets/glbs-logo.jpg';
 import { addHeaderAndSetStartY, addReportTitle, addTableToDoc } from '../../utils/pdfTheme';
 
-// NOTE: jsPDF and jspdf-autotable are expected to be loaded globally via CDN in public/index.html
-// If you are using npm, you'd do: npm install jspdf jspdf-autotable
-// Then import them here:
-// import { jsPDF } from 'jspdf';
-// import 'jspdf-autotable';
-
-
-
 const PublicationManagement = ({ showFlashMessage }) => {
     const [isOpen, setIsOpen] = useState(false);
-    // State for managing list of publications
     const [publications, setPublications] = useState([]);
-    // State for managing list of cities for lookup/validation (not for dropdown anymore)
     const [cities, setCities] = useState([]);
-    // State for form inputs (for creating new or editing existing publication)
     const [formData, setFormData] = useState({
         name: '',
         personName: '',
-        city: '', // Will now store City Name directly
+        city: '',
         mobileNumber: '',
         bank: '',
         accountNumber: '',
         ifsc: '',
         gstin: '',
         address: '',
-        status: 'active', // Default status
-        publicationType: 'Private Pub' // NEW: State for the radio buttons
-        // Removed subtitles and discount from here as they will be managed via a separate modal/field
+        status: 'active',
+        publicationType: 'Private Pub'
     });
-    // State for loading indicators
     const [loading, setLoading] = useState(false);
-    // State for managing local errors (e.g., form validation)
     const [localError, setLocalError] = useState(null);
-    // State to track if we are in edit mode and which publication is being edited
     const [editingPublicationId, setEditingPublicationId] = useState(null);
-    // State to track the ID of the newly added publication for highlighting
     const [highlightedPublicationId, setHighlightedPublicationId] = useState(null);
-
-    // States for confirmation modal (for deleting main publication)
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [publicationToDeleteId, setPublicationToDeleteId] = useState(null);
     const [publicationToDeleteName, setPublicationToDeleteName] = useState('');
-
-    // States for Subtitle Management Modal
     const [showSubtitleModal, setShowSubtitleModal] = useState(false);
-    const [selectedPublicationForSubtitle, setSelectedPublicationForSubtitle] = useState(null); // This will hold the full publication object for subtitle ops
+    const [selectedPublicationForSubtitle, setSelectedPublicationForSubtitle] = useState(null);
     const [newSubtitleName, setNewSubtitleName] = useState('');
-    const [newSubtitleDiscount, setNewSubtitleDiscount] = useState(0); // NEW: State for subtitle discount
+    const [newSubtitleDiscount, setNewSubtitleDiscount] = useState(0);
     const [subtitleModalLoading, setSubtitleModalLoading] = useState(false);
     const [subtitleModalError, setSubtitleModalError] = useState(null);
-
-    // NEW STATE: Temporary subtitles for a new publication being created (before it's saved)
     const [newPublicationSubtitles, setNewPublicationSubtitles] = useState([]);
-
-    // NEW STATE: ID of the subtitle currently being edited
     const [editingSubtitleId, setEditingSubtitleId] = useState(null);
-
-
-    // Ref for scrolling to the new item in the table (if needed)
     const tableBodyRef = useRef(null);
-
-    // States for Search
     const [searchTerm, setSearchTerm] = useState('');
-    const [publicationTypeFilter, setPublicationTypeFilter] = useState('all'); // Default to 'all' for no filter
+    const [publicationTypeFilter, setPublicationTypeFilter] = useState('all');
     const [publicationNameFilter, setPublicationNameFilter] = useState('all');
-
-    // States for Pagination
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10; // Show 10 entries per page
+    const itemsPerPage = 10;
 
-    // --- Initial form state for clearing/resetting ---
     const initialFormData = {
         name: '', personName: '', city: '',
         mobileNumber: '', bank: '', accountNumber: '', ifsc: '', gstin: '',
         address: '', status: 'active', publicationType: 'Private Pub'
     };
 
-    // --- Helper function for date formatting ---
     const formatDateWithTime = (dateString) => {
         if (!dateString) return 'N/A';
         const options = {
@@ -101,26 +67,22 @@ const PublicationManagement = ({ showFlashMessage }) => {
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-            hour12: true // For AM/PM format
+            hour12: true
         };
         const date = new Date(dateString);
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
 
-    // --- Fetch Publications ---
-    // --- Fetch Publications ---
     const fetchPublications = useCallback(async () => {
         setLoading(true);
         setLocalError(null);
         try {
             const response = await api.get(`/publications`);
             if (response.data.status === 'success') {
-                // ✅ Sort by latest createdAt first
                 const sorted = response.data.data.publications.sort(
                     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
                 );
                 setPublications(sorted);
-
                 const totalPagesCalculated = Math.ceil(sorted.length / itemsPerPage);
                 if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
                     setCurrentPage(totalPagesCalculated);
@@ -138,13 +100,11 @@ const PublicationManagement = ({ showFlashMessage }) => {
         }
     }, [currentPage, itemsPerPage]);
 
-    // --- Fetch Cities for Lookup ---
     const fetchCitiesForLookup = useCallback(async () => {
         try {
-            // Fetch all active cities to use for validation/lookup
             const response = await api.get('/cities?status=active&limit=1000');
             if (response.data.status === 'success') {
-                setCities(response.data.data.cities || []); // Safeguard: Ensure cities is always an array
+                setCities(response.data.data.cities || []);
             } else {
                 console.error('Failed to fetch cities for lookup:', response.data.message);
                 showFlashMessage('Failed to load cities for lookup.', 'error');
@@ -155,7 +115,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
         }
     }, [showFlashMessage]);
 
-    // Fetch publications and cities on component mount or relevant state changes
     useEffect(() => {
         fetchPublications();
     }, [fetchPublications]);
@@ -164,16 +123,12 @@ const PublicationManagement = ({ showFlashMessage }) => {
         fetchCitiesForLookup();
     }, [fetchCitiesForLookup]);
 
-
-    // Debugging useEffect for PDF libraries
     useEffect(() => {
         console.log("PDF Libraries Check (PublicationManagement):");
         console.log("window.jspdf (global object):", typeof window.jspdf);
         console.log("window.jspdf.jsPDF (constructor):", typeof window.jspdf?.jsPDF);
     }, []);
 
-
-    // --- Form Handling ---
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
@@ -182,12 +137,10 @@ const PublicationManagement = ({ showFlashMessage }) => {
         }));
     };
 
-    // --- Submit Form ---
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setLocalError(null);
-
 
         if (!formData.name.trim()) {
             setLocalError('Publication Name is required.');
@@ -200,7 +153,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
         const enteredCityName = formData.city.trim();
 
         try {
-
             if (enteredCityName) {
                 let existingCity = cities.find(c => c && c.name && c.name.toLowerCase() === enteredCityName.toLowerCase());
                 if (existingCity) {
@@ -219,19 +171,28 @@ const PublicationManagement = ({ showFlashMessage }) => {
 
             const publicationData = { ...formData, city: cityIdToUse || undefined };
 
-            let response;
             if (editingPublicationId) {
                 // Update case
-                response = await api.patch(`/publications/${editingPublicationId}`, publicationData);
+                const response = await api.patch(`/publications/${editingPublicationId}`, publicationData);
                 if (response.data.status === 'success') {
+                    const updatedPublication = response.data.data.publication;
+                    // Update the local state immediately
+                    setPublications(prev =>
+                        prev.map(pub =>
+                            pub._id === editingPublicationId
+                                ? { ...pub, ...updatedPublication, city: cities.find(c => c._id === cityIdToUse) || { name: enteredCityName } }
+                                : pub
+                        ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                    );
                     showFlashMessage('Publication updated successfully!', 'success');
-                    fetchPublications();
                     // Reset all states after a successful update
                     setFormData(initialFormData);
                     setEditingPublicationId(null);
                     setSelectedPublicationForSubtitle(null);
                     setNewPublicationSubtitles([]);
                     setHighlightedPublicationId(null);
+                    // Optionally fetch publications in the background to ensure sync
+                    fetchPublications();
                 } else {
                     throw new Error(response.data.message || 'Failed to update publication.');
                 }
@@ -241,20 +202,25 @@ const PublicationManagement = ({ showFlashMessage }) => {
                     ...publicationData,
                     subtitles: newPublicationSubtitles.map(s => ({ name: s.name, discount: s.discount }))
                 };
-                response = await api.post('/publications', newPublicationData);
+                const response = await api.post('/publications', newPublicationData);
                 if (response.data.status === 'success') {
-                    showFlashMessage('Publication created successfully!', 'success');
                     const newPublication = response.data.data.publication;
-                    setPublications(prev => [newPublication, ...prev]);
+                    // Update the local state immediately
+                    setPublications(prev => [
+                        { ...newPublication, city: cities.find(c => c._id === cityIdToUse) || { name: enteredCityName } },
+                        ...prev
+                    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
                     setCurrentPage(1);
                     setHighlightedPublicationId(newPublication._id);
+                    showFlashMessage('Publication created successfully!', 'success');
                     // Reset all states after a successful creation
                     setFormData(initialFormData);
                     setEditingPublicationId(null);
                     setSelectedPublicationForSubtitle(null);
                     setNewPublicationSubtitles([]);
-                    // Scroll to top after successful submission of a new entry
-                    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    // Optionally fetch publications in the background to ensure sync
+                    fetchPublications();
                 } else {
                     throw new Error(response.data.message || 'Failed to create publication.');
                 }
@@ -269,12 +235,11 @@ const PublicationManagement = ({ showFlashMessage }) => {
         }
     };
 
-    // --- Edit and Delete Operations ---
     const handleEdit = (publicationItem) => {
         setFormData({
             name: publicationItem.name,
             personName: publicationItem.personName,
-            city: publicationItem.city ? publicationItem.city.name : '', // Set city NAME for input field
+            city: publicationItem.city ? publicationItem.city.name : '',
             mobileNumber: publicationItem.mobileNumber,
             bank: publicationItem.bank,
             accountNumber: publicationItem.accountNumber,
@@ -282,17 +247,14 @@ const PublicationManagement = ({ showFlashMessage }) => {
             gstin: publicationItem.gstin,
             address: publicationItem.address,
             status: publicationItem.status,
-            publicationType: publicationItem.publicationType // NEW: Set publication type on edit
-            // Subtitles are not edited via the main form
+            publicationType: publicationItem.publicationType
         });
         setEditingPublicationId(publicationItem._id);
-        // When editing, also set the selected publication for potential subtitle operations
         setSelectedPublicationForSubtitle(publicationItem);
-        // Clear temporary subtitles when starting to edit an existing one
         setNewPublicationSubtitles([]);
         setLocalError(null);
-        setHighlightedPublicationId(null); // Clear highlight on edit
-        window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to form
+        setHighlightedPublicationId(null);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const openConfirmModal = (publicationItem) => {
@@ -314,9 +276,15 @@ const PublicationManagement = ({ showFlashMessage }) => {
 
         try {
             const response = await api.delete(`/publications/${publicationToDeleteId}`);
-            if (response.status === 204) { // 204 No Content for successful deletion
+            if (response.status === 204) {
                 showFlashMessage('Publication deleted successfully!', 'success');
-                fetchPublications(); // Re-fetch publications to update the list
+                setPublications(prev => prev.filter(pub => pub._id !== publicationToDeleteId));
+                const totalPagesCalculated = Math.ceil((filteredPublications.length - 1) / itemsPerPage);
+                if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
+                    setCurrentPage(totalPagesCalculated);
+                } else if (filteredPublications.length - 1 === 0) {
+                    setCurrentPage(1);
+                }
             } else {
                 throw new Error(response.data?.message || 'Failed to delete publication.');
             }
@@ -330,13 +298,10 @@ const PublicationManagement = ({ showFlashMessage }) => {
         }
     };
 
-    // --- Subtitle Management Functions ---
-    // This function will now be called from the main form
     const handleOpenSubtitleModalFromForm = () => {
-        // Reset subtitle form fields and states for a fresh start
         setNewSubtitleName('');
         setNewSubtitleDiscount(0);
-        setEditingSubtitleId(null); // Ensure we are in "add" mode
+        setEditingSubtitleId(null);
         setSubtitleModalError(null);
         setShowSubtitleModal(true);
     };
@@ -344,7 +309,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
     const handleEditSubtitle = (subtitle, publication) => {
         setNewSubtitleName(subtitle.name);
         setNewSubtitleDiscount(subtitle.discount);
-        setEditingSubtitleId(subtitle._id); // Set the ID of the subtitle being edited
+        setEditingSubtitleId(subtitle._id);
         setSelectedPublicationForSubtitle(publication);
         setSubtitleModalError(null);
         setShowSubtitleModal(true);
@@ -354,7 +319,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
         setShowSubtitleModal(false);
         setNewSubtitleName('');
         setNewSubtitleDiscount(0);
-        setEditingSubtitleId(null); // Reset to null after closing
+        setEditingSubtitleId(null);
         setSubtitleModalError(null);
     };
 
@@ -370,7 +335,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
         }
 
         if (editingSubtitleId) {
-            // Logic for UPDATING a subtitle
             try {
                 const response = await api.patch(`/publications/subtitles/${editingSubtitleId}`, {
                     name: newSubtitleName.trim(),
@@ -379,7 +343,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 if (response.data.status === 'success') {
                     showFlashMessage('Subtitle updated successfully!', 'success');
                     closeSubtitleModal();
-                    fetchPublications(); // Re-fetch publications to update the table with new subtitle
+                    fetchPublications();
                 } else {
                     throw new Error(response.data.message || 'Failed to update subtitle.');
                 }
@@ -392,9 +356,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 setSubtitleModalLoading(false);
             }
         } else {
-            // Logic for ADDING a new subtitle
             if (editingPublicationId) {
-                // Add to existing publication
                 try {
                     const response = await api.post(`/publications/${editingPublicationId}/subtitles`, {
                         name: newSubtitleName.trim(),
@@ -403,7 +365,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                     if (response.data.status === 'success') {
                         showFlashMessage('Subtitle added successfully!', 'success');
                         closeSubtitleModal();
-                        fetchPublications(); // Re-fetch publications to update the table with new subtitle
+                        fetchPublications();
                     } else {
                         throw new Error(response.data.message || 'Failed to add subtitle.');
                     }
@@ -416,7 +378,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                     setSubtitleModalLoading(false);
                 }
             } else {
-                // Add to a new (unsaved) publication
                 const tempSubtitle = {
                     _id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     name: newSubtitleName.trim(),
@@ -437,16 +398,15 @@ const PublicationManagement = ({ showFlashMessage }) => {
             return;
         }
 
-        setLoading(true); // Use main loading for this action
+        setLoading(true);
         setLocalError(null);
 
         if (publicationId) {
-            // Logic for removing subtitle from an existing publication
             try {
                 const response = await api.delete(`/publications/subtitles/${subtitleId}`);
                 if (response.status === 204) {
                     showFlashMessage('Subtitle removed successfully!', 'success');
-                    fetchPublications(); // Re-fetch publications to update the table
+                    fetchPublications();
                 } else {
                     throw new Error(response.data?.message || 'Failed to remove subtitle.');
                 }
@@ -459,37 +419,32 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 setLoading(false);
             }
         } else {
-            // Logic for removing subtitle from a new (unsaved) publication
             setNewPublicationSubtitles(prev => prev.filter(sub => sub._id !== subtitleId));
             showFlashMessage('Subtitle removed temporarily.', 'info');
-            setLoading(false); // Manually set false as no API call for temporary remove
+            setLoading(false);
         }
     };
 
     const handleCancelEdit = () => {
-        setFormData(initialFormData); // Reset to initial state
+        setFormData(initialFormData);
         setEditingPublicationId(null);
-        setSelectedPublicationForSubtitle(null); // Also clear selected publication for subtitle ops
-        setNewPublicationSubtitles([]); // IMPORTANT: Clear temporary subtitles
+        setSelectedPublicationForSubtitle(null);
+        setNewPublicationSubtitles([]);
         setLocalError(null);
-        setHighlightedPublicationId(null); // Clear highlight on cancel edit
+        setHighlightedPublicationId(null);
     };
 
-    // --- Search Filtering ---
     const filteredPublications = publications.filter((publicationItem) => {
         if (!publicationItem) return false;
 
-        // Apply publicationType filter
         const matchesType =
             publicationTypeFilter === 'all' ||
             publicationItem.publicationType === publicationTypeFilter;
 
-        // NEW: Apply publicationName filter
         const matchesName =
             publicationNameFilter === 'all' ||
             publicationItem.name === publicationNameFilter;
 
-        // Apply existing search term filter
         const matchesSearch =
             publicationItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             publicationItem.personName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -506,11 +461,9 @@ const PublicationManagement = ({ showFlashMessage }) => {
                         sub && sub.name && sub.name.toLowerCase().includes(searchTerm.toLowerCase())
                 ));
 
-        // Combine all filter conditions
         return matchesType && matchesName && matchesSearch;
     });
 
-    // --- Pagination Logic ---
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentPublications = filteredPublications.slice(indexOfFirstItem, indexOfLastItem);
@@ -530,8 +483,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
         }
     };
 
-    // --- PDF Download Functionality ---
-    // --- PDF Download Functionality ---
     const downloadPdf = () => {
         if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF !== 'function') {
             showFlashMessage('PDF generation failed: Core libraries are not loaded. Please check your script links.', 'error');
@@ -540,8 +491,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
         }
 
         const doc = new window.jspdf.jsPDF('p', 'mm', 'a4');
-
-        // Corrected coordinates for the logo to fix the positioning issue
         let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
         startY = addReportTitle(doc, startY, "Publications Report");
 
@@ -555,12 +504,10 @@ const PublicationManagement = ({ showFlashMessage }) => {
         ]);
 
         addTableToDoc(doc, tableColumn, tableRows, startY);
-
         doc.save(`Publications_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
         showFlashMessage('Publications list downloaded as PDF!', 'success');
     };
 
-    // --- UI Rendering ---
     return (
         <div className="publication-management-container">
             <h2 className="main-section-title">Publication Management</h2>
@@ -569,15 +516,10 @@ const PublicationManagement = ({ showFlashMessage }) => {
                 <p className="error-message text-center">{localError}</p>
             )}
 
-            {/* Main content layout for two columns */}
             <div className="main-content-layout">
-
-                {/* Publication Creation/Update Form - SECOND CHILD */}
                 <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
                         <h3 className="form-title">{editingPublicationId ? 'Edit Publication' : 'Publication Details'}</h3>
-
-                        {/* NEW: Radio buttons for publication type */}
                         <div className="form-group publication-type-radio-group">
                             <label>Publishers Detail:</label>
                             <div className="radio-group">
@@ -613,8 +555,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                 </label>
                             </div>
                         </div>
-
-                        <div className="form-row"> {/* Use form-row for multi-column layout */}
+                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="name">Publication Name:</label>
                                 <input
@@ -638,14 +579,11 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     value={formData.personName}
                                     onChange={handleChange}
                                     placeholder="e.g., John Doe"
-                                    // required
                                     disabled={loading}
                                     className="form-input"
                                 />
                             </div>
                         </div>
-
-                        {/* Display temporarily added subtitles for new publication OR existing for edited one */}
                         {(!editingPublicationId && newPublicationSubtitles.length > 0) || (editingPublicationId && selectedPublicationForSubtitle?.subtitles?.length > 0) ? (
                             <div className="form-group">
                                 <label>Subtitles:</label>
@@ -669,7 +607,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                                 {sub.name} ({sub.discount}%)
                                                 <button
                                                     className="remove-subtitle-btn"
-                                                    onClick={() => handleRemoveSubtitle(sub._id, null, sub.name)} // Pass null for publicationId as it's temporary
+                                                    onClick={() => handleRemoveSubtitle(sub._id, null, sub.name)}
                                                     title="Remove temporary Subtitle"
                                                     disabled={loading}
                                                 >
@@ -681,8 +619,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                 </div>
                             </div>
                         ) : null}
-
-                        {/* Add Subtitle button - always visible and enabled as per user request */}
                         <div className="form-group mt-3">
                             <button
                                 type="button"
@@ -692,11 +628,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                             >
                                 <FaPlusCircle className="mr-2" /> Add Subtitle
                             </button>
-                            {/* <small className="form-text-muted ml-2">
-                                Add new subtitles {editingPublicationId ? 'to this publication.' : 'for the new publication.'}
-                            </small> */}
                         </div>
-
                         <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="mobileNumber">Mobile Number:</label>
@@ -707,14 +639,12 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     value={formData.mobileNumber}
                                     onChange={handleChange}
                                     placeholder="e.g., 9876543210"
-                                    // required
                                     disabled={loading}
                                     className="form-input"
                                 />
                             </div>
                             <div className="form-group">
                                 <label htmlFor="city">City:</label>
-                                {/* City input is now a direct text input */}
                                 <input
                                     type="text"
                                     id="city"
@@ -722,7 +652,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     value={formData.city}
                                     onChange={handleChange}
                                     placeholder="e.g., Indore, Bhopal"
-                                    // required
                                     disabled={loading}
                                     className="form-input"
                                 />
@@ -735,7 +664,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     value={formData.address}
                                     onChange={handleChange}
                                     placeholder="Full Address"
-                                    // required
                                     disabled={loading}
                                     className="form-textarea"
                                 ></textarea>
@@ -753,7 +681,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-
                         </div>
                         <h3 className="form-title">{editingPublicationId ? 'Edit Bank Details' : 'Bank Details'}</h3>
                         <div className="form-row">
@@ -784,7 +711,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                 />
                             </div>
                         </div>
-
                         <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="ifsc">IFSC:</label>
@@ -799,9 +725,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-
                         </div>
-
                         <div className="form-group">
                             <label htmlFor="status">Status:</label>
                             <select
@@ -816,7 +740,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                 <option value="inactive">Inactive</option>
                             </select>
                         </div>
-
                         <div className="form-actions">
                             <button type="submit" className="btn btn-primary" disabled={loading}>
                                 {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingPublicationId ? 'Update Publication' : 'Add Publication')}
@@ -834,9 +757,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                         </div>
                     </form>
                 </div>
-                {/* Publication List Table - FIRST CHILD */}
                 <div className="table-section">
-                    {/* Search and PDF Download Section */}
                     <div className="table-controls">
                         <div className="search-input-group">
                             <input
@@ -855,12 +776,11 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                 value={publicationNameFilter}
                                 onChange={(e) => {
                                     setPublicationNameFilter(e.target.value);
-                                    setCurrentPage(1); // Reset to first page when filter changes
+                                    setCurrentPage(1);
                                 }}
                                 className="form-select"
                             >
                                 <option value="all">All Publications</option>
-                                {/* Map over a unique list of publication names here */}
                                 {publications.map(pub => (
                                     <option key={pub._id} value={pub.name}>
                                         {pub.name}
@@ -868,7 +788,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                 ))}
                             </select>
                         </div>
-                        {/* NEW: Publication Type Filter Dropdown */}
                         <div className="publication-type-filter">
                             <label htmlFor="publicationTypeFilter" className="mr-2"></label>
                             <select
@@ -876,7 +795,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                 value={publicationTypeFilter}
                                 onChange={(e) => {
                                     setPublicationTypeFilter(e.target.value);
-                                    setCurrentPage(1); // Reset to first page when filter changes
+                                    setCurrentPage(1);
                                 }}
                                 className="form-select"
                             >
@@ -894,11 +813,10 @@ const PublicationManagement = ({ showFlashMessage }) => {
                             <FaFilePdf className="mr-2" /> Download PDF
                         </button>
                     </div>
-
                     {loading && publications.length === 0 ? (
                         <p className="loading-state text-center">Loading publications...</p>
                     ) : (
-                        <div className="table-container"> {/* This div is for table overflow, not layout */}
+                        <div className="table-container">
                             <table className="app-table">
                                 <thead>
                                     <tr>
@@ -949,13 +867,10 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                                         <span>No subtitles</span>
                                                     )}
                                                 </td>
-
                                                 <td>{pubItem.mobileNumber}</td>
                                                 <td>{pubItem.address}</td>
                                                 <td>{pubItem.city ? pubItem.city.name : 'N/A'}</td>
-                                                <td>
-                                                    {pubItem.gstin && `${pubItem.gstin}`}
-                                                </td>
+                                                <td>{pubItem.gstin && `${pubItem.gstin}`}</td>
                                                 <td>{pubItem.bank}</td>
                                                 <td>{pubItem.accountNumber}</td>
                                                 <td>{pubItem.ifsc}</td>
@@ -992,7 +907,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     )}
                                 </tbody>
                             </table>
-                            {/* Pagination Controls */}
                             {filteredPublications.length > 0 && totalPages > 1 && (
                                 <div className="pagination-controls">
                                     <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn btn-page">
@@ -1010,11 +924,7 @@ const PublicationManagement = ({ showFlashMessage }) => {
                         </div>
                     )}
                 </div>
-
-
-            </div> {/* End of main-content-layout */}
-
-            {/* Confirmation Modal for Publication Deletion */}
+            </div>
             {showConfirmModal && (
                 <div className="modal-backdrop">
                     <div className="modal-content">
@@ -1029,16 +939,14 @@ const PublicationManagement = ({ showFlashMessage }) => {
                     </div>
                 </div>
             )}
-
-            {/* Subtitle Management Modal */}
             {showSubtitleModal && (
                 <div
                     className="modal-backdrop"
-                    onClick={closeSubtitleModal} // close on outside click
+                    onClick={closeSubtitleModal}
                 >
                     <div
                         className="modal-content"
-                        onClick={(e) => e.stopPropagation()} // prevent close when clicking inside
+                        onClick={(e) => e.stopPropagation()}
                     >
                         <h3>{editingSubtitleId ? 'Edit Subtitle' : 'Add Subtitle'}</h3>
                         <form onSubmit={handleAddSubtitle}>
@@ -1056,8 +964,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-
-                            {/* Discount input */}
                             <div className="form-group">
                                 <label htmlFor="newSubtitleDiscount">Discount (%):</label>
                                 <input
@@ -1073,11 +979,9 @@ const PublicationManagement = ({ showFlashMessage }) => {
                                     className="form-input"
                                 />
                             </div>
-
                             {subtitleModalError && (
                                 <p className="error-message text-center">{subtitleModalError}</p>
                             )}
-
                             <div className="form-actions">
                                 <button type="submit" className="btn btn-primary" disabled={subtitleModalLoading}>
                                     {subtitleModalLoading
@@ -1097,7 +1001,6 @@ const PublicationManagement = ({ showFlashMessage }) => {
                     </div>
                 </div>
             )}
-
         </div>
     );
 };

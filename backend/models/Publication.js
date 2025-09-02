@@ -14,8 +14,10 @@ const publicationSchema = new mongoose.Schema({
         maxlength: [100, 'Person name cannot exceed 100 characters']
     },
     city: {
-        type: mongoose.Schema.ObjectId,
-        ref: 'City'
+        type: String,
+        trim: true,
+        maxlength: [10, 'City cannot exceed 10 characters'],
+        default: ''
     },
     mobileNumber: {
         type: String,
