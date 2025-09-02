@@ -5,7 +5,6 @@ const CitySchema = new mongoose.Schema({
     name: {
         type: String,
         required: [true, 'City name is required'],
-        unique: true,
         trim: true,
         maxlength: [50, 'City name cannot be more than 50 characters']
     },
