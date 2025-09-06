@@ -31,7 +31,11 @@ router.route('/')
         upload.fields([{ name: 'passportPhoto', maxCount: 1 }, { name: 'documentPDF', maxCount: 1 }]),
         employeeController.createEmployee
     )
-    .get(authMiddleware.protect, authMiddleware.restrictTo('super_admin', 'branch_admin'), employeeController.getAllEmployees);
+    .get(
+        authMiddleware.protect,
+        authMiddleware.restrictTo('super_admin', 'branch_admin', 'stock_manager'),  // Added 'stock_manager'
+        employeeController.getAllEmployees
+    );
 
 router.get(
     '/by-role/:role',
@@ -56,5 +60,12 @@ router.route('/:id')
         employeeController.updateEmployee
     )
     .delete(authMiddleware.protect, authMiddleware.restrictTo('super_admin', 'branch_admin'), employeeController.deleteEmployee);
+
+    router.get(
+    '/for-orders',
+    authMiddleware.protect,
+    authMiddleware.restrictTo('super_admin', 'branch_admin', 'stock_manager'),
+    employeeController.getAllEmployeesForOrders
+);
 
 module.exports = router;

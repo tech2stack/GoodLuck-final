@@ -48,6 +48,9 @@ import TransportManagement from './components/masters/TransportManagement';  
 import PendingBookManagement from './components/PendingBookManagement'; // Confirmed path
 
 
+import CustomerOrderRecord from './pages/CustomerOrderRecord';
+
+
 // A PrivateRoute component to protect routes based on user role
 const PrivateRoute = ({ children, allowedRoles }) => {
     const { isLoggedIn, userData, loading } = useAuth();
@@ -249,6 +252,10 @@ function App() {
 
                             {/* NEW Route for Pending Book Management */}
                             <Route path="/pending-books" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><PendingBookManagement showFlashMessage={showFlashMessage} /></PrivateRoute>} />
+
+
+
+                                 <Route path="/customer-order-record" element={<PrivateRoute allowedRoles={['super_admin', 'stock_manager']}><CustomerOrderRecord showFlashMessage={showFlashMessage} /></PrivateRoute>} />
 
                             {/* Default fallback route: Redirects users based on their role after login */}
                             <Route path="*" element={<RoleBasedRedirect />} />

@@ -130,4 +130,16 @@ exports.getSalesRepresentatives = catchAsync(async (req, res, next) => {
     });
 });
 
+exports.getAllEmployeesForOrders = catchAsync(async (req, res, next) => {
+    const employees = await Employee.find().select('name mobileNumber postId');
+    if (!employees || employees.length === 0) {
+        return next(new AppError('No employees found', 404));
+    }
+    res.status(200).json({
+        status: 'success',
+        results: employees.length,
+        data: { employees },
+    });
+});
+
 initializeDefaultPosts().catch(err => console.error("Failed to initialize default posts:", err));

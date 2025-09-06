@@ -74,7 +74,7 @@ const SidebarStockManagerDashboard = ({
   const handleNavigationClick = (key) => {
     handleOptionClick(key);
     setIsSidebarCollapsed(true); // ✅ close sidebar after navigation
-    window.scrollTo(0, 0); // Add this line to scroll to the top
+    window.scrollTo(0, 0); // ✅ scroll to top
   };
 
   useEffect(() => {
@@ -89,7 +89,6 @@ const SidebarStockManagerDashboard = ({
         setShowSalesDropdown(false);
       }
 
-      // ✅ keep sidebar closed if clicked outside
       if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
         setIsSidebarCollapsed(true);
       }
@@ -124,7 +123,6 @@ const SidebarStockManagerDashboard = ({
       toggle: toggleMasterDropdown,
       show: showMasterDropdown,
       items: [
-        // { key: 'zone', icon: FaGlobeAsia, label: 'Zone' },
         { key: 'city', icon: FaCity, label: 'Add Zone ' },
         { key: 'class', icon: FaGraduationCap, label: 'Class' },
         { key: 'language', icon: FaLanguage, label: 'Language' },
@@ -132,23 +130,18 @@ const SidebarStockManagerDashboard = ({
         { key: 'book-catalog', icon: FaBookOpen, label: 'Book Catalog' },
         { key: 'stationery-item', icon: FaPencilRuler, label: 'Stationery Item' },
         { key: 'customers', icon: FaUserFriends, label: 'Customers' },
-        // { key: 'set-quantity', icon: FaLayerGroup, label: 'Set Quantity' }, // NEW: Added Set Quantity
         { key: 'create-sets', icon: FaLayerGroup, label: 'Create Set' },
         { key: 'pending-book', icon: FaHourglassHalf, label: 'Pending Book' },
         { key: 'transports', icon: FaTruck, label: 'Transport' },
-        
-        //CREATE ITEMS SERIES SET
-        // 1. ADD ZONE
-        // 2. CLASS
-        // 3. LANGUAGE 
-        // 4. PUBLICATION 
-        // 5. BOOK CATALOGUE 
-        // 6. STATIONARY ITEM 
-        // 7. COUSTMER 
-        // 8. CREATE SET 
-        // 9. PENDING BOOKS
-        // 10. TRANSPORT
       ]
+    },
+    {
+      title: 'Customer Order Record',
+      icon: FaClipboardList,
+      ref: null,
+      toggle: () => handleNavigationClick('customer-order-record'),
+      show: false,
+      items: []
     },
     {
       title: 'Purchase',
@@ -252,11 +245,13 @@ const SidebarStockManagerDashboard = ({
                     <Icon className="text-lg min-w-[1.5rem] mr-3" />
                     <span className="truncate">{title}</span>
                   </div>
-                  <FaChevronDown
-                    className={`transform transition-transform duration-200 ${show ? 'rotate-180' : ''}`}
-                  />
+                  {items.length > 0 && (
+                    <FaChevronDown
+                      className={`transform transition-transform duration-200 ${show ? 'rotate-180' : ''}`}
+                    />
+                  )}
                 </button>
-                {show && renderDropdown(items)}
+                {show && items.length > 0 && renderDropdown(items)}
               </li>
             ))}
           </ul>

@@ -6,6 +6,8 @@ import StockManagerDashboardSummary from '../components/dashboard/StockManagerDa
 import ClassManagement from '../components/masters/ClassManagement';
 import ZoneManagement from '../components/masters/ZoneManagement';
 import CityManagement from '../components/masters/CityManagement';
+import CustomerOrderRecord from "../pages/CustomerOrderRecord";
+
 import PublicationManagement from '../components/masters/PublicationManagement';
 import LanguageManagement from '../components/masters/LanguageManagement';
 import BookCatalogManagement from '../components/masters/BookCatalogManagement';
@@ -115,9 +117,8 @@ const StockManagerDashboard = ({ showFlashMessage: propShowFlashMessage }) => {
                 />
 
                 <div
-                    className={`main-content-wrapper ${
-                        isSidebarCollapsed ? 'sidebar-collapsed' : ''
-                    }`}
+                    className={`main-content-wrapper ${isSidebarCollapsed ? 'sidebar-collapsed' : ''
+                        }`}
                 >
                     <main className="dashboard-main-content">
                         {flashMessage && (
@@ -174,6 +175,11 @@ const StockManagerDashboard = ({ showFlashMessage: propShowFlashMessage }) => {
                                     showFlashMessage={showFlashMessage}
                                 />
                             )}
+
+                            {activeView === "customer-order-record" && (
+                                <CustomerOrderRecord showFlashMessage={showFlashMessage} />
+                            )}
+
                             {activeView === 'purchase-order' && (
                                 <ManagementPlaceholder title="Purchase Order" />
                             )}

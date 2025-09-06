@@ -21,6 +21,7 @@ const setRouter = require('./setRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
 const postRoutes = require('./postRoutes');
 const firmRoutes = require('./firmRoutes'); // Added import for firmRoutes
+ const customerOrderRoutes = require('./customerOrderRoutes');
 
 const router = express.Router();
 
@@ -46,5 +47,7 @@ router.use('/sets', setRouter);
 router.use('/dashboard', dashboardRoutes);
 router.use('/posts', postRoutes);
 router.use('/firms', firmRoutes); // Added mounting for firmRoutes
+router.use('/customer-orders', customerOrderRoutes);
+
 
 module.exports = router;
