@@ -24,15 +24,7 @@ exports.protect = catchAsync(async (req, res, next) => {
     }
 
     // Verify token
-    let decoded;
-    try {
-        decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-    } catch (err) {
-        if (process.env.NODE_ENV !== 'production') {
-            console.error('JWT verification failed:', err.message);
-        }
-        return next(new AppError('Invalid or expired token. Please log in again.', 401));
-    }
+    const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
     // Check if user still exists across all possible user types
     let currentUser;

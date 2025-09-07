@@ -50,6 +50,4 @@ router.use('/firms', firmRoutes); // Added mounting for firmRoutes
 router.use('/customer-orders', customerOrderRoutes);
 
 
-
-
 module.exports = router;
