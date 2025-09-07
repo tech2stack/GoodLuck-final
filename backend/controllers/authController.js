@@ -10,11 +10,12 @@ const StockManager = require('../models/StockManager');
 const Branch = require('../models/Branch'); // Branch model ko import karein
 const mongoose = require('mongoose'); // <<< ZAROORI: mongoose ko import karein ObjectId.isValid ke liye
 
-
 // Helper function to sign the JWT token
 const signToken = id => {
-    console.log('DEBUG: JWT_EXPIRES_IN value:', process.env.JWT_EXPIRES_IN);
-    console.log('DEBUG: Type of JWT_EXPIRES_IN:', typeof process.env.JWT_EXPIRES_IN);
+    if (process.env.NODE_ENV !== 'production') {
+        console.log('DEBUG: JWT_EXPIRES_IN value:', process.env.JWT_EXPIRES_IN);
+        console.log('DEBUG: Type of JWT_EXPIRES_IN:', typeof process.env.JWT_EXPIRES_IN);
+    }
 
     const expiresIn = process.env.JWT_EXPIRES_IN || '90d'; 
 
@@ -38,7 +39,7 @@ const createSendToken = (user, statusCode, res) => {
         expires: cookieExpirationDate,
         httpOnly: true, 
         secure: process.env.NODE_ENV === 'production', 
-        sameSite: 'Lax' 
+        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax'  // Changed to 'None' for cross-origin in production
     };
 
     res.cookie('jwt', token, cookieOptions);
@@ -108,7 +109,7 @@ exports.logout = (req, res) => {
         expires: new Date(Date.now() + 10 * 1000), 
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax'
+        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax'  // Consistent with login
     });
     res.status(200).json({ status: 'success' });
 };
@@ -123,22 +124,27 @@ exports.getMe = catchAsync(async (req, res, next) => {
     
     let branchName = 'N/A'; 
 
-    // <<< DEBUG LOG 1 >>>
-    console.log('DEBUG: Logged in user:', user.name, 'Role:', user.role, 'Branch ID from user:', user.branchId); 
+    if (process.env.NODE_ENV !== 'production') {
+        console.log('DEBUG: Logged in user:', user.name, 'Role:', user.role, 'Branch ID from user:', user.branchId); 
+    }
 
     if (user.role === 'branch_admin' && user.branchId) {
-        // <<< ZAROORI: mongoose import kiya hai kya? Ye check karein >>>
         if (!mongoose.Types.ObjectId.isValid(user.branchId)) {
-            console.error('ERROR: Invalid branchId format:', user.branchId); // <<< DEBUG LOG 2
+            if (process.env.NODE_ENV !== 'production') {
+                console.error('ERROR: Invalid branchId format:', user.branchId);
+            }
             branchName = 'Invalid Branch ID';
         } else {
             const branch = await Branch.findById(user.branchId);
-            // <<< DEBUG LOG 3 >>>
-            console.log('DEBUG: Branch found by ID:', branch ? branch.name : 'Not Found'); 
+            if (process.env.NODE_ENV !== 'production') {
+                console.log('DEBUG: Branch found by ID:', branch ? branch.name : 'Not Found'); 
+            }
             if (branch) {
                 branchName = branch.name;
             } else {
-                console.warn(`Branch details not found in DB for ID: ${user.branchId}`); // <<< DEBUG LOG 4
+                if (process.env.NODE_ENV !== 'production') {
+                    console.warn(`Branch details not found in DB for ID: ${user.branchId}`);
+                }
                 branchName = 'Unknown Branch';
             }
         }
