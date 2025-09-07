@@ -33,8 +33,8 @@ const CustomerOrderRecord = () => {
 
   const navigate = useNavigate();
 
-  const apiBaseUrl = 'http://localhost:5000/api/v1/customer-orders';
-  const authApiBaseUrl = 'http://localhost:5000/api/v1/auth';
+  const apiBaseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000/api/v1/customer-orders';
+  const authApiBaseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000/api/v1/auth';
 
   const getJwtToken = () => {
     const cookies = document.cookie.split(';').reduce((acc, cookie) => {
@@ -70,53 +70,53 @@ const CustomerOrderRecord = () => {
     }
   };
 
-const checkAuth = async () => {
-  try {
-    const response = await fetch(`${authApiBaseUrl}/me`, {
-      credentials: 'include',
-    });
-    console.log('Auth response status:', response.status);
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'User not authenticated');
-    }
-    const data = await response.json();
-    console.log('Authenticated user:', data.data.user);
-    setIsAuthenticated(true);
-    setUser(data.data.user);
-    return data.data.user;
-  } catch (err) {
-    setIsAuthenticated(false);
-    setError('Please log in to access this page');
-    console.error('Authentication check failed:', err);
-    navigate('/login');
-    return null;
-  }
-};
-
-useEffect(() => {
-  const initializeData = async () => {
-    const user = await checkAuth();
-    if (user) {
-      if (['super_admin', 'branch_admin', 'stock_manager'].includes(user.role)) {
-        fetchData(`${apiBaseUrl}/types`, setCustomerTypes);
-        fetchData(`${apiBaseUrl}/sales-representatives`, setSalesRepresentatives);
-        fetchData(`${apiBaseUrl}/employees`, setAllEmployees);
-        fetchData(`${apiBaseUrl}/publications`, setPublications);
-        fetchData(`${apiBaseUrl}`, (data) => {
-          setOrders(data);
-          const lastOrder = data[data.length - 1];
-          setOrderNumber(lastOrder ? lastOrder.orderNumber + 1 : 1);
-        });
-      } else {
-        setError('You do not have permission to access this page');
-        setIsAuthenticated(false);
-        navigate('/login');
+  const checkAuth = async () => {
+    try {
+      const response = await fetch(`${authApiBaseUrl}/me`, {
+        credentials: 'include',
+      });
+      console.log('Auth response status:', response.status);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'User not authenticated');
       }
+      const data = await response.json();
+      console.log('Authenticated user:', data.data.user);
+      setIsAuthenticated(true);
+      setUser(data.data.user);
+      return data.data.user;
+    } catch (err) {
+      setIsAuthenticated(false);
+      setError('Please log in to access this page');
+      console.error('Authentication check failed:', err);
+      navigate('/login');
+      return null;
     }
   };
-  initializeData();
-}, [navigate]);
+
+  useEffect(() => {
+    const initializeData = async () => {
+      const user = await checkAuth();
+      if (user) {
+        if (['super_admin', 'branch_admin', 'stock_manager'].includes(user.role)) {
+          fetchData(`${apiBaseUrl}/types`, setCustomerTypes);
+          fetchData(`${apiBaseUrl}/sales-representatives`, setSalesRepresentatives);
+          fetchData(`${apiBaseUrl}/employees`, setAllEmployees);
+          fetchData(`${apiBaseUrl}/publications`, setPublications);
+          fetchData(`${apiBaseUrl}`, (data) => {
+            setOrders(data);
+            const lastOrder = data[data.length - 1];
+            setOrderNumber(lastOrder ? lastOrder.orderNumber + 1 : 1);
+          });
+        } else {
+          setError('You do not have permission to access this page');
+          setIsAuthenticated(false);
+          navigate('/login');
+        }
+      }
+    };
+    initializeData();
+  }, [navigate]);
 
   useEffect(() => {
     if (formData.customerType) {
