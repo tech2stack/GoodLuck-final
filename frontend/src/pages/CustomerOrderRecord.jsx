@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -33,8 +32,10 @@ const CustomerOrderRecord = () => {
 
   const navigate = useNavigate();
 
-  const apiBaseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000/api/v1/customer-orders';
-  const authApiBaseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000/api/v1/auth';
+  // Use the provided production URL as base, append /api/v1 for endpoint structure
+  const baseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+  const apiBaseUrl = `${baseUrl}/api/v1/customer-orders`;
+  const authApiBaseUrl = `${baseUrl}/api/v1/auth`;
 
   const getJwtToken = () => {
     const cookies = document.cookie.split(';').reduce((acc, cookie) => {
@@ -42,7 +43,9 @@ const CustomerOrderRecord = () => {
       acc[name] = value;
       return acc;
     }, {});
-    console.log('Cookies:', document.cookie);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Cookies:', document.cookie);
+    }
     return cookies.jwt || null;
   };
 
@@ -54,17 +57,26 @@ const CustomerOrderRecord = () => {
       const response = await fetch(url, {
         credentials: 'include',
       });
-      console.log(`Fetching ${url}: Status ${response.status}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Fetching ${url}: Status ${response.status}`);
+      }
+      if (response.status === 404) {
+        throw new Error(`Endpoint not found: ${url}. Verify backend routes on Render.`);
+      }
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Failed to fetch ${url} (Status: ${response.status})`);
       }
       const data = await response.json();
-      console.log(`Data from ${url}:`, data);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Data from ${url}:`, data);
+      }
       setter(data.data[Object.keys(data.data)[0]]);
     } catch (err) {
       setError(`Error fetching ${url}: ${err.message}`);
-      console.error(`Error fetching ${url}:`, err);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error(`Error fetching ${url}:`, err);
+      }
     } finally {
       setLoading(false);
     }
@@ -75,20 +87,30 @@ const CustomerOrderRecord = () => {
       const response = await fetch(`${authApiBaseUrl}/me`, {
         credentials: 'include',
       });
-      console.log('Auth response status:', response.status);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Auth response status:', response.status);
+      }
+      if (response.status === 404) {
+        setError('Authentication endpoint (/me) not found on backend. Check Render deployment and routes.');
+        throw new Error('Endpoint /me not configured on server');
+      }
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'User not authenticated');
       }
       const data = await response.json();
-      console.log('Authenticated user:', data.data.user);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Authenticated user:', data.data.user);
+      }
       setIsAuthenticated(true);
       setUser(data.data.user);
       return data.data.user;
     } catch (err) {
       setIsAuthenticated(false);
-      setError('Please log in to access this page');
-      console.error('Authentication check failed:', err);
+      setError(err.message || 'Please log in to access this page');
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Authentication check failed:', err);
+      }
       navigate('/login');
       return null;
     }
@@ -116,7 +138,7 @@ const CustomerOrderRecord = () => {
       }
     };
     initializeData();
-  }, [navigate]);
+  }, [navigate, apiBaseUrl, authApiBaseUrl]);
 
   useEffect(() => {
     if (formData.customerType) {
@@ -125,7 +147,7 @@ const CustomerOrderRecord = () => {
       setCustomers([]);
       setOrderItems([{ book: '', quantity: 0, price: 0, discount: 0, total: 0, className: '' }]);
     }
-  }, [formData.customerType]);
+  }, [formData.customerType, apiBaseUrl]);
 
   // Memoize the discount update to prevent unnecessary re-renders
   const updateDiscount = useCallback(() => {
@@ -156,19 +178,21 @@ const CustomerOrderRecord = () => {
     } else {
       setSubtitles([]);
     }
-  }, [formData.publication]);
+  }, [formData.publication, apiBaseUrl]);
 
   useEffect(() => {
     if (formData.publication) {
       const subtitleId = formData.subtitle || 'null';
       fetchData(`${apiBaseUrl}/publications/${formData.publication}/subtitles/${subtitleId}/books`, (books) => {
-        console.log('Fetched books:', books);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('Fetched books:', books);
+        }
         setBooks(books);
       });
     } else {
       setBooks([]);
     }
-  }, [formData.publication, formData.subtitle]);
+  }, [formData.publication, formData.subtitle, apiBaseUrl]);
 
   const handleChange = useCallback((e) => {
     const { name, value, files } = e.target;
@@ -197,13 +221,17 @@ const CustomerOrderRecord = () => {
 
         if (field === 'book') {
           const selectedBook = books.find((b) => b._id === value);
-          console.log('Selected book:', selectedBook);
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('Selected book:', selectedBook);
+          }
           if (selectedBook) {
             updatedItems[index].className = selectedBook.bookType === 'common_price' ? '' : updatedItems[index].className;
             updatedItems[index].price = selectedBook.bookType === 'common_price' ? selectedBook.commonPrice || 0 : 0;
             if (selectedBook.bookType !== 'common_price' && updatedItems[index].className) {
               const price = selectedBook.pricesByClass?.[updatedItems[index].className] || 0;
-              console.log(`Setting price for className ${updatedItems[index].className}: ${price}`);
+              if (process.env.NODE_ENV !== 'production') {
+                console.log(`Setting price for className ${updatedItems[index].className}: ${price}`);
+              }
               updatedItems[index].price = price;
             }
           } else {
@@ -215,7 +243,9 @@ const CustomerOrderRecord = () => {
           const selectedBook = books.find((b) => b._id === updatedItems[index].book);
           if (selectedBook && selectedBook.bookType !== 'common_price' && value) {
             const price = selectedBook.pricesByClass?.[value] || 0;
-            console.log(`Updating price for className ${value}: ${price}`);
+            if (process.env.NODE_ENV !== 'production') {
+              console.log(`Updating price for className ${value}: ${price}`);
+            }
             updatedItems[index].price = price;
           }
         }
@@ -270,7 +300,9 @@ const CustomerOrderRecord = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log('Submitting order items:', orderItems);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Submitting order items:', orderItems);
+      }
 
       for (const item of orderItems) {
         const selectedBook = books.find((b) => b._id === item.book);
@@ -309,8 +341,11 @@ const CustomerOrderRecord = () => {
         credentials: 'include',
       });
 
+      if (response.status === 404) {
+        throw new Error(`Submit endpoint not found: ${apiBaseUrl}. Verify backend routes on Render.`);
+      }
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Failed to create order');
       }
 
@@ -320,7 +355,9 @@ const CustomerOrderRecord = () => {
       handleReset();
     } catch (err) {
       setError(err.message);
-      console.error('Error creating order:', err);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Error creating order:', err);
+      }
     } finally {
       setLoading(false);
     }
