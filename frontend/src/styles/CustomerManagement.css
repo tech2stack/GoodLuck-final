@@ -202,7 +202,7 @@ input[type="number"] {
 .table-scroll-container {
     max-height: 500px; /* Ya koi bhi height jo aapko theek lage */
     overflow-y: auto;
-    border: 1px solid #64d029;
+    /* border: 1px solid #64d029; */
     border-radius: 8px;
 }
 

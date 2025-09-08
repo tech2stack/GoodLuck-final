@@ -1,12 +1,15 @@
-// src/components/masters/BookCatalogManagement.jsx
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import api from '../../utils/api';
+import * as XLSX from 'xlsx';
 import {
     FaEdit,
     FaTrashAlt,
     FaPlusCircle,
     FaSearch,
     FaFilePdf,
+    FaFileExcel,
+    FaWhatsapp,
+    FaEnvelope,
     FaChevronLeft,
     FaChevronRight,
     FaSpinner,
@@ -29,10 +32,9 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     const [classes, setClasses] = useState([]);
     const [isbnVisible, setIsbnVisible] = useState({});
     const [showLanguageField, setShowLanguageField] = useState(false);
-
-    // NEW: UI states
     const [showPriceSection, setShowPriceSection] = useState(false);
     const [showAllIsbn, setShowAllIsbn] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
 
     const [formData, setFormData] = useState({
         bookName: '',
@@ -50,26 +52,20 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     const [loading, setLoading] = useState(false);
     const [localError, setLocalError] = useState(null);
     const [editingBookCatalogId, setEditingBookCatalogId] = useState(null);
-
     const [currentClassIndex, setCurrentClassIndex] = useState(0);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [bookCatalogToDeleteId, setBookCatalogToDeleteId] = useState(null);
     const [bookCatalogToDeleteName, setBookCatalogToDeleteName] = useState('');
     const [bookToDelete, setBookToDelete] = useState(null);
-
     const [priceDropdownId, setPriceDropdownId] = useState(null);
     const dropdownRef = useRef(null);
     const tableBodyRef = useRef(null);
-
     const [searchTerm, setSearchTerm] = useState('');
     const [publicationFilter, setPublicationFilter] = useState('all');
     const [subtitleFilter, setSubtitleFilter] = useState('all');
     const [languageFilter, setLanguageFilter] = useState('all');
-
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-
-    // NEW: highlight state for newly added row
     const [highlightedId, setHighlightedId] = useState(null);
 
     const formatDateWithTime = (dateString) => {
@@ -114,33 +110,24 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
     const fetchSubtitles = useCallback(
         (publicationId, initialSubtitleId = null) => {
-            console.log('Fetching subtitles for publicationId:', publicationId, 'Initial Subtitle ID:', initialSubtitleId);
             const selectedPub = publications.find((pub) => pub._id === publicationId);
-
             if (!selectedPub) {
                 setSubtitles([]);
                 setFormData((prev) => ({ ...prev, subtitle: '' }));
                 setSubtitleFilter('all');
-                console.log('Subtitle cleared because no publicationId or publication not found.');
                 return;
             }
-
             const fetchedSubtitles = selectedPub.subtitles || [];
             setSubtitles(fetchedSubtitles);
-            console.log('Fetched subtitles from state:', fetchedSubtitles);
-
             if (initialSubtitleId) {
                 const subtitleExistsInFetched = fetchedSubtitles.some((sub) => sub._id === initialSubtitleId);
                 if (subtitleExistsInFetched) {
                     setFormData((prev) => ({ ...prev, subtitle: initialSubtitleId }));
-                    console.log('Subtitle set to initialSubtitleId:', initialSubtitleId);
                 } else {
                     setFormData((prev) => ({ ...prev, subtitle: '' }));
-                    console.log('Subtitle set to empty string as initial ID not found.');
                 }
             } else {
                 setFormData((prev) => ({ ...prev, subtitle: fetchedSubtitles[0]?._id || '' }));
-                console.log('Subtitle set to first available or cleared (no initialSubtitleId).');
             }
         },
         [publications]
@@ -156,7 +143,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
                 );
                 setBookCatalogs(sorted);
-
                 const totalPagesCalculated = Math.ceil(sorted.length / itemsPerPage);
                 if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
                     setCurrentPage(totalPagesCalculated);
@@ -203,18 +189,11 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     }, [formData.publication, fetchSubtitles, editingBookCatalogId]);
 
     useEffect(() => {
-        console.log("PDF Libraries Check (BookCatalogManagement):");
-        console.log("window.jspdf (global object):", typeof window.jspdf);
-        console.log("window.jspdf.jsPDF (constructor):", typeof window.jspdf?.jsPDF);
-    }, []);
-
-    useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setPriceDropdownId(null);
             }
         };
-
         document.addEventListener('mousedown', handleClickOutside);
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
@@ -223,7 +202,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
     const handleChange = (e) => {
         const { name, value, type } = e.target;
-
         if (name.startsWith('price_')) {
             const classId = name.split('_')[1];
             const numericValue = parseFloat(value);
@@ -317,25 +295,20 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             dataToSend.commonPrice = parseFloat(dataToSend.commonPrice);
         }
 
-        console.log('Submitting formData:', formData);
-        console.log('Data to send:', dataToSend);
-
         try {
             let response;
             if (editingBookCatalogId) {
                 response = await api.patch(`/book-catalogs/${editingBookCatalogId}`, dataToSend);
                 if (response.data.status === 'success') {
                     showFlashMessage('Book Catalog updated successfully!', 'success');
-                    await fetchBookCatalogs(); // Re-fetch after update
+                    await fetchBookCatalogs();
                 } else {
                     throw new Error(response.data.message || 'Failed to update book catalog.');
                 }
             } else {
-                // Create case: Add new entry and ensure it's visible
                 response = await api.post('/book-catalogs', dataToSend);
                 if (response.data.status === 'success') {
                     showFlashMessage('Book Catalog created successfully!', 'success');
-                    // Update bookCatalogs state with the new entry
                     const newBookCatalog = {
                         ...response.data.data.bookCatalog,
                         publication: publications.find(pub => pub._id === formData.publication) || { name: 'N/A' },
@@ -343,19 +316,13 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                         language: languages.find(lang => lang._id === formData.language) || null,
                     };
                     setBookCatalogs(prev => [newBookCatalog, ...prev]);
-
-                    // NEW: highlight the newly added row for a few seconds
                     setHighlightedId(newBookCatalog._id);
                     setTimeout(() => setHighlightedId(null), 4000);
-
-                    // Reset filters to ensure the new entry is visible
                     setSearchTerm('');
                     setPublicationFilter('all');
                     setSubtitleFilter('all');
                     setLanguageFilter('all');
-                    setCurrentPage(1); // Go to first page
-
-                    // Scroll to the top of the table
+                    setCurrentPage(1);
                     if (topRef.current) {
                         topRef.current.scrollIntoView({ behavior: 'smooth' });
                     }
@@ -364,7 +331,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 }
             }
 
-            // Reset form
             setFormData({
                 bookName: '',
                 publication: formData.publication,
@@ -378,10 +344,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 status: 'active',
             });
             setEditingBookCatalogId(null);
-
-            // Re-fetch subtitles for the retained publication
             fetchSubtitles(formData.publication, formData.subtitle);
-
         } catch (err) {
             console.error('Error saving book catalog:', err);
             const errorMessage = err.response?.data?.message || 'Failed to save book catalog.';
@@ -393,7 +356,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
     };
 
     const handleEdit = (bookCatalogItem) => {
-        console.log('Editing book catalog item:', bookCatalogItem);
         const pricesMap = bookCatalogItem.pricesByClass
             ? Object.fromEntries(Object.entries(bookCatalogItem.pricesByClass))
             : {};
@@ -416,9 +378,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         setEditingBookCatalogId(bookCatalogItem._id);
         setLocalError(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-
         fetchSubtitles(bookCatalogItem.publication?._id, bookCatalogItem.subtitle?._id);
-        console.log('Set formData for editing. Publication:', bookCatalogItem.publication?._id, 'Subtitle:', bookCatalogItem.subtitle?._id);
     };
 
     const handleDeleteClick = (bookCatalogItem) => {
@@ -435,7 +395,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
 
     const confirmDelete = async () => {
         if (!bookToDelete) return;
-
         setLoading(true);
         setLocalError(null);
         closeConfirmModal();
@@ -471,7 +430,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
             const publicationName = bookCatalogItem.publication?.name || '';
             const languageName = bookCatalogItem.language?.name || '';
             const subtitleName = bookCatalogItem.subtitle?.name || '';
-
             const matchesPublication =
                 publicationFilter === 'all' || bookCatalogItem.publication?._id === publicationFilter;
             const matchesSubtitle =
@@ -483,7 +441,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 publicationName.toLowerCase().includes(lowerCaseSearchTerm) ||
                 languageName.toLowerCase().includes(lowerCaseSearchTerm) ||
                 subtitleName.toLowerCase().includes(lowerCaseSearchTerm);
-
             return matchesPublication && matchesSubtitle && matchesLanguage && matchesSearch;
         });
     }, [bookCatalogs, searchTerm, publicationFilter, subtitleFilter, languageFilter]);
@@ -517,38 +474,179 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         setPriceDropdownId(priceDropdownId === bookId ? null : bookId);
     };
 
-    const downloadPdf = () => {
+    const generatePdfBlob = () => {
         if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF !== 'function') {
-            showFlashMessage('PDF generation failed: Core libraries are not loaded. Please check your script links.', 'error');
-            console.error("PDF generation failed: window.jspdf is not available. Ensure CDNs for jsPDF are correctly linked in your HTML file.");
+            showFlashMessage('PDF generation failed: jsPDF library is not loaded.', 'error');
+            console.error("PDF generation failed: window.jspdf is not available.");
+            return null;
+        }
+
+        try {
+            const doc = new window.jspdf.jsPDF('l', 'mm', 'a4');
+            let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
+            startY = addReportTitle(doc, startY, "Book Catalog Report");
+
+            const tableColumn = ["S.No.", "Book Name", "Publication", "Subtitle", "Language", "ISBN No.", "Discount"];
+            const tableRows = filteredBookCatalogs.map((book, index) => [
+                index + 1,
+                book.bookName,
+                book.publication ? book.publication.name : 'N/A',
+                book.subtitle ? book.subtitle.name : 'N/A',
+                book.language ? book.language.name : 'N/A',
+                book.bookType === 'common_price'
+                    ? book.commonIsbn || 'N/A'
+                    : Object.entries(book.isbnByClass || {})
+                        .filter(([classId, isbn]) => isbn)
+                        .map(([classId, isbn]) => `${getClassName(classId)}/${isbn}`)
+                        .join(', '),
+                `${book.discountPercentage}%`,
+            ]);
+
+            addTableToDoc(doc, tableColumn, tableRows, startY);
+            const blob = doc.output('blob');
+            if (!blob || blob.size === 0) {
+                throw new Error('Generated PDF blob is empty or invalid.');
+            }
+            return blob;
+        } catch (err) {
+            console.error('Error generating PDF blob:', err);
+            showFlashMessage('Failed to generate PDF for sharing.', 'error');
+            return null;
+        }
+    };
+
+    const downloadPdf = () => {
+        const blob = generatePdfBlob();
+        if (!blob) return;
+
+        try {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Book_Catalog_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            showFlashMessage('Book catalog list downloaded as PDF!', 'success');
+        } catch (err) {
+            console.error('Error downloading PDF:', err);
+            showFlashMessage('Failed to download PDF.', 'error');
+        }
+    };
+
+    const handleShare = async (method) => {
+        setLoading(true);
+        const blob = generatePdfBlob();
+        if (!blob) {
+            setLoading(false);
+            showFlashMessage('Failed to generate PDF for sharing.', 'error');
             return;
         }
 
-        const doc = new window.jspdf.jsPDF('l', 'mm', 'a4');
+        const fileName = `Book_Catalog_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`;
+        const file = new File([blob], fileName, { type: 'application/pdf', lastModified: Date.now() });
 
-        let startY = addHeaderAndSetStartY(doc, companyLogo, 25, 22);
-        startY = addReportTitle(doc, startY, "Book Catalog Report");
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            // Use Web Share API for direct sharing
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: 'Book Catalog PDF',
+                    text: 'Please find attached the Book Catalog PDF.',
+                });
+                showFlashMessage(`PDF shared successfully via ${method === 'whatsapp' ? 'WhatsApp' : 'Email'}!`, 'success');
+            } catch (err) {
+                console.error(`Error sharing via ${method}:`, err);
+                showFlashMessage(`Failed to share PDF via ${method}. Using fallback method.`, 'warning');
+                // Fallback to URL-based sharing
+                const url = URL.createObjectURL(blob);
+                if (method === 'whatsapp') {
+                    const message = `Please find the Book Catalog PDF: ${url}`;
+                    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank');
+                    showFlashMessage('WhatsApp opened with PDF link. Please share the PDF manually.', 'info');
+                } else if (method === 'email') {
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    const subject = 'Book Catalog PDF';
+                    const body = `The Book Catalog PDF (${fileName}) has been downloaded to your device. Please attach it to this email and send.`;
+                    const emailUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                    window.location.href = emailUrl;
+                    showFlashMessage('Email client opened. Please attach the downloaded PDF manually.', 'info');
+                }
+                setTimeout(() => URL.revokeObjectURL(url), 60000);
+            }
+        } else {
+            // Fallback for browsers without Web Share API
+            const url = URL.createObjectURL(blob);
+            if (method === 'whatsapp') {
+                try {
+                    const message = `Please find the Book Catalog PDF: ${url}`;
+                    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank');
+                    showFlashMessage('WhatsApp opened with PDF link. Please download and share the PDF manually.', 'info');
+                } catch (err) {
+                    console.error('Error opening WhatsApp:', err);
+                    showFlashMessage('Failed to open WhatsApp for sharing.', 'error');
+                }
+            } else if (method === 'email') {
+                try {
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    const subject = 'Book Catalog PDF';
+                    const body = `The Book Catalog PDF (${fileName}) has been downloaded to your device. Please attach it to this email and send.`;
+                    const emailUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                    window.location.href = emailUrl;
+                    showFlashMessage('Email client opened. Please attach the downloaded PDF manually.', 'info');
+                } catch (err) {
+                    console.error('Error opening email client:', err);
+                    showFlashMessage('Failed to open email client for sharing. Please check your email client settings.', 'error');
+                }
+            }
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        }
+        setLoading(false);
+        setShowShareModal(false);
+    };
 
-        const tableColumn = ["S.No.", "Book Name", "Publication", "Subtitle", "Language", "ISBN No.", "Discount"];
-        const tableRows = filteredBookCatalogs.map((book, index) => [
-            index + 1,
-            book.bookName,
-            book.publication ? book.publication.name : 'N/A',
-            book.subtitle ? book.subtitle.name : 'N/A',
-            book.language ? book.language.name : 'N/A',
-            book.bookType === 'common_price'
+    const downloadExcel = () => {
+        const data = filteredBookCatalogs.map((book, index) => ({
+            'S.No.': index + 1,
+            'Book Name': book.bookName,
+            'Publication': book.publication ? book.publication.name : 'N/A',
+            'Subtitle': book.subtitle ? book.subtitle.name : 'N/A',
+            'Language': book.language ? book.language.name : 'N/A',
+            'Price': book.bookType === 'common_price'
+                ? book.commonPrice
+                : Object.entries(book.pricesByClass || {})
+                    .map(([classId, price]) => `${getClassName(classId)}: ${price}`)
+                    .join(', '),
+            'ISBN': book.bookType === 'common_price'
                 ? book.commonIsbn || 'N/A'
                 : Object.entries(book.isbnByClass || {})
                     .filter(([classId, isbn]) => isbn)
-                    .map(([classId, isbn]) => `${getClassName(classId)}/${isbn}`)
+                    .map(([classId, isbn]) => `${getClassName(classId)}: ${isbn}`)
                     .join(', '),
-            `${book.discountPercentage}%`,
-        ]);
+            'Discount': `${book.discountPercentage}%`,
+            'Book Type': book.bookType === 'common_price' ? 'Common Price' : 'By Class',
+            'Status': book.status,
+            'Created At': formatDateWithTime(book.createdAt),
+        }));
 
-        addTableToDoc(doc, tableColumn, tableRows, startY);
-
-        doc.save(`Book_Catalog_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.pdf`);
-        showFlashMessage('Book catalog list downloaded as PDF!', 'success');
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Book Catalog');
+        XLSX.writeFile(wb, `Book_Catalog_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.xlsx`);
+        showFlashMessage('Book catalog list downloaded as Excel!', 'success');
     };
 
     return (
@@ -566,7 +664,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                 <div className="form-container-card">
                     <form onSubmit={handleSubmit} className="app-form">
                         <h3 className="form-title">{editingBookCatalogId ? 'Edit Book Catalog' : 'Add Book Catalog'}</h3>
-
                         <div className="form-group">
                             <div className="radio-group">
                                 <label>
@@ -591,7 +688,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 </label>
                             </div>
                         </div>
-
                         <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="publication">Publication Name:</label>
@@ -639,7 +735,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 </select>
                             </div>
                         </div>
-
                         <div className="form-row">
                             <div className="form-group">
                                 <div className="elective-language-toggle">
@@ -689,7 +784,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 />
                             </div>
                         </div>
-
                         {formData.bookType === 'common_price' && (
                             <div className="form-row">
                                 <div className="form-group">
@@ -722,8 +816,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 </div>
                             </div>
                         )}
-
-                        {/* Master Toggle Button */}
                         {formData.bookType === 'default' && (
                             <div className="section-toggle-container">
                                 <button
@@ -735,7 +827,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 </button>
                             </div>
                         )}
-
                         {formData.bookType === 'default' && showPriceSection && (
                             <div
                                 className="modal-backdrop"
@@ -753,7 +844,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                         ✕
                                     </button>
                                     <h4 className="sub-section-title">Prices & ISBNs by Class</h4>
-
                                     <div className="isbn-toggle-container">
                                         <label className="switch">
                                             <input
@@ -767,7 +857,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                             {showAllIsbn ? "Hide ISBNs" : "Show ISBNs"}
                                         </span>
                                     </div>
-
                                     {classes.length === 0 ? (
                                         <p className="loading-state">Loading classes...</p>
                                     ) : (
@@ -826,7 +915,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 <option value="inactive">Inactive</option>
                             </select>
                         </div>
-
                         <div className="form-actions">
                             <button type="submit" className="btn btn-primary" disabled={loading}>
                                 {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (editingBookCatalogId ? 'Update Book' : 'Add Book')}
@@ -859,7 +947,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                         </div>
                     </form>
                 </div>
-
                 <div className="table-section">
                     {loading && bookCatalogs.length === 0 ? (
                         <p className="loading-state text-center">
@@ -939,10 +1026,15 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                     </select>
                                 </div>
                                 <button onClick={downloadPdf} className="download-pdf-btn" disabled={loading || filteredBookCatalogs.length === 0}>
-                                    <FaFilePdf className="btn-icon-mr" /> Download PDF
+                                    <FaFilePdf className="btn-icon-mr" /> PDF
+                                </button>
+                                <button onClick={downloadExcel} className="download-excel-btn" disabled={loading || filteredBookCatalogs.length === 0}>
+                                    <FaFileExcel className="btn-icon-mr" /> Excel
+                                </button>
+                                <button onClick={() => setShowShareModal(true)} className="share-btn" disabled={loading || filteredBookCatalogs.length === 0}>
+                                    <FaEnvelope className="btn-icon-mr" /> Share
                                 </button>
                             </div>
-
                             <table className="app-table">
                                 <thead>
                                     <tr>
@@ -957,7 +1049,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-
                                 <tbody ref={tableBodyRef}>
                                     {filteredBookCatalogs.length === 0 ? (
                                         <tr>
@@ -973,7 +1064,7 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                                 <td>{book.subtitle?.name || 'N/A'}</td>
                                                 <td>{book.bookName}</td>
                                                 <td className="price-cell">
-                                                    {book.bookType === 'common_price' ? (
+                                                    {book.bookType === "common_price" ? (
                                                         `${book.commonPrice}`
                                                     ) : (
                                                         <div className="price-dropdown-container" ref={dropdownRef}>
@@ -985,14 +1076,20 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                                             </span>
                                                             {priceDropdownId === book._id && (
                                                                 <div className="price-dropdown">
-                                                                    <strong><h5>Class-wise Prices:</h5></strong>
-                                                                    <ul>
-                                                                        {classes.map(cls => (
+                                                                    <strong>
+                                                                        <h5>Class: Price / ISBN</h5>
+                                                                    </strong>
+                                                                    <ul className="class-price-list">
+                                                                        {classes.map((cls) => (
                                                                             <li key={cls._id}>
-                                                                                <strong>{cls.name}:</strong> {book.pricesByClass?.[cls._id] || 'N/A'}
-                                                                                {book.isbnByClass?.[cls._id] && (
-                                                                                    <span> / ISBN: {book.isbnByClass[cls._id]}</span>
-                                                                                )}
+                                                                                <div className="class-price-item">
+                                                                                    <strong>{cls.name}:</strong>{" "}
+                                                                                    {book.pricesByClass?.[cls._id] || "N/A"}
+                                                                                    {book.isbnByClass?.[cls._id] && (
+                                                                                        <span> / {book.isbnByClass[cls._id]}</span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <hr />
                                                                             </li>
                                                                         ))}
                                                                     </ul>
@@ -1029,8 +1126,6 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                     )}
                                 </tbody>
                             </table>
-
-                            {/* Pagination + totals (visible even if no data, but disabled appropriately) */}
                             <div className="pagination-controls">
                                 <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1 || loading} className="btn-page">
                                     <FaChevronLeft className="btn-icon-mr" /> Previous
@@ -1058,6 +1153,38 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
                                 {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : 'Delete'}
                             </button>
                             <button onClick={cancelDelete} className="btn btn-secondary" disabled={loading}>Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showShareModal && (
+                <div className="modal-backdrop">
+                    <div className="modal-content">
+                        <h3>Share Book Catalog PDF</h3>
+                        <p>Choose a method to share the book catalog as a PDF:</p>
+                        <div className="modal-actions">
+                            <button
+                                onClick={() => handleShare('whatsapp')}
+                                className="btn btn-success"
+                                disabled={loading}
+                            >
+                                <FaWhatsapp className="btn-icon-mr" /> Share via WhatsApp
+                            </button>
+                            <button
+                                onClick={() => handleShare('email')}
+                                className="btn btn-primary"
+                                disabled={loading}
+                            >
+                                <FaEnvelope className="btn-icon-mr" /> Share via Email
+                            </button>
+                            <button
+                                onClick={() => setShowShareModal(false)}
+                                className="btn btn-secondary"
+                                disabled={loading}
+                            >
+                                Cancel
+                            </button>
                         </div>
                     </div>
                 </div>

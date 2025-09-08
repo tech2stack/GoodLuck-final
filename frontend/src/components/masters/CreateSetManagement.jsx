@@ -109,6 +109,13 @@ export default function CreateSetManagement({ showFlashMessage }) {
         return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', options);
     };
 
+    const classOrder = [
+        "EY1", "EY2", "EY3",
+        "Pre-Nursery", "Nursery",
+        "KG1", "KG2",
+        "1st", "2nd", "3rd", "4th", "5th", "6th",
+        "7th", "8th", "9th", "10th", "11th", "12th"
+    ];
     // Fetch Dropdown Data
     const fetchDropdownData = useCallback(async () => {
         setLoading(true);
@@ -127,6 +134,22 @@ export default function CreateSetManagement({ showFlashMessage }) {
             const validStationeryItems = (stationeryRes.data.data.stationeryItems || []).filter((i) => i?._id);
 
             setCustomers(validCustomers);
+
+
+            const sortedClasses = validClasses.sort((a, b) => {
+                const indexA = classOrder.indexOf(a.name);
+                const indexB = classOrder.indexOf(b.name);
+
+                // agar name list me hai toh uske index pe sort hoga
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+
+                // agar koi match nahi mila toh alphabetically sort kar do
+                if (indexA === -1 && indexB === -1) return a.name.localeCompare(b.name);
+                return indexA === -1 ? 1 : -1;
+            });
+
+            setClasses(sortedClasses);
+
             setClasses(validClasses);
             setStationeryItemsMaster(validStationeryItems);
 
@@ -1555,7 +1578,26 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                 {editingItemId ? 'Update Item' : 'Add Item'}
                             </button>
                         </div>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={handleSaveSet}
+                                disabled={isSaveSetDisabled || loading}
+                                className="w-1/2 btn-blue"
+                                aria-label={isEditMode ? 'Update Set' : 'Save Set'}
+                            >
+                                {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (isEditMode ? 'Update Set' : 'Save Set')}
+                            </button>
+                            <button
+                                onClick={resetForm}
+                                disabled={loading}
+                                className="w-1/2 btn-secondary"
+                                aria-label="Create New Set"
+                            >
+                                New Set
+                            </button>
+                        </div>
                     </section>
+
 
                     <section className="section-container">
                         <h2 className="section-header1">Copy Set</h2>
@@ -1609,24 +1651,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                         </div>
                     </section>
 
-                    <div className="flex gap-4">
-                        <button
-                            onClick={handleSaveSet}
-                            disabled={isSaveSetDisabled || loading}
-                            className="w-1/2 btn-blue"
-                            aria-label={isEditMode ? 'Update Set' : 'Save Set'}
-                        >
-                            {loading ? <FaSpinner className="btn-icon-mr animate-spin" /> : (isEditMode ? 'Update Set' : 'Save Set')}
-                        </button>
-                        <button
-                            onClick={resetForm}
-                            disabled={loading}
-                            className="w-1/2 btn-secondary"
-                            aria-label="Create New Set"
-                        >
-                            New Set
-                        </button>
-                    </div>
+
                 </div>
 
                 <div className="right-panel">
@@ -1742,7 +1767,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             </div>
                             <div className="table-container mt-6">
                                 <h2 className="section-header">Optional Books Details</h2>
-                                <table className="app-table">
+                                <table className="app-table">~
                                     <thead className="table-header-group">
                                         <tr>
                                             <th className="table-header-cell">No.</th>
@@ -1913,6 +1938,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                                         <th className="table-header-cell">Quantity</th>
                                         <th className="table-header-cell table-cell-center">Actions</th>
                                     </tr>
+
                                 </thead>
                                 <tbody className="table-body">
                                     {(classes || []).length === 0 ? (

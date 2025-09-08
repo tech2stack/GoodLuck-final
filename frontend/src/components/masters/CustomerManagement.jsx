@@ -264,37 +264,37 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
     // --- Fetch Customers ---
     const fetchCustomers = useCallback(async () => {
-    setLoading(true);
-    setLocalError(null);
-    try {
-        const queryParams = new URLSearchParams();
-        if (selectedBranchFilter) queryParams.append('branch', selectedBranchFilter);
-        if (selectedFirmFilter) queryParams.append('firm', selectedFirmFilter);
-        if (selectedCityFilter) queryParams.append('city', selectedCityFilter);
-        if (selectedSalesRepFilter) queryParams.append('salesBy', selectedSalesRepFilter);
-        if (selectedCustomerTypeFilter) queryParams.append('customerType', selectedCustomerTypeFilter);
-        if (searchTerm) queryParams.append('search', searchTerm);
+        setLoading(true);
+        setLocalError(null);
+        try {
+            const queryParams = new URLSearchParams();
+            if (selectedBranchFilter) queryParams.append('branch', selectedBranchFilter);
+            if (selectedFirmFilter) queryParams.append('firm', selectedFirmFilter);
+            if (selectedCityFilter) queryParams.append('city', selectedCityFilter);
+            if (selectedSalesRepFilter) queryParams.append('salesBy', selectedSalesRepFilter);
+            if (selectedCustomerTypeFilter) queryParams.append('customerType', selectedCustomerTypeFilter);
+            if (searchTerm) queryParams.append('search', searchTerm);
 
-        const response = await api.get(`/customers?${queryParams.toString()}`);
-        if (response.data.status === 'success' && response.data.data && Array.isArray(response.data.data.customers)) {
-            setCustomers(response.data.data.customers);
+            const response = await api.get(`/customers?${queryParams.toString()}`);
+            if (response.data.status === 'success' && response.data.data && Array.isArray(response.data.data.customers)) {
+                setCustomers(response.data.data.customers);
 
-            const totalPagesCalculated = Math.ceil(response.data.data.customers.length / itemsPerPage);
-            if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
-                setCurrentPage(totalPagesCalculated);
-            } else if (response.data.data.customers.length === 0) {
-                setCurrentPage(1);
+                const totalPagesCalculated = Math.ceil(response.data.data.customers.length / itemsPerPage);
+                if (currentPage > totalPagesCalculated && totalPagesCalculated > 0) {
+                    setCurrentPage(totalPagesCalculated);
+                } else if (response.data.data.customers.length === 0) {
+                    setCurrentPage(1);
+                }
+            } else {
+                setLocalError(response.data.message || 'Failed to fetch customers due to unexpected response structure.');
             }
-        } else {
-            setLocalError(response.data.message || 'Failed to fetch customers due to unexpected response structure.');
+        } catch (err) {
+            console.error('Error fetching customers:', err);
+            setLocalError(err.response?.data?.message || 'Failed to load customers due to network error.');
+        } finally {
+            setLoading(false);
         }
-    } catch (err) {
-        console.error('Error fetching customers:', err);
-        setLocalError(err.response?.data?.message || 'Failed to load customers due to network error.');
-    } finally {
-        setLoading(false);
-    }
-}, [currentPage, itemsPerPage, selectedBranchFilter, selectedFirmFilter, selectedCityFilter, selectedSalesRepFilter, selectedCustomerTypeFilter, searchTerm]);
+    }, [currentPage, itemsPerPage, selectedBranchFilter, selectedFirmFilter, selectedCityFilter, selectedSalesRepFilter, selectedCustomerTypeFilter, searchTerm]);
 
     // --- Fetch Branches, Cities, and Sales Representatives for Dropdowns ---
     const fetchDropdownData = useCallback(async () => {
@@ -365,7 +365,7 @@ const CustomerManagement = ({ showFlashMessage }) => {
 
     // Fetch data on component mount and when filters change
     useEffect(() => {
-    fetchCustomers();
+        fetchCustomers();
     }, [fetchCustomers]); // Now depends on selectedBranchFilter and searchTerm via fetchCustomers
 
     useEffect(() => {
@@ -1309,10 +1309,19 @@ const CustomerManagement = ({ showFlashMessage }) => {
                                             <label htmlFor="pinCode">Pincode</label>
                                             <input type="text" id="pinCode" name="pinCode" value={formData.pinCode} onChange={handleChange} />
                                         </div> */}
-                                        <div className="form-group">
-                                            <label htmlFor="shopRegNo">Shop Reg No</label>
-                                            <input type="text" id="shopRegNo" name="shopRegNo" value={formData.shopRegNo} onChange={handleChange} />
-                                        </div>
+                                        {formData.primaryCustomerType !== 'School' && (
+                                            <div className="form-group">
+                                                <label htmlFor="shopRegNo">Shop Reg No</label>
+                                                <input
+                                                    type="text"
+                                                    id="shopRegNo"
+                                                    name="shopRegNo"
+                                                    value={formData.shopRegNo}
+                                                    onChange={handleChange}
+                                                />
+                                            </div>
+                                        )}
+
                                         <div className="form-group">
                                             <label htmlFor="fixedTradeDiscount">Fixed Trade Discount</label>
                                             <input type="number" id="fixedTradeDiscount" name="fixedTradeDiscount" value={formData.fixedTradeDiscount} onChange={handleChange} />
@@ -1552,127 +1561,127 @@ const CustomerManagement = ({ showFlashMessage }) => {
                     </div>
 
                     <div>
-                    {loading && customers.length === 0 ? (
-                        <p className="loading-state text-center">
-                            <FaSpinner className="icon animate-spin" /> Fetching customer data...
-                        </p>
-                    ) : customers.length === 0 ? (
-                        <p className="no-records-found">No customers found.</p>
-                    ) : (
-                        <div className="table-scroll-container">
-                            <table className="app-table">
-                                <thead>
-                                    <tr>
-                                        <th>S.No.</th>
-                                        <th>Firm</th> {/* NEW: Firm column */}
-                                        <th>Name (Type)</th>
-                                        <th>Contact Person</th>
-                                        <th>Mobile No.</th>
-                                        <th>Address</th>
-                                        <th>City</th>
-                                        <th>Branch</th>
-                                        <th>School Code</th>
-                                        <th>Sales Rep</th>
-                                        <th>Discount</th>
-                                        <th>Status</th>
-                                        {/* <th>Customer Shop Name</th>
+                        {loading && customers.length === 0 ? (
+                            <p className="loading-state text-center">
+                                <FaSpinner className="icon animate-spin" /> Fetching customer data...
+                            </p>
+                        ) : customers.length === 0 ? (
+                            <p className="no-records-found">No customers found.</p>
+                        ) : (
+                            <div className="table-scroll-container">
+                                <table className="app-table">
+                                    <thead>
+                                        <tr>
+                                            <th>S.No.</th>
+                                            <th>Firm</th> {/* NEW: Firm column */}
+                                            <th>Name (Type)</th>
+                                            <th>Contact Person</th>
+                                            <th>Mobile No.</th>
+                                            <th>Address</th>
+                                            <th>City</th>
+                                            <th>Branch</th>
+                                            <th>School Code</th>
+                                            <th>Sales Rep</th>
+                                            <th>Discount</th>
+                                            <th>Status</th>
+                                            {/* <th>Customer Shop Name</th>
                                         <th>Age</th>
                                         <th>S/O</th>
                                         <th>Customer City</th>
                                         <th>District</th>
                                         <th>State</th>
                                         <th>Pincode</th> */}
-                                        <th>Shop Reg No</th>
-                                        <th>Fixed Trade Discount</th>
-                                        <th>Remark</th>
-                                        <th>Goods Del. Transport Pay</th>
-                                        <th>Goods Return Transport Pay</th>
-                                        <th>Final Sales Return Month</th>
-                                        <th>Final Payment Month</th>
-                                        <th>Payment Concern Person</th>
-                                        <th>Advance Payment</th> {/*advance  payment*/}
-                                        <th>Closed Date</th>
-                                        <th>Cheque No.</th>
-                                        <th>Cheque Bank Name</th>
-                                        <th>Attachments</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody ref={tableBodyRef}>
-                                    {currentItems.map((customer, index) => (
-                                        <tr key={customer._id} id={`customer-row-${customer._id}`} className={newlyAddedCustomerId === customer._id ? 'highlight-row' : ''}>
-                                            <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                            <td>{customer.firm ? customer.firm.name : 'N/A'}</td> {/* NEW: Firm value */}
-                                            <td>{customer.customerName} ({customer.customerType || 'N/A'})</td>
-                                            <td>{customer.contactPerson || 'N/A'}</td>
-                                            <td>{customer.mobileNumber || 'N/A'}</td>
-                                            <td>{customer.shopAddress || customer.homeAddress || 'N/A'}</td>
-                                            <td>{customer.city ? customer.city.name : 'N/A'}</td>
-                                            <td>{customer.branch ? customer.branch.name : 'N/A'}</td>
-                                            <td>{customer.schoolCode || 'N/A'}</td>
-                                            <td>{customer.salesBy ? customer.salesBy.name : 'N/A'}</td>
-                                            <td>{customer.discount || 0}%</td>
-                                            <td>{customer.status}</td>
-                                            {/* <td>{customer.customerShopName || 'N/A'}</td>
+                                            <th>Shop Reg No</th>
+                                            <th>Fixed Trade Discount</th>
+                                            <th>Remark</th>
+                                            <th>Goods Del. Transport Pay</th>
+                                            <th>Goods Return Transport Pay</th>
+                                            <th>Final Sales Return Month</th>
+                                            <th>Final Payment Month</th>
+                                            <th>Payment Concern Person</th>
+                                            <th>Advance Payment</th> {/*advance  payment*/}
+                                            <th>Closed Date</th>
+                                            <th>Cheque No.</th>
+                                            <th>Cheque Bank Name</th>
+                                            <th>Attachments</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody ref={tableBodyRef}>
+                                        {currentItems.map((customer, index) => (
+                                            <tr key={customer._id} id={`customer-row-${customer._id}`} className={newlyAddedCustomerId === customer._id ? 'highlight-row' : ''}>
+                                                <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                                <td>{customer.firm ? customer.firm.name : 'N/A'}</td> {/* NEW: Firm value */}
+                                                <td>{customer.customerName} ({customer.customerType || 'N/A'})</td>
+                                                <td>{customer.contactPerson || 'N/A'}</td>
+                                                <td>{customer.mobileNumber || 'N/A'}</td>
+                                                <td>{customer.shopAddress || customer.homeAddress || 'N/A'}</td>
+                                                <td>{customer.city ? customer.city.name : 'N/A'}</td>
+                                                <td>{customer.branch ? customer.branch.name : 'N/A'}</td>
+                                                <td>{customer.schoolCode || 'N/A'}</td>
+                                                <td>{customer.salesBy ? customer.salesBy.name : 'N/A'}</td>
+                                                <td>{customer.discount || 0}%</td>
+                                                <td>{customer.status}</td>
+                                                {/* <td>{customer.customerShopName || 'N/A'}</td>
                                             <td>{customer.age || 'N/A'}</td>
                                             <td>{customer.so || 'N/A'}</td>
                                             <td>{customer.customerCity || 'N/A'}</td>
                                             <td>{customer.distt || 'N/A'}</td>
                                             <td>{customer.state || 'N/A'}</td>
                                             <td>{customer.pinCode || 'N/A'}</td> */}
-                                            <td>{customer.shopRegNo || 'N/A'}</td>
-                                            <td>{customer.fixedTradeDiscount || 'N/A'}</td>
-                                            <td>{customer.remark || 'N/A'}</td>
-                                            <td>{customer.goodsDeliveredTransportationPay || 'N/A'}</td>
-                                            <td>{customer.goodsReturnTransportationPay || 'N/A'}</td>
-                                            <td>{customer.finalSalesReturnMonth || 'N/A'}</td>
-                                            <td>{customer.finalPaymentInAccountMonth || 'N/A'}</td>
-                                            <td>{customer.paymentConcernPersonName || 'N/A'}</td>
-                                            <td>{customer.advancePayment || 0}</td> {/* NEW VALUE */}
-                                            <td>{customer.closedDate ? formatDateWithTime(customer.closedDate) : 'N/A'}</td>
-                                            <td>{customer.chequeNo || 'N/A'}</td>
-                                            <td>{customer.chequeOfBankName || 'N/A'}</td>
-                                            <td className="actions-column">
-                                                {(customer.chequeImage || customer.passportImage || customer.otherAttachment) && (
-                                                    <button
-                                                        onClick={() => openAttachmentModal(customer)}
-                                                        className="action-icon-button view-button"
-                                                        title="View Attachment"
-                                                    >
-                                                        <FaEye className="icon" />
-                                                    </button>
-                                                )}
+                                                <td>{customer.shopRegNo || 'N/A'}</td>
+                                                <td>{customer.fixedTradeDiscount || 'N/A'}</td>
+                                                <td>{customer.remark || 'N/A'}</td>
+                                                <td>{customer.goodsDeliveredTransportationPay || 'N/A'}</td>
+                                                <td>{customer.goodsReturnTransportationPay || 'N/A'}</td>
+                                                <td>{customer.finalSalesReturnMonth || 'N/A'}</td>
+                                                <td>{customer.finalPaymentInAccountMonth || 'N/A'}</td>
+                                                <td>{customer.paymentConcernPersonName || 'N/A'}</td>
+                                                <td>{customer.advancePayment || 0}</td> {/* NEW VALUE */}
+                                                <td>{customer.closedDate ? formatDateWithTime(customer.closedDate) : 'N/A'}</td>
+                                                <td>{customer.chequeNo || 'N/A'}</td>
+                                                <td>{customer.chequeOfBankName || 'N/A'}</td>
+                                                <td className="actions-column">
+                                                    {(customer.chequeImage || customer.passportImage || customer.otherAttachment) && (
+                                                        <button
+                                                            onClick={() => openAttachmentModal(customer)}
+                                                            className="action-icon-button view-button"
+                                                            title="View Attachment"
+                                                        >
+                                                            <FaEye className="icon" />
+                                                        </button>
+                                                    )}
 
-                                            </td>
-                                            <td className="actions-column">
-                                                <button onClick={() => handleEdit(customer)} className="action-icon-button edit-button">
-                                                    <FaEdit />
-                                                </button>
-                                                <button onClick={() => openConfirmModal(customer)} className="action-icon-button delete-button">
-                                                    <FaTrashAlt />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            {/* Pagination Controls */}
-                            {customers.length > itemsPerPage && (
-                                <div className="pagination-controls">
-                                    <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn-page">
-                                        <FaChevronLeft className="icon mr-2" /> Prev
-                                    </button>
-                                    <span>Page {currentPage} of {totalPages}</span>
-                                    <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn-page">
-                                        Next <FaChevronRight className="icon ml-2" />
-                                    </button>
+                                                </td>
+                                                <td className="actions-column">
+                                                    <button onClick={() => handleEdit(customer)} className="action-icon-button edit-button">
+                                                        <FaEdit />
+                                                    </button>
+                                                    <button onClick={() => openConfirmModal(customer)} className="action-icon-button delete-button">
+                                                        <FaTrashAlt />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                {/* Pagination Controls */}
+                                {customers.length > itemsPerPage && (
+                                    <div className="pagination-controls">
+                                        <button onClick={goToPrevPage} disabled={currentPage === 1 || loading} className="btn-page">
+                                            <FaChevronLeft className="icon mr-2" /> Prev
+                                        </button>
+                                        <span>Page {currentPage} of {totalPages}</span>
+                                        <button onClick={goToNextPage} disabled={currentPage === totalPages || loading} className="btn-page">
+                                            Next <FaChevronRight className="icon ml-2" />
+                                        </button>
+                                    </div>
+                                )}
+                                <div className="total-records text-center mt-2">
+                                    Total Records: {customers.length}
                                 </div>
-                            )}
-                            <div className="total-records text-center mt-2">
-                                Total Records: {customers.length}
                             </div>
-                        </div>
-                    )}
+                        )}
 
                     </div>
                 </div>
