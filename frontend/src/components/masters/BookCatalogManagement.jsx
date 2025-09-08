@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import api from '../../utils/api';
-import * as XLSX from 'xlsx';
+// import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import {
     FaEdit,
     FaTrashAlt,
@@ -618,37 +619,69 @@ const BookCatalogManagement = ({ showFlashMessage }) => {
         setShowShareModal(false);
     };
 
-    const downloadExcel = () => {
-        const data = filteredBookCatalogs.map((book, index) => ({
-            'S.No.': index + 1,
-            'Book Name': book.bookName,
-            'Publication': book.publication ? book.publication.name : 'N/A',
-            'Subtitle': book.subtitle ? book.subtitle.name : 'N/A',
-            'Language': book.language ? book.language.name : 'N/A',
-            'Price': book.bookType === 'common_price'
-                ? book.commonPrice
-                : Object.entries(book.pricesByClass || {})
-                    .map(([classId, price]) => `${getClassName(classId)}: ${price}`)
-                    .join(', '),
-            'ISBN': book.bookType === 'common_price'
-                ? book.commonIsbn || 'N/A'
-                : Object.entries(book.isbnByClass || {})
-                    .filter(([classId, isbn]) => isbn)
-                    .map(([classId, isbn]) => `${getClassName(classId)}: ${isbn}`)
-                    .join(', '),
-            'Discount': `${book.discountPercentage}%`,
-            'Book Type': book.bookType === 'common_price' ? 'Common Price' : 'By Class',
-            'Status': book.status,
-            'Created At': formatDateWithTime(book.createdAt),
-        }));
+const downloadExcel = async () => {
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Book Catalog');
 
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Book Catalog');
-        XLSX.writeFile(wb, `Book_Catalog_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.xlsx`);
-        showFlashMessage('Book catalog list downloaded as Excel!', 'success');
+            // Define columns
+            worksheet.columns = [
+                { header: 'S.No.', key: 'sno', width: 10 },
+                { header: 'Book Name', key: 'bookName', width: 30 },
+                { header: 'Publication', key: 'publication', width: 25 },
+                { header: 'Subtitle', key: 'subtitle', width: 20 },
+                { header: 'Language', key: 'language', width: 15 },
+                { header: 'Price', key: 'price', width: 20 },
+                { header: 'ISBN', key: 'isbn', width: 30 },
+                { header: 'Discount', key: 'discount', width: 15 },
+                { header: 'Book Type', key: 'bookType', width: 15 },
+                { header: 'Status', key: 'status', width: 15 },
+                { header: 'Created At', key: 'createdAt', width: 25 },
+            ];
+
+            // Add rows
+            filteredBookCatalogs.forEach((book, index) => {
+                worksheet.addRow({
+                    sno: index + 1,
+                    bookName: book.bookName,
+                    publication: book.publication?.name || 'N/A',
+                    subtitle: book.subtitle?.name || 'N/A',
+                    language: book.language?.name || 'N/A',
+                    price: book.bookType === 'common_price'
+                        ? book.commonPrice
+                        : Object.entries(book.pricesByClass || {})
+                            .map(([classId, price]) => `${getClassName(classId)}: ${price}`)
+                            .join(', '),
+                    isbn: book.bookType === 'common_price'
+                        ? book.commonIsbn || 'N/A'
+                        : Object.entries(book.isbnByClass || {})
+                            .filter(([classId, isbn]) => isbn)
+                            .map(([classId, isbn]) => `${getClassName(classId)}: ${isbn}`)
+                            .join(', '),
+                    discount: `${book.discountPercentage}%`,
+                    bookType: book.bookType === 'common_price' ? 'Common Price' : 'By Class',
+                    status: book.status,
+                    createdAt: formatDateWithTime(book.createdAt),
+                });
+            });
+
+            // Write to a file
+            const fileName = `Book_Catalog_List_${new Date().toLocaleDateString('en-CA').replace(/\//g, '-')}.xlsx`;
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            showFlashMessage('Book catalog list downloaded as Excel!', 'success');
+        } catch (error) {
+            console.error('Error generating Excel file:', error);
+            showFlashMessage('Failed to download Excel file.', 'error');
+        }
     };
-
     return (
         <div className="book-catalog-management-container">
             <div ref={topRef}></div>
