@@ -1366,7 +1366,7 @@ export default function CreateSetManagement({ showFlashMessage }) {
                             </label>
                         </div>
 
-                        {/* Sub Title for Books */}
+                        {/* Sub Title for Books and all */}
                         {selectedItemType === 'books' && (
                             <div>
                                 <select
